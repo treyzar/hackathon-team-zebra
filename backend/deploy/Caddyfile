@@ -1,0 +1,33 @@
+# Public entry point. Caddy obtains and renews Let's Encrypt certificates itself;
+# every domain below needs a DNS A record pointing at the server.
+{
+	email {$ACME_EMAIL}
+}
+
+# The site: frontend, with the API on the same origin (no CORS needed).
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	@backend path /api/* /health
+	handle @backend {
+		reverse_proxy backend:8000
+	}
+	handle {
+		reverse_proxy frontend:80
+	}
+}
+
+# File storage. Browsers upload/download directly via presigned URLs; the
+# signature covers Host and path, so it needs its own domain, proxied as is.
+{$S3_DOMAIN} {
+	request_body {
+		max_size 100MB
+	}
+	reverse_proxy s3:9000
+}
+
+# Judge0 for developers' machines; requests need the X-Auth-Token header.
+{$JUDGE0_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy judge0-server:2358
+}

@@ -9,3 +9,8 @@ __pycache__/
 *.md
 docker-compose.yml
 Dockerfile
+.env.*
+!.env.example
+.coverage
+htmlcov/
+deploy/

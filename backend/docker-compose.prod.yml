@@ -1,34 +1,200 @@
+# Production stack, see deploy/README.md.
+# Only Caddy publishes ports (80/443); everything else is on the internal network.
+# All secrets and domains come from .env (see .env.example); nothing has a default.
+name: zebra
+
+x-app: &app
+  build: .
+  restart: unless-stopped
+
+# Everything the app gets is listed here explicitly (no env_file), so all
+# services take their values from one place: the .env used for interpolation.
+x-app-env: &app-env
+  DB_URL: postgresql+asyncpg://${POSTGRES_USER:?set in .env}:${POSTGRES_PASSWORD:?set in .env}@db:5432/${POSTGRES_DB:?set in .env}
+  JWT_KEY: ${JWT_KEY:?set in .env}
+  JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+  ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-10}
+  REFRESH_TOKEN_EXPIRE_MINUTES: ${REFRESH_TOKEN_EXPIRE_MINUTES:-10080}
+  CORS_ORIGINS: '["https://${SITE_DOMAIN:?set in .env}"]'
+  S3_ENDPOINT: http://s3:9000
+  S3_PUBLIC_ENDPOINT: https://${S3_DOMAIN:?set in .env}
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set in .env}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:?set in .env}
+  S3_BUCKET: ${S3_BUCKET:?set in .env}
+  JUDGE0_URL: http://judge0-server:2358
+  JUDGE0_AUTH_TOKEN: ${JUDGE0_AUTH_TOKEN:?set in .env}
+  UV_NO_SYNC: "1"
+
+x-judge0-env: &judge0-env
+  REDIS_HOST: judge0-redis
+  REDIS_PASSWORD: ${JUDGE0_REDIS_PASSWORD:?set in .env}
+  POSTGRES_HOST: judge0-db
+  POSTGRES_DB: judge0
+  POSTGRES_USER: judge0
+  POSTGRES_PASSWORD: ${JUDGE0_DB_PASSWORD:?set in .env}
+  # Judge0 is public: every request must carry X-Auth-Token.
+  AUTHN_TOKEN: ${JUDGE0_AUTH_TOKEN:?set in .env}
+  # Admin endpoints (e.g. listing all submissions) need a separate token.
+  AUTHZ_TOKEN: ${JUDGE0_ADMIN_TOKEN:?set in .env}
+  # Submitted code must never get network access, even if a client asks.
+  ENABLE_NETWORK: "false"
+  ALLOW_ENABLE_NETWORK: "false"
+
 services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?set in .env}
+      S3_DOMAIN: ${S3_DOMAIN:?set in .env}
+      JUDGE0_DOMAIN: ${JUDGE0_DOMAIN:?set in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?set in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # certificates: keep this volume
+      - caddy_config:/config
+    depends_on: [backend, frontend, s3, judge0-server]
+
+  frontend:
+    build:
+      context: ../frontend
+      args:
+        VITE_API_URL: /api # same origin, served through Caddy
+    restart: unless-stopped
+
+  backend:
+    <<: *app
+    command: >
+      uv run --no-sync fastapi run --host 0.0.0.0 --port 8000 --workers 2
+      src/server.py
+    environment:
+      <<: *app-env
+      FORWARDED_ALLOW_IPS: "*" # trust X-Forwarded-* from Caddy
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      s3-init:
+        condition: service_completed_successfully
+
+  migrate:
+    <<: *app
+    command: uv run --no-sync alembic upgrade head
+    environment: *app-env
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    <<: *app
+    command: uv run --no-sync python src/worker.py
+    environment: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      judge0-server:
+        condition: service_started
+
   db:
     image: postgres:16
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-mda}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mda}
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      POSTGRES_USER: ${POSTGRES_USER:?set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mda} -d ${POSTGRES_DB:-app}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 2s
       timeout: 2s
       retries: 30
 
-  migrate:
-    build: .
-    command: uv run --no-sync alembic upgrade head
+  s3:
+    image: chrislusf/seaweedfs:latest
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cat > /tmp/s3.json <<EOF
+        {"identities": [{"name": "app",
+          "credentials": [{"accessKey": "$${S3_ACCESS_KEY}", "secretKey": "$${S3_SECRET_KEY}"}],
+          "actions": ["Admin", "Read", "Write", "List", "Tagging"]}]}
+        EOF
+        exec weed server -ip.bind=0.0.0.0 -dir=/data -s3 -s3.port=9000 -s3.config=/tmp/s3.json -master.volumeSizeLimitMB=1024
     environment:
-      DB_URL: postgresql+asyncpg://${POSTGRES_USER:-mda}:${POSTGRES_PASSWORD:-mda}@db:5432/${POSTGRES_DB:-app}
-      UV_NO_SYNC: "1"
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set in .env}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?set in .env}
     volumes:
-      - .:/app
+      - s3data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:9333/cluster/status"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  s3-init:
+    image: amazon/aws-cli:latest
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        s3="aws --endpoint-url http://s3:9000"
+        until $$s3 s3api list-buckets > /dev/null 2>&1; do sleep 1; done
+        $$s3 s3api head-bucket --bucket "$${S3_BUCKET}" 2>/dev/null || $$s3 s3 mb "s3://$${S3_BUCKET}"
+        cors=$$(printf '{"CORSRules": [{"AllowedOrigins": ["%s"], "AllowedMethods": ["GET", "PUT", "HEAD"], "AllowedHeaders": ["*"], "MaxAgeSeconds": 3600}]}' "$${S3_CORS_ORIGIN}")
+        $$s3 s3api put-bucket-cors --bucket "$${S3_BUCKET}" --cors-configuration "$$cors"
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:?set in .env}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:?set in .env}
+      AWS_DEFAULT_REGION: us-east-1
+      S3_BUCKET: ${S3_BUCKET:?set in .env}
+      S3_CORS_ORIGIN: https://${SITE_DOMAIN:?set in .env}
     depends_on:
-      db:
+      s3:
         condition: service_healthy
     restart: "no"
 
-  #run:
+  # Judge0 CE: needs privileged containers and cgroup v1 on the host.
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    restart: unless-stopped
+    privileged: true
+    environment: *judge0-env
+    depends_on: [judge0-db, judge0-redis]
+
+  judge0-workers:
+    image: judge0/judge0:1.13.1
+    restart: unless-stopped
+    command: ["./scripts/workers"]
+    privileged: true
+    environment: *judge0-env
+    depends_on: [judge0-db, judge0-redis]
+
+  judge0-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: judge0
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: ${JUDGE0_DB_PASSWORD:?set in .env}
+    volumes:
+      - judge0data:/var/lib/postgresql/data
+
+  judge0-redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${JUDGE0_REDIS_PASSWORD:?set in .env}"]
 
 volumes:
   pgdata:
+  s3data:
+  judge0data:
+  caddy_data:
+  caddy_config:
