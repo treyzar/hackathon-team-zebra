@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -69,6 +69,12 @@ class CommonSettings(Schema):
     show_answer: ShowAnswer = ShowAnswer.NEVER
 
 
+class TestFiles(Protocol):
+    """Access to uploaded files (e.g. large tests) while grading."""
+
+    async def text(self, file_id: int) -> str: ...
+
+
 @dataclass
 class GradeResult:
     score: float
@@ -105,6 +111,15 @@ class StepType:
         if files:
             raise ValueError("This step does not accept files")
 
+    def authored_files(self, content: Any, answer_key: Any) -> list[int]:
+        """Ids of uploaded files the authored step references."""
+        return []
+
+    def check_authored_files(
+        self, content: Any, answer_key: Any, files: dict[int, FileInfo]
+    ) -> None:
+        """Checks of those files (purpose, size). Raise ValueError."""
+
     def check(
         self, content: Any, answer_key: Any, settings: Any, answer: Any, max_score: int
     ) -> GradeResult:
@@ -114,6 +129,7 @@ class StepType:
     async def run_tests(
         self,
         judge: JudgeClient,
+        files: TestFiles,
         content: Any,
         answer_key: Any,
         settings: Any,
@@ -137,3 +153,4 @@ class FileInfo:
     id: int
     mime: str
     size: int
+    purpose: str = ""

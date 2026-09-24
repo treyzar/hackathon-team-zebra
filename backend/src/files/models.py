@@ -9,6 +9,8 @@ from models import BaseDB, User
 class FilePurpose(enum.StrEnum):
     CONTENT = "content"  # course materials, readable by any signed-in user
     SUBMISSION = "submission"  # student's attachment, private
+    # Hidden tests, reference answers: admins and curators only.
+    ANSWER_KEY = "answer_key"
 
 
 class FileStatus(enum.StrEnum):

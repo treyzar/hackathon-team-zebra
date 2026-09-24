@@ -6,7 +6,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from courses.models import Course, Module, Step, StepRevision
+from files.models import File, FileStatus
 from models import User
+from steps.base import FileInfo
 from steps.registry import ParsedRevision, StepPayloadBase, get_type, parse_revision
 from submissions.models import Submission
 
@@ -95,6 +97,30 @@ async def reorder(db: AsyncSession, items: list, ids: list[int]) -> None:
         by_id[item_id].position = position
 
 
+async def check_authored_files(db: AsyncSession, payload: StepPayloadBase) -> None:
+    """Files the step refers to must be uploaded and suit the step type."""
+    t = get_type(payload.type)
+    ids = set(t.authored_files(payload.content, payload.answer_key))
+    if not ids:
+        return
+    found = (
+        await db.scalars(
+            select(File).where(File.id.in_(ids), File.status == FileStatus.READY)
+        )
+    ).all()
+    missing = ids - {f.id for f in found}
+    if missing:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            f"Unknown or not uploaded files: {sorted(missing)}",
+        )
+    infos = {f.id: FileInfo(f.id, f.mime, f.size, f.purpose.value) for f in found}
+    try:
+        t.check_authored_files(payload.content, payload.answer_key, infos)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(e)) from e
+
+
 async def add_revision(
     db: AsyncSession,
     step: Step,
@@ -103,6 +129,7 @@ async def add_revision(
     comment: str | None,
     is_breaking: bool,
 ) -> StepRevision:
+    await check_authored_files(db, payload)
     number = (
         await db.scalar(
             select(func.max(StepRevision.number)).where(StepRevision.step_id == step.id)

@@ -45,6 +45,17 @@ class FreeText(StepType):
     def answer_files(self, answer):
         return answer.files
 
+    def authored_files(self, content, answer_key):
+        return answer_key.files
+
+    def check_authored_files(self, content, answer_key, files):
+        # Reference files are for curators, never for students.
+        for f in files.values():
+            if f.purpose != "answer_key":
+                raise ValueError(
+                    f"Reference file {f.id} must be uploaded with purpose answer_key"
+                )
+
     def check_files(self, content, files):
         if len(files) > content.max_files:
             raise ValueError(f"At most {content.max_files} files allowed")

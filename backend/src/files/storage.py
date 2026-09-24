@@ -6,9 +6,13 @@ from urllib.parse import quote
 
 import boto3
 from botocore.config import Config
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 
 from config import settings
+
+
+class StorageError(Exception):
+    """Storage is unavailable or failed; the operation may be retried."""
 
 
 def _client(endpoint: str):
@@ -54,6 +58,27 @@ def presign_download(key: str, filename: str) -> str:
     )
 
 
+def _missing(e: ClientError) -> bool:
+    return e.response.get("Error", {}).get("Code") in ("404", "NoSuchKey")
+
+
+async def read_object(key: str) -> bytes:
+    """Whole object; FileNotFoundError if it does not exist."""
+
+    def get() -> bytes:
+        try:
+            resp = _internal().get_object(Bucket=settings.s3_bucket, Key=key)
+            return resp["Body"].read()
+        except ClientError as e:
+            if _missing(e):
+                raise FileNotFoundError(key) from e
+            raise StorageError(str(e)) from e
+        except BotoCoreError as e:
+            raise StorageError(str(e)) from e
+
+    return await asyncio.to_thread(get)
+
+
 async def object_size(key: str) -> int | None:
     """Size of the uploaded object, or None if it does not exist."""
 
@@ -61,7 +86,7 @@ async def object_size(key: str) -> int | None:
         try:
             resp = _internal().head_object(Bucket=settings.s3_bucket, Key=key)
         except ClientError as e:
-            if e.response.get("Error", {}).get("Code") in ("404", "NoSuchKey"):
+            if _missing(e):
                 return None
             raise
         return resp["ContentLength"]

@@ -30,6 +30,17 @@ class Settings(BaseSettings):
     # A submission stuck in "running" longer than this is requeued (worker crash).
     judge_stale_after_seconds: int = 600
     worker_concurrency: int = 2
+    # Judge0 caps program output (max_file_size) at MAX_MAX_FILE_SIZE, 4096 KB
+    # by default; expected outputs of tests must fit into it.
+    judge_max_output_kb: int = 4096
+    # Largest input file of a programming test.
+    test_input_max_mb: int = 16
+    # All test files of one step together: the worker holds them in memory.
+    test_files_total_mb: int = 128
+    # Upper bound of stdin + expected output sent to Judge0 in one batch.
+    judge_batch_max_mb: int = 16
+    # In-memory cache of test files in each worker process.
+    worker_file_cache_mb: int = 64
 
 
 settings = Settings()

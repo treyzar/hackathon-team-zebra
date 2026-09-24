@@ -60,31 +60,6 @@ def programming(grading="tests", scoring="all_or_nothing", max_score=10):
     }
 
 
-@pytest.fixture
-async def admin(make_user):
-    return await make_user("admin")
-
-
-@pytest.fixture
-async def course(client, admin):
-    """Published course with one module; returns (course_id, module_id)."""
-    _, h = admin
-    r = await client.post(
-        "/admin/courses", json={"slug": "py", "title": "Python"}, headers=h
-    )
-    assert r.status_code == 201, r.text
-    course_id = r.json()["id"]
-    r = await client.post(
-        f"/admin/courses/{course_id}/modules", json={"title": "Intro"}, headers=h
-    )
-    module_id = r.json()["id"]
-    r = await client.patch(
-        f"/admin/courses/{course_id}", json={"is_published": True}, headers=h
-    )
-    assert r.json()["is_published"]
-    return course_id, module_id
-
-
 async def add_step(client, admin, module_id, payload) -> int:
     r = await client.post(
         f"/admin/modules/{module_id}/steps", json={"payload": payload}, headers=admin[1]

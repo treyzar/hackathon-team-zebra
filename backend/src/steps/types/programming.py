@@ -1,8 +1,9 @@
 import enum
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
+from config import settings as app_settings
 from steps.base import CommonSettings, GradeResult, Grading, RichText, Schema, StepType
 from steps.registry import register
 
@@ -10,9 +11,27 @@ Language = Literal["python3"]
 _MAX_SHOWN_OUTPUT = 4096
 
 
-class TestCase(Schema):
+class Sample(Schema):
+    """Example shown to the student: always inline."""
+
     input: str = Field(default="", max_length=1_000_000)
     output: str = Field(default="", max_length=1_000_000)
+
+
+class TestCase(Sample):
+    """Hidden test. Small data is inline; large data is an uploaded file
+    (purpose answer_key) referenced by id instead of the inline text."""
+
+    input_file: int | None = None
+    output_file: int | None = None
+
+    @model_validator(mode="after")
+    def _one_source(self):
+        if self.input_file is not None and self.input:
+            raise ValueError("Set either input or input_file, not both")
+        if self.output_file is not None and self.output:
+            raise ValueError("Set either output or output_file, not both")
+        return self
 
 
 class TestGroup(Schema):
@@ -28,7 +47,7 @@ class ProgrammingContent(Schema):
     memory_limit_mb: int = Field(default=256, ge=16, le=512)
     template: str = Field(default="", max_length=65_536)
     # Shown to the student; run for feedback but not scored.
-    samples: list[TestCase] = Field(default=[], max_length=20)
+    samples: list[Sample] = Field(default=[], max_length=20)
 
 
 class ProgrammingKey(Schema):
@@ -80,10 +99,57 @@ class Programming(StepType):
                     f"Sum of group points ({total}) must equal max_score ({max_score})"
                 )
 
-    async def run_tests(self, judge, content, answer_key, settings, answer, max_score):
+    def authored_files(self, content, answer_key):
+        return [
+            file_id
+            for g in answer_key.test_groups
+            for t in g.tests
+            for file_id in (t.input_file, t.output_file)
+            if file_id is not None
+        ]
+
+    def check_authored_files(self, content, answer_key, files):
+        max_input = app_settings.test_input_max_mb * 1024 * 1024
+        max_output = app_settings.judge_max_output_kb * 1024
+        max_total = app_settings.test_files_total_mb * 1024 * 1024
+        if sum(files[i].size for i in set(files)) > max_total:
+            raise ValueError(
+                f"Test files together exceed {app_settings.test_files_total_mb} MB"
+            )
+        for g in answer_key.test_groups:
+            for t in g.tests:
+                for file_id, limit in (
+                    (t.input_file, max_input),
+                    (t.output_file, max_output),
+                ):
+                    if file_id is None:
+                        continue
+                    f = files[file_id]
+                    # Content files are readable by every student.
+                    if f.purpose != "answer_key":
+                        raise ValueError(
+                            f"Test file {file_id} must be uploaded with purpose answer_key"
+                        )
+                    if f.size > limit:
+                        raise ValueError(
+                            f"Test file {file_id} is larger than {limit // 1024} KB"
+                        )
+
+    async def run_tests(
+        self, judge, files, content, answer_key, settings, answer, max_score
+    ):
+        async def text(inline: str, file_id: int | None) -> str:
+            return inline if file_id is None else await files.text(file_id)
+
         cases = [(t.input, t.output) for t in content.samples]
         for g in answer_key.test_groups:
-            cases += [(t.input, t.output) for t in g.tests]
+            for t in g.tests:
+                cases.append(
+                    (
+                        await text(t.input, t.input_file),
+                        await text(t.output, t.output_file),
+                    )
+                )
         runs = await judge.run(
             answer.code,
             cases,

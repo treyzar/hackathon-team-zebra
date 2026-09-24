@@ -118,3 +118,83 @@ async def make_user(db_clean):
             return user.id, {"Authorization": f"Bearer {token}"}
 
     return make
+
+
+@pytest_asyncio.fixture
+async def admin(make_user):
+    return await make_user("admin")
+
+
+@pytest_asyncio.fixture
+async def course(client, admin):
+    """Published course with one module; returns (course_id, module_id)."""
+    _, h = admin
+    r = await client.post(
+        "/admin/courses", json={"slug": "py", "title": "Python"}, headers=h
+    )
+    assert r.status_code == 201, r.text
+    course_id = r.json()["id"]
+    r = await client.post(
+        f"/admin/courses/{course_id}/modules", json={"title": "Intro"}, headers=h
+    )
+    module_id = r.json()["id"]
+    r = await client.patch(
+        f"/admin/courses/{course_id}", json={"is_published": True}, headers=h
+    )
+    assert r.json()["is_published"]
+    return course_id, module_id
+
+
+class FakeStorage:
+    """In-memory stand-in for the S3 bucket."""
+
+    def __init__(self):
+        self.objects: dict[str, bytes] = {}
+        self.reads = 0
+
+    async def object_size(self, key):
+        data = self.objects.get(key)
+        return None if data is None else len(data)
+
+    async def read_object(self, key):
+        self.reads += 1
+        if key not in self.objects:
+            raise FileNotFoundError(key)
+        return self.objects[key]
+
+
+@pytest.fixture
+def fake_storage(monkeypatch):
+    from files import storage
+
+    fake = FakeStorage()
+    monkeypatch.setattr(storage, "object_size", fake.object_size)
+    monkeypatch.setattr(storage, "read_object", fake.read_object)
+    return fake
+
+
+@pytest.fixture
+def upload(client, fake_storage):
+    """Upload bytes through the API as the given user; returns the file id."""
+
+    async def do(headers, data: bytes, purpose="answer_key", complete=True):
+        r = await client.post(
+            "/files",
+            json={
+                "filename": "test.txt",
+                "mime": "text/plain",
+                "size": len(data),
+                "purpose": purpose,
+            },
+            headers=headers,
+        )
+        assert r.status_code == 201, r.text
+        # Presigned URL path: /<bucket>/<key>
+        key = httpx.URL(r.json()["upload_url"]).path.split("/", 2)[2]
+        fake_storage.objects[key] = data
+        if complete:
+            r2 = await client.post(f"/files/{r.json()['id']}/complete", headers=headers)
+            assert r2.status_code == 200, r2.text
+        return r.json()["id"]
+
+    return do

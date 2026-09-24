@@ -94,6 +94,8 @@ services:
   worker:
     <<: *app
     command: uv run --no-sync python src/worker.py
+    # On stop the worker finishes running checks before exiting.
+    stop_grace_period: 2m
     environment: *app-env
     depends_on:
       migrate:

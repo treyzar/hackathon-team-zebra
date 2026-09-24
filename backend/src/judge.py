@@ -47,12 +47,19 @@ class JudgeClient:
         base_url: str = settings.judge0_url,
         auth_token: str | None = settings.judge0_auth_token,
         language_id: int = settings.judge0_python_language_id,
+        max_output_kb: int = settings.judge_max_output_kb,
+        batch_max_bytes: int = settings.judge_batch_max_mb * 1024 * 1024,
         poll_interval: float = 0.5,
         timeout: float = 120,
+        transport: httpx.AsyncBaseTransport | None = None,
     ):
         headers = {"X-Auth-Token": auth_token} if auth_token else {}
-        self._http = httpx.AsyncClient(base_url=base_url, headers=headers, timeout=30)
+        self._http = httpx.AsyncClient(
+            base_url=base_url, headers=headers, timeout=30, transport=transport
+        )
         self._language_id = language_id
+        self._max_output_kb = max_output_kb
+        self._batch_max_bytes = batch_max_bytes
         self._poll_interval = poll_interval
         self._timeout = timeout
 
@@ -66,12 +73,28 @@ class JudgeClient:
         time_limit_s: float,
         memory_limit_kb: int,
     ) -> list[RunResult]:
-        """Run ``code`` on every (stdin, expected_stdout) case."""
+        """Run ``code`` on every (stdin, expected_stdout) case, in order."""
         results: list[RunResult] = []
-        for i in range(0, len(cases), BATCH_SIZE):
-            chunk = cases[i : i + BATCH_SIZE]
+        for chunk in self._batches(cases):
             results += await self._run_batch(code, chunk, time_limit_s, memory_limit_kb)
         return results
+
+    def _batches(self, cases: list[tuple[str, str]]):
+        """Split by Judge0's batch size and by data size: large tests must not
+        end up in one huge request."""
+        chunk: list[tuple[str, str]] = []
+        size = 0
+        for case in cases:
+            case_size = len(case[0].encode()) + len(case[1].encode())
+            if chunk and (
+                len(chunk) == BATCH_SIZE or size + case_size > self._batch_max_bytes
+            ):
+                yield chunk
+                chunk, size = [], 0
+            chunk.append(case)
+            size += case_size
+        if chunk:
+            yield chunk
 
     async def _run_batch(self, code, cases, time_limit_s, memory_limit_kb):
         body = {
@@ -83,6 +106,8 @@ class JudgeClient:
                     "expected_output": _b64(expected),
                     "cpu_time_limit": time_limit_s,
                     "memory_limit": memory_limit_kb,
+                    # Largest output the program may write, in KB.
+                    "max_file_size": self._max_output_kb,
                 }
                 for stdin, expected in cases
             ]

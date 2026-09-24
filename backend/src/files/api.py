@@ -45,9 +45,16 @@ class DownloadOut(FileOut):
     download_url: str
 
 
+# Purposes only admins may upload.
+ADMIN_PURPOSES = {FilePurpose.CONTENT, FilePurpose.ANSWER_KEY}
+
+
 async def can_read(db: AsyncSession, user: User, file: File) -> bool:
-    if file.purpose == FilePurpose.CONTENT:
-        return True
+    match file.purpose:
+        case FilePurpose.CONTENT:
+            return True
+        case FilePurpose.ANSWER_KEY:
+            return user.role in (Role.ADMIN, Role.CURATOR)
     return await can_see_student(db, user, file.owner_id)
 
 
@@ -64,7 +71,7 @@ async def request_upload(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(access_db),
 ):
-    if data.purpose == FilePurpose.CONTENT and user.role != Role.ADMIN:
+    if data.purpose in ADMIN_PURPOSES and user.role != Role.ADMIN:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only admins upload materials")
     if data.size > settings.max_upload_mb * 1024 * 1024:
         raise HTTPException(
