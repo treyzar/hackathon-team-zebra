@@ -78,6 +78,19 @@ def answer_available(parsed: ParsedRevision, stats: StepStats) -> bool:
     return False
 
 
+def submit_block_reason(parsed: ParsedRevision, stats: StepStats) -> str | None:
+    """Why the student may not submit again, or None if they may: a new try
+    is allowed while attempts remain and the maximum score is not reached."""
+    if stats.in_progress:
+        return "The previous submission is still being checked"
+    if stats.best_score is not None and stats.best_score >= parsed.max_score:
+        return "The step is already solved with the maximum score"
+    max_attempts = parsed.settings.max_attempts
+    if max_attempts is not None and stats.attempts_used >= max_attempts:
+        return "No attempts left"
+    return None
+
+
 def status_for_score(score: float, max_score: int) -> SubmissionStatus:
     if score >= max_score:
         return SubmissionStatus.CORRECT
@@ -143,13 +156,8 @@ async def submit(
     # otherwise both could pass the attempts check.
     await db.execute(select(func.pg_advisory_xact_lock(user.id, step.id)))
     stats = (await stats_for(db, user.id, [step.id]))[step.id]
-    if stats.in_progress:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "The previous submission is still being checked"
-        )
-    max_attempts = parsed.settings.max_attempts
-    if max_attempts is not None and stats.attempts_used >= max_attempts:
-        raise HTTPException(status.HTTP_409_CONFLICT, "No attempts left")
+    if reason := submit_block_reason(parsed, stats):
+        raise HTTPException(status.HTTP_409_CONFLICT, reason)
 
     sub = Submission(
         user_id=user.id,

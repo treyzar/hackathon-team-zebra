@@ -416,3 +416,103 @@ async def test_files_access(client, admin, course, groups_setup, monkeypatch):
     assert r.status_code == 422  # someone else's file
     r = await submit(client, student1, step_id, {"files": [file_id]})
     assert r.status_code == 201, r.text
+
+
+def multiple_choice(**settings):
+    c = str(uuid.uuid4())
+    return {
+        "type": "multiple_choice",
+        "max_score": 4,
+        "content": {
+            "question": DOC,
+            "options": [
+                {"id": A, "text": "a"},
+                {"id": B, "text": "b"},
+                {"id": c, "text": "c"},
+            ],
+        },
+        "answer_key": {"correct": [A, B]},
+        "settings": {"scoring": "partial", **settings},
+    }
+
+
+async def step_state(client, headers, step_id):
+    s = (await client.get(f"/steps/{step_id}", headers=headers)).json()
+    return s["can_submit"], s["submit_block_reason"]
+
+
+async def test_resubmit_until_max_score(client, admin, course, make_user):
+    step_id = await add_step(client, admin, course[1], multiple_choice())
+    _, h = await make_user()
+    assert await step_state(client, h, step_id) == (True, None)
+
+    r = await submit(client, h, step_id, {"option_ids": [A]})
+    assert (r.json()["status"], r.json()["score"]) == ("partial", 2)
+    assert await step_state(client, h, step_id) == (True, None)
+
+    r = await submit(client, h, step_id, {"option_ids": [A, B]})
+    assert (r.json()["status"], r.json()["score"]) == ("correct", 4)
+    # Maximum reached: no more attempts even though they are unlimited.
+    can, reason = await step_state(client, h, step_id)
+    assert not can and "maximum score" in reason
+    r = await submit(client, h, step_id, {"option_ids": [A, B]})
+    assert r.status_code == 409 and "maximum score" in r.json()["detail"]
+
+
+async def test_attempt_limit_without_max_score(client, admin, course, make_user):
+    step_id = await add_step(client, admin, course[1], multiple_choice(max_attempts=2))
+    _, h = await make_user()
+    for _ in range(2):
+        assert (
+            await submit(client, h, step_id, {"option_ids": [A]})
+        ).status_code == 201
+    assert await step_state(client, h, step_id) == (False, "No attempts left")
+    assert (await submit(client, h, step_id, {"option_ids": [A, B]})).status_code == 409
+
+
+async def test_breaking_change_reopens_step(client, admin, course, make_user):
+    step_id = await add_step(client, admin, course[1], multiple_choice())
+    _, h = await make_user()
+    await submit(client, h, step_id, {"option_ids": [A, B]})
+    assert (await step_state(client, h, step_id))[0] is False
+
+    r = await client.post(
+        f"/admin/steps/{step_id}/revisions",
+        json={"payload": multiple_choice(), "is_breaking": True},
+        headers=admin[1],
+    )
+    assert r.status_code == 200
+    # The old full score is outdated, so the student may answer again.
+    assert await step_state(client, h, step_id) == (True, None)
+
+
+async def test_manual_review_score_decides(client, admin, course, groups_setup):
+    step_id = await add_step(client, admin, course[1], free_text())
+    (_, curator, _, student) = groups_setup[0]
+
+    sub_id = (await submit(client, student, step_id, {"text": "v1"})).json()["id"]
+    can, reason = await step_state(client, student, step_id)
+    assert not can and "being checked" in reason
+    await client.post(
+        f"/review/submissions/{sub_id}",
+        json={"verdict": "accepted", "score": 3},
+        headers=curator,
+    )
+    # Accepted, but 3 of 5: the student may improve the answer.
+    assert await step_state(client, student, step_id) == (True, None)
+
+    sub_id = (await submit(client, student, step_id, {"text": "v2"})).json()["id"]
+    await client.post(
+        f"/review/submissions/{sub_id}", json={"verdict": "accepted"}, headers=curator
+    )
+    assert (await step_state(client, student, step_id))[0] is False
+
+
+async def test_theory_is_viewed_once(client, admin, course, make_user):
+    step_id = await add_step(
+        client, admin, course[1], {"type": "theory", "content": {"body": DOC}}
+    )
+    _, h = await make_user()
+    assert (await submit(client, h, step_id, {})).status_code == 201
+    assert (await step_state(client, h, step_id))[0] is False
+    assert (await submit(client, h, step_id, {})).status_code == 409

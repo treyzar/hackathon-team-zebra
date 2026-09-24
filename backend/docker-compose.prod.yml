@@ -39,6 +39,9 @@ x-judge0-env: &judge0-env
   # Submitted code must never get network access, even if a client asks.
   ENABLE_NETWORK: "false"
   ALLOW_ENABLE_NETWORK: "false"
+  # Parallel code runs (Judge0 workers); the default is 2 x CPU count.
+  # Kept low so checking code does not starve the site of CPU.
+  COUNT: ${JUDGE0_WORKERS:-2}
 
 services:
   caddy:

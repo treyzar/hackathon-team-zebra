@@ -98,6 +98,7 @@ async def get_step(
     step, rev, module = await svc.get_step(db, step_id, for_student=True)
     parsed = svc.parse(step, rev)
     stats = (await sub_svc.stats_for(db, user.id, [step.id]))[step.id]
+    block = sub_svc.submit_block_reason(parsed, stats)
     return StudentStep(
         id=step.id,
         course_id=module.course_id,
@@ -112,6 +113,8 @@ async def get_step(
         attempts_used=stats.attempts_used,
         progress=_progress(stats),
         answer_available=sub_svc.answer_available(parsed, stats),
+        can_submit=block is None,
+        submit_block_reason=block,
     )
 
 

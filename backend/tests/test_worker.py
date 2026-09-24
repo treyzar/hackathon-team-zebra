@@ -273,7 +273,9 @@ async def test_large_tests_from_storage(
     files = reader()
     r1 = (await submit(client, h, step_id, {"code": code})).json()
     await drain(LocalJudge(), files)
-    r2 = (await submit(client, h, step_id, {"code": code})).json()
+    # A full score closes the step for this student, so a second one submits.
+    _, h2 = await make_user()
+    r2 = (await submit(client, h2, step_id, {"code": code})).json()
     await drain(LocalJudge(), files)
 
     for sub_id in (r1["id"], r2["id"]):

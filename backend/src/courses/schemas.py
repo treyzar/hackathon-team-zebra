@@ -157,6 +157,10 @@ class StudentStep(BaseModel):
     attempts_used: int
     progress: StepProgress
     answer_available: bool
+    # False while a check is running, attempts are used up or the maximum
+    # score is reached; the reason is in submit_block_reason.
+    can_submit: bool
+    submit_block_reason: str | None
 
 
 class SubmitIn(BaseModel):
