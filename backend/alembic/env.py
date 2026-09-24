@@ -12,7 +12,7 @@ from alembic import context
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 
 from config import settings
-import models
+import all_models
 
 print(f"Alembic imported these settings:\n{settings}")
 
@@ -31,7 +31,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = models.BaseDB.metadata
+target_metadata = all_models.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

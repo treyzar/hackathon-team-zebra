@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import require_admin
 from database import access_db
+from groups.service import detach_on_role_change
 from models import Role, User
 from schemas import RoleUpdate, UserResponse
 
@@ -38,5 +39,6 @@ async def set_role(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     user.role = data.role
+    await detach_on_role_change(db, user)
     await db.flush()
     return user

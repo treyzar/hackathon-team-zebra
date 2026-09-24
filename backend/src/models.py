@@ -25,7 +25,7 @@ class BaseDB(AsyncAttrs, DeclarativeBase):
     )
 
 
-class Role(str, enum.Enum):
+class Role(enum.StrEnum):
     STUDENT = "student"
     CURATOR = "curator"
     ADMIN = "admin"

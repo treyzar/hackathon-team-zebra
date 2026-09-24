@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 import jwt
@@ -54,7 +54,7 @@ def create_token(client: User, token_type: TokenType) -> str:
         )
     )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     data = {
         "sub": str(client.id),
         # "user": client.username,
@@ -76,7 +76,7 @@ async def revoke_token(payload: dict, db: AsyncSession) -> bool:
         RevokedToken(
             jti=jti,
             user_id=int(payload["sub"]),
-            expires_at=datetime.fromtimestamp(payload["exp"], tz=timezone.utc),
+            expires_at=datetime.fromtimestamp(payload["exp"], tz=UTC),
         )
     )
     return True
