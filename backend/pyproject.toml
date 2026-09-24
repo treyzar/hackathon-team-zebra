@@ -14,5 +14,17 @@ dependencies = [
     "sqlalchemy>=2.0.54",
 ]
 
+[tool.ruff]
+src = ["src"]
+extend-exclude = ["alembic/versions"]
+
 [tool.ruff.lint]
-extend-per-file-ignores = { "*" = ["B008"] }
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]  # line length is handled by the formatter
+extend-per-file-ignores = { "*" = ["B008"], "alembic/env.py" = ["I001"] }
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.2",
+    "ruff>=0.16.8",
+]

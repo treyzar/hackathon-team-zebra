@@ -1,6 +1,7 @@
+import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
@@ -24,11 +25,28 @@ class BaseDB(AsyncAttrs, DeclarativeBase):
     )
 
 
+class Role(str, enum.Enum):
+    STUDENT = "student"
+    CURATOR = "curator"
+    ADMIN = "admin"
+
+
 class User(BaseDB):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[Role] = mapped_column(
+        Enum(
+            Role,
+            native_enum=False,
+            length=16,
+            values_callable=lambda e: [r.value for r in e],
+        ),
+        default=Role.STUDENT,
+        server_default=Role.STUDENT.value,
+        nullable=False,
+    )
 
 
 class RevokedToken(BaseDB):

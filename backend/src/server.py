@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from admin import admin
 from auth import auth, get_current_user, require_auth
 from config import settings
 from health import health
@@ -17,6 +18,7 @@ app.add_middleware(
 
 api = APIRouter(prefix="/api", tags=["api"])
 api.include_router(auth)
+api.include_router(admin)
 app.include_router(health)
 
 

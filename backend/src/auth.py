@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
 from database import access_db
-from models import RevokedToken, User
+from models import RevokedToken, Role, User
 from schemas import RefreshRequest, TokenResponse, UserAuth, UserSignup
 
 TokenType = Literal["access", "refresh"]
@@ -35,10 +35,10 @@ def extract_token(token: str, expected_type: TokenType) -> dict:
             algorithms=[settings.jwt_algorithm],
             options={"verify_exp": True},
         )
-    except jwt.ExpiredSignatureError:
-        raise not_authorized("Expired token")
-    except jwt.PyJWTError:
-        raise not_authorized()
+    except jwt.ExpiredSignatureError as e:
+        raise not_authorized("Expired token") from e
+    except jwt.PyJWTError as e:
+        raise not_authorized() from e
 
     if payload.get("type") != expected_type:
         raise not_authorized()
@@ -108,6 +108,29 @@ async def get_current_user(
     return user
 
 
+def require_roles(*roles: Role):
+    """Dependency factory: allow only users having one of the given roles.
+
+    The role is read from the DB on each request, so role changes apply
+    immediately without waiting for the access token to expire.
+    """
+    allowed = set(roles)
+
+    async def checker(user: User = Depends(get_current_user)) -> User:
+        if user.role not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions",
+            )
+        return user
+
+    return checker
+
+
+require_curator = require_roles(Role.CURATOR, Role.ADMIN)
+require_admin = require_roles(Role.ADMIN)
+
+
 # move endpoints to separate file
 
 auth = APIRouter(prefix="/auth")
@@ -162,12 +185,12 @@ async def signup(
     try:
         db.add(new_user)
         await db.flush()
-    except IntegrityError:
+    except IntegrityError as e:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email or Username already taken",
-        )
+        ) from e
 
     return issue_tokens(new_user)
 

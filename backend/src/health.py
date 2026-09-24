@@ -11,8 +11,8 @@ health = APIRouter(prefix="/health")
 async def check_health(db=Depends(access_db)):
     try:
         await db.scalar(text("SELECT 1"))
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="DB dead :("
-        )
+        ) from e
     return {"status": "ok"}
