@@ -1,10 +1,14 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import URL, make_url
 
 
 class Settings(BaseSettings):
     # .env is shared with docker compose, so it has keys the app does not use.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     db_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/app"
+    # Password kept out of DB_URL: docker compose cannot URL-escape it, and
+    # characters like @ : / % would break the URL.
+    db_password: str | None = None
     jwt_algorithm: str = "HS256"
     jwt_key: str = "bruh"
     access_token_expire_minutes: int = 10
@@ -41,6 +45,13 @@ class Settings(BaseSettings):
     judge_batch_max_mb: int = 16
     # In-memory cache of test files in each worker process.
     worker_file_cache_mb: int = 64
+
+    @property
+    def database_url(self) -> URL:
+        url = make_url(self.db_url)
+        if self.db_password is not None:
+            url = url.set(password=self.db_password)
+        return url
 
 
 settings = Settings()
