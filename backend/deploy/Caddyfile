@@ -8,7 +8,8 @@
 {$SITE_DOMAIN} {
 	encode zstd gzip
 
-	@backend path /api/* /health
+	# /docs, /redoc, /openapi.json: FastAPI's API documentation (Swagger).
+	@backend path /api/* /health /docs /docs/* /redoc /openapi.json
 	handle @backend {
 		reverse_proxy backend:8000
 	}
