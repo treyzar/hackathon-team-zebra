@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from weasyprint import HTML
 import asyncio
 import base64 as _b64
 import html as _html
@@ -223,7 +223,6 @@ async def _load_images(db: AsyncSession, ids: set[int]) -> dict[int, str]:
 async def export_as_pdf(
     db: AsyncSession, course: Course, *, include_answers: bool = True
 ) -> bytes:
-    from weasyprint import HTML
 
     modules = await service.live_modules(db, course.id)
     module_ids = [m.id for m in modules]
