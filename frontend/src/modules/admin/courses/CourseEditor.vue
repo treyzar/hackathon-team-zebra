@@ -286,7 +286,7 @@ watch(courseId, load);
 </script>
 
 <template>
-  <div class="admin-page admin-page--detail">
+  <div class="admin-page admin-page--detail" :class="{ 'admin-page--course-structure': tab === 'structure' }">
     <Teleport to="#admin-page-header">
     <div class="admin-toolbar admin-toolbar--detail">
       <div>
@@ -315,13 +315,14 @@ watch(courseId, load);
     <template v-else-if="course">
       <template v-if="tab === 'structure'">
         <div class="course-editor-layout">
-        <section class="admin-panel">
-          <div class="admin-panel-head">
+        <section class="course-editor-sidebar" aria-label="Структура курса">
+          <div class="course-sidebar-heading">
             <div>
               <h2>Структура курса</h2>
               <p>{{ course.modules.length }} модулей · {{ stepCount }} шагов</p>
             </div>
           </div>
+          <div class="course-sidebar-scroll" role="region" aria-label="Модули и шаги" tabindex="0">
           <div v-if="!course.modules.length" class="admin-empty">
             Модулей пока нет. Добавьте первый модуль ниже.
           </div>
@@ -329,8 +330,7 @@ watch(courseId, load);
             <article
               v-for="(module, moduleIndex) in course.modules"
               :key="module.id"
-              class="admin-panel"
-              style="box-shadow: none; padding: 19px"
+              class="admin-panel course-module"
             >
               <div
                 class="admin-panel-head course-module-head"
@@ -433,6 +433,21 @@ watch(courseId, load);
               >+ Добавить шаг</RouterLink>
             </article>
           </div>
+          </div>
+          <div class="course-module-add">
+            <h2>Добавить модуль</h2>
+            <form @submit.prevent="createModule">
+              <input
+                v-model="newModuleTitle"
+                class="admin-input"
+                maxlength="200"
+                required
+                placeholder="Название модуля"
+                aria-label="Название нового модуля"
+              />
+              <button class="admin-button admin-button--primary" :disabled="busy">Добавить</button>
+            </form>
+          </div>
         </section>
         <aside class="course-editor-preview" aria-label="Редактор выбранного шага">
           <CourseStepWorkbench
@@ -446,25 +461,6 @@ watch(courseId, load);
           <section v-else class="admin-panel admin-empty">Выберите шаг слева или добавьте новый.</section>
         </aside>
         </div>
-        <section class="admin-panel">
-          <div class="admin-panel-head">
-            <div>
-              <h2>Добавить модуль</h2>
-              <p>Внутри модуля вы сможете создать шаги.</p>
-            </div>
-          </div>
-          <form class="admin-actions" @submit.prevent="createModule">
-            <input
-              v-model="newModuleTitle"
-              class="admin-input"
-              style="max-width: 380px"
-              maxlength="200"
-              required
-              placeholder="Название модуля"
-              aria-label="Название нового модуля"
-            /><button class="admin-button admin-button--primary" :disabled="busy">Добавить</button>
-          </form>
-        </section>
       </template>
       <section v-else class="admin-panel">
         <div class="admin-panel-head">
@@ -509,12 +505,20 @@ watch(courseId, load);
 </template>
 
 <style scoped>
-.course-editor-layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 0; align-items: stretch; min-height: 560px; margin: 0 -32px; border-top: 1px solid #e1e6f0; border-bottom: 1px solid #e1e6f0; }
-.course-editor-layout > .admin-panel { padding: 0; overflow: visible; }
-.course-editor-layout > .admin-panel > .admin-panel-head { margin: 0; padding: 20px; }
-.course-editor-layout > .admin-panel > .admin-stack { gap: 0; }
-.course-editor-layout > .admin-panel > .admin-stack > .admin-panel { border: 0 !important; border-top: 1px solid #e1e6f0 !important; border-radius: 0 !important; padding: 16px 20px !important; }
-.course-editor-layout > .admin-panel > .admin-stack > .admin-panel > .admin-panel-head { margin-bottom: 12px; }
+.admin-page--course-structure { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; }
+.course-editor-layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); flex: 1; min-height: 0; margin: 0 -32px; border-top: 1px solid #e1e6f0; border-bottom: 1px solid #e1e6f0; }
+.course-editor-sidebar { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid #e1e6f0; background: #fff; }
+.course-sidebar-heading { flex: none; padding: 20px; border-bottom: 1px solid #e1e6f0; }
+.course-sidebar-heading h2, .course-module-add h2 { margin: 0; color: #0f172a; font-size: 17px; letter-spacing: -0.025em; }
+.course-sidebar-heading p { margin: 5px 0 0; color: #6b7487; font-size: 13px; }
+.course-sidebar-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; }
+.course-sidebar-scroll > .admin-stack { gap: 0; }
+.course-sidebar-scroll .course-module { padding: 16px 20px; border: 0; border-top: 1px solid #e1e6f0; border-radius: 0; box-shadow: none; }
+.course-sidebar-scroll .course-module:first-child { border-top: 0; }
+.course-module > .admin-panel-head { margin-bottom: 12px; }
+.course-module-add { flex: none; padding: 16px 20px; border-top: 1px solid #e1e6f0; background: #fff; }
+.course-module-add form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 10px; }
+.course-module-add .admin-input { min-width: 0; }
 .course-editor-layout .admin-list { gap: 6px; }
 .course-module-head { align-items: center; }
 .course-module-title { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; min-width: 0; }
@@ -534,18 +538,23 @@ watch(courseId, load);
 .course-step-menu summary { display: grid; width: 24px; height: 24px; place-items: center; border-radius: 6px; color: #7c869c; font-size: 18px; line-height: 1; cursor: pointer; list-style: none; }
 .course-step-menu summary::-webkit-details-marker { display: none; }
 .course-step-menu summary:hover { background: #f4f6fb; }
-.course-step-menu-items { position: absolute; z-index: 3; top: 26px; right: 0; display: grid; min-width: 115px; padding: 4px; border: 1px solid #e1e6f0; border-radius: 10px; background: #fff; box-shadow: 0 8px 24px #0f172a24; }
+.course-step-menu-items { position: absolute; z-index: 3; bottom: 26px; right: 0; display: grid; min-width: 115px; padding: 4px; border: 1px solid #e1e6f0; border-radius: 10px; background: #fff; box-shadow: 0 8px 24px #0f172a24; }
 .course-step-menu-items button { padding: 7px 9px; border: 0; border-radius: 6px; background: transparent; color: #26334c; text-align: left; font: inherit; font-size: 12px; cursor: pointer; }
 .course-step-menu-items button:hover { background: #f4f6fb; }
 .course-add-step-row { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 42px; margin-top: 6px; border: 2px dashed #c9d5fc; border-radius: 12px; background: transparent; color: #3457f0; font-size: 14px; font-weight: 600; text-decoration: none; }
 .course-add-step-row:hover { background: #eaf0fe; }
 .course-drop-before { box-shadow: inset 0 3px #3457f0; }
 .course-drop-after { box-shadow: inset 0 -3px #3457f0; }
-.course-editor-preview { min-width: 0; }
+.course-editor-preview { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; }
 .course-editor-preview .admin-panel { min-height: 310px; padding: 24px; }
 .course-preview-title { margin: 8px 0 !important; font-size: 24px !important; }
 .course-preview-facts { display: grid; gap: 1px; margin-top: 24px; border: 1px solid #e1e6f0; border-radius: 12px; overflow: hidden; background: #e1e6f0; }
 .course-preview-facts > div { display: flex; justify-content: space-between; gap: 12px; padding: 13px 15px; background: #f8f9fc; color: #727d90; font-size: 12px; }
 .course-preview-facts strong { color: #24324b; }
-@media (max-width: 1050px) { .course-editor-layout { grid-template-columns: 1fr; margin: 0; border: 0; gap: 16px; } }
+@media (max-width: 1050px) {
+  .admin-page--course-structure { height: auto; min-height: 100%; }
+  .course-editor-layout { grid-template-columns: 1fr; flex: none; min-height: 0; margin: 0; border: 0; gap: 16px; }
+  .course-editor-sidebar { height: min(70dvh, 560px); min-height: 320px; border: 1px solid #e1e6f0; border-radius: 16px; overflow: hidden; }
+  .course-editor-preview { overflow: visible; }
+}
 </style>
