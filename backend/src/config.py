@@ -5,7 +5,7 @@ from sqlalchemy.engine import URL, make_url
 class Settings(BaseSettings):
     # .env is shared with docker compose, so it has keys the app does not use.
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-    db_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/app"
+    db_url: str = "postgresql+asyncpg://postgres:admin@localhost:5432/app"
     # Password kept out of DB_URL: docker compose cannot URL-escape it, and
     # characters like @ : / % would break the URL.
     db_password: str | None = None
