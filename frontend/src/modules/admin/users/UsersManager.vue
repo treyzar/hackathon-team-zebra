@@ -190,8 +190,7 @@ onMounted(load);
                   />
                 </th>
                 <th>Имя</th>
-                <th>Класс</th>
-                <th>Группа</th>
+                <th v-if="filter === 'student'">Группа</th>
                 <th>Вход</th>
                 <th>Был</th>
               </tr>
@@ -214,18 +213,13 @@ onMounted(load);
                     >{{ user.email }} <span v-if="user.id === auth.user?.id">· это вы</span></small
                   >
                 </td>
-                <td class="admin-muted">—</td>
                 <td
+                  v-if="filter === 'student'"
                   :class="{
-                    'user-no-group':
-                      user.role === 'student' && membershipsComplete && !memberships[user.id],
+                    'user-no-group': membershipsComplete && !memberships[user.id],
                   }"
                 >
-                  {{
-                    user.role === "student"
-                      ? memberships[user.id] || (membershipsComplete ? "не в группе" : "—")
-                      : "—"
-                  }}
+                  {{ memberships[user.id] || (membershipsComplete ? "не в группе" : "—") }}
                 </td>
                 <td class="admin-muted">—</td>
                 <td class="admin-muted">—</td>
