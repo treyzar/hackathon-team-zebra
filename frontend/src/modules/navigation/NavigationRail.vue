@@ -4,6 +4,7 @@ import { RouterLink, useRoute } from "vue-router";
 
 import type { UserRole } from "@/api/http";
 import NavigationIcon from "./NavigationIcon.vue";
+import NotificationBell from "@/modules/notifications/NotificationBell.vue";
 import { isNavigationItemActive, navigationForRole } from "./items";
 
 const props = defineProps<{
@@ -50,6 +51,11 @@ const items = computed(() => navigationForRole(props.role));
       <NavigationIcon :name="item.icon" />
     </RouterLink>
     <span class="rail-spacer" />
+    <NotificationBell
+      v-if="role !== 'admin'"
+      variant="rail"
+      class="rail-bell"
+    />
     <span class="rail-avatar" :title="username">{{ username.slice(0, 1).toUpperCase() }}</span>
   </aside>
 </template>
@@ -140,5 +146,25 @@ const items = computed(() => navigationForRole(props.role));
   color: #fff;
   font-size: 13px;
   font-weight: 700;
+}
+
+.rail-bell {
+  margin-bottom: 4px;
+}
+.rail-bell :deep(.notifications-bell--rail) {
+  border-radius: var(--radius-control);
+  color: var(--color-muted);
+}
+.rail-bell :deep(.notifications-bell--rail:hover) {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.rail-bell :deep(.notifications-bell--rail[aria-expanded="true"]) {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.rail-bell :deep(.notifications-bell-dot) {
+  top: 8px;
+  right: 8px;
 }
 </style>

@@ -9,7 +9,7 @@ import { formatRelative, viewNotification } from "./presentation";
 
 const props = withDefaults(
   defineProps<{
-    variant?: "icon" | "sidebar";
+    variant?: "icon" | "sidebar" | "rail";
   }>(),
   { variant: "icon" },
 );
@@ -103,6 +103,7 @@ watch(
           ? `Уведомления, непрочитанных: ${store.unread}`
           : 'Уведомления'
       "
+      :title="props.variant === 'sidebar' ? undefined : 'Уведомления'"
       @click="toggle"
     >
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -112,9 +113,11 @@ watch(
       <span v-if="props.variant === 'sidebar'" class="notifications-bell-label">
         Уведомления
       </span>
-      <span v-if="store.hasUnread" class="notifications-bell-badge">
-        {{ store.unread > 99 ? "99+" : store.unread }}
-      </span>
+      <span
+        v-if="store.hasUnread"
+        class="notifications-bell-dot"
+        aria-hidden="true"
+      />
     </button>
 
     <div
@@ -179,54 +182,16 @@ watch(
   flex: none;
 }
 
-/* Иконка-вариант: квадратная кнопка как раньше */
-.notifications-bell--icon {
+.notifications-bell {
   position: relative;
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  background: var(--color-surface);
-  color: var(--color-text);
-  cursor: pointer;
-}
-.notifications-bell--icon:hover {
-  border-color: var(--color-primary-pale);
-  color: var(--color-primary);
-}
-
-/* Sidebar-вариант: выглядит как пункт меню рядом с RouterLink'ами */
-.notifications-bell-wrap--sidebar {
-  width: 100%;
-}
-.notifications-bell--sidebar {
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
-  min-height: 44px;
-  padding: 0 12px;
   border: 0;
-  border-radius: var(--radius-control);
   background: transparent;
-  color: var(--color-text);
+  color: inherit;
   font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  text-align: left;
   cursor: pointer;
-}
-.notifications-bell--sidebar:hover {
-  background: var(--color-bg);
-}
-.notifications-bell--sidebar[aria-expanded="true"] {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-.notifications-bell--sidebar[aria-expanded="true"] svg {
-  color: var(--color-primary);
 }
 
 .notifications-bell svg {
@@ -239,9 +204,16 @@ watch(
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.notifications-bell--icon svg {
-  width: 22px;
-  height: 22px;
+
+.notifications-bell-wrap--sidebar {
+  width: 100%;
+}
+.notifications-bell--sidebar {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-control, 10px);
+  text-align: left;
 }
 .notifications-bell-label {
   flex: 1;
@@ -251,25 +223,29 @@ watch(
   white-space: nowrap;
 }
 
-.notifications-bell-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 20px;
-  text-align: center;
+.notifications-bell-wrap--rail {
+  flex: none;
 }
-/* В sidebar-варианте бейдж — часть flex-строки, не абсолютный */
-.notifications-bell--sidebar .notifications-bell-badge {
+.notifications-bell--rail {
+  width: 48px;
+  height: 48px;
+  justify-content: center;
+}
+
+.notifications-bell-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e5484d;
+  box-shadow: 0 0 0 2px var(--color-surface, #fff);
+}
+.notifications-bell--sidebar .notifications-bell-dot {
   position: static;
   flex: none;
+  box-shadow: none;
 }
 
 .notifications-popover {
@@ -280,22 +256,20 @@ watch(
   display: flex;
   flex-direction: column;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
+  border-radius: var(--radius-card, 14px);
+  background: var(--color-surface, #fff);
   box-shadow: 0 18px 48px rgba(11, 18, 32, 0.16);
   overflow: hidden;
 }
 
-/* Иконка: как было — снизу от кнопки */
 .notifications-bell-wrap--icon .notifications-popover {
   top: calc(100% + 8px);
   right: 0;
   bottom: auto;
   left: auto;
 }
-
-/* Sidebar: открывается ВБОК, а не вниз — тогда ничего не уезжает за экран */
-.notifications-bell-wrap--sidebar .notifications-popover {
+.notifications-bell-wrap--sidebar .notifications-popover,
+.notifications-bell-wrap--rail .notifications-popover {
   top: auto;
   bottom: 0;
   left: calc(100% + 8px);
@@ -317,7 +291,7 @@ watch(
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary, #3457f0);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -328,7 +302,7 @@ watch(
 }
 .notifications-popover-empty {
   padding: 24px 16px;
-  color: var(--color-muted);
+  color: var(--color-muted, #64748b);
   font-size: 13px;
   text-align: center;
 }
@@ -343,7 +317,7 @@ watch(
   border-top: 1px solid var(--color-border);
 }
 .notifications-popover-item--unread {
-  background: var(--color-primary-soft);
+  background: var(--color-primary-soft, #eaf0fe);
 }
 .notifications-popover-item--success .notifications-popover-body strong {
   color: #168054;
@@ -368,7 +342,7 @@ watch(
   cursor: pointer;
 }
 .notifications-popover-link:hover {
-  background: var(--color-bg);
+  background: var(--color-bg, #f4f6fb);
 }
 .notifications-popover-body {
   display: flex;
@@ -379,15 +353,15 @@ watch(
 }
 .notifications-popover-body strong {
   font-size: 13px;
-  color: var(--color-text);
+  color: var(--color-text, #0f172a);
 }
 .notifications-popover-body span {
-  color: var(--color-muted);
+  color: var(--color-muted, #64748b);
   font-size: 12px;
   overflow-wrap: anywhere;
 }
 .notifications-popover-time {
-  color: var(--color-subtle);
+  color: var(--color-subtle, #94a3b8);
   font-size: 11px;
   white-space: nowrap;
   padding-top: 2px;

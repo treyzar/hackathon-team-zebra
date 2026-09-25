@@ -76,7 +76,7 @@ onMounted(async () => {
       </RouterLink>
       <slot />
     </div>
-    <NotificationBell variant="sidebar" v-if="role !== 'admin'" />
+    <NotificationBell variant="sidebar" v-if="role !== 'admin'" class="side-bell" />
     <div class="side-account">
       <span class="side-avatar" aria-hidden="true">{{ username.slice(0, 1).toUpperCase() }}</span>
       <span class="side-account-copy">
@@ -192,6 +192,48 @@ onMounted(async () => {
 .side-link--active :deep(.navigation-icon) {
   color: var(--color-primary);
 }
+
+.side-bell {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.side-bell :deep(.notifications-bell--sidebar) {
+  color: var(--color-text);
+  font-weight: 500;
+}
+.side-bell :deep(.notifications-bell--sidebar svg) {
+  color: var(--color-muted);
+}
+.side-bell :deep(.notifications-bell--sidebar:hover) {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.side-bell :deep(.notifications-bell--sidebar[aria-expanded="true"]) {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.side-bell :deep(.notifications-bell--sidebar[aria-expanded="true"] svg) {
+  color: var(--color-primary);
+}
+
+.side-navigation--large .side-bell :deep(.notifications-bell--sidebar) {
+  gap: 14px;
+  min-height: 52px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 18px;
+}
+.side-navigation--large .side-bell :deep(.notifications-bell--sidebar svg) {
+  width: 26px;
+  height: 26px;
+}
+.side-navigation--large .side-bell :deep(.notifications-bell-dot) {
+  width: 12px;
+  height: 12px;
+}
+
 .side-account {
   display: flex;
   align-items: center;
