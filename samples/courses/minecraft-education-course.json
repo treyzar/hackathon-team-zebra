@@ -1,0 +1,554 @@
+{
+  "schema_version": 2,
+  "course": {
+    "slug": "minecraft-agent",
+    "title": "Minecraft Education: программируем агента",
+    "description": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Курс для 3–6 классов. Ученик управляет агентом с помощью блоков MakeCode, использует циклы для постройки и решает небольшую инженерную задачу в мире Minecraft."
+            }
+          ]
+        }
+      ]
+    },
+    "step_access": "all",
+    "modules": [
+      {
+        "title": "Code Builder и агент",
+        "steps": [
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "theory",
+              "max_score": 0,
+              "content": {
+                "body": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Кто такой агент" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "В Minecraft Education у каждого игрока есть помощник — агент. Это маленький робот, который выполняет команды из твоей программы: ходит, поворачивает, ставит и ломает блоки." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Как открыть редактор кода" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        {
+                          "type": "listItem",
+                          "content": [
+                            { "type": "paragraph", "content": [{ "type": "text", "text": "Создай мир: «Играть» → «Создать» → «Новый». Для заданий подойдёт плоский мир в творческом режиме." }] }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "text": "В мире нажми клавишу " },
+                                { "type": "text", "marks": [{ "type": "bold" }], "text": "C" },
+                                { "type": "text", "text": " — откроется Code Builder." }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "text": "Выбери " },
+                                { "type": "text", "marks": [{ "type": "bold" }], "text": "MakeCode" },
+                                { "type": "text", "text": " и создай новый проект. Программу собирают из блоков, как в Scratch." }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Где искать блоки" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "text": "Раздел " },
+                                { "type": "text", "marks": [{ "type": "bold" }], "text": "«Игрок»" },
+                                { "type": "text", "text": " — события, например «при команде в чате»." }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "text": "Раздел " },
+                                { "type": "text", "marks": [{ "type": "bold" }], "text": "«Агент»" },
+                                { "type": "text", "text": " — всё, что делает агент: двигаться, поворачивать, ставить и ломать блоки." }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "text": "Раздел " },
+                                { "type": "text", "marks": [{ "type": "bold" }], "text": "«Циклы»" },
+                                { "type": "text", "text": " — блок «повторить ... раз»." }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Первая программа" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Программа запускается командой в чате. Если набрать в чате «прыг», агент переместится к игроку и пройдёт вперёд три блока." }
+                      ]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "makecode" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "[Игрок] при команде в чате «прыг»\n[Агент] телепортировать агента к игроку\n[Агент] агент перемещается вперёд на 3"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Чат открывается клавишей " },
+                        { "type": "text", "marks": [{ "type": "bold" }], "text": "T" },
+                        { "type": "text", "text": ". Набери «прыг» и нажми Enter." }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "answer_key": {},
+              "settings": { "grading": "none" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "single_choice",
+              "max_score": 1,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Какой клавишей в Minecraft Education открывается Code Builder?" }
+                      ]
+                    }
+                  ]
+                },
+                "options": [
+                  { "id": "11111111-1111-4111-8111-111111111111", "text": "T" },
+                  { "id": "22222222-2222-4222-8222-222222222222", "text": "E" },
+                  { "id": "33333333-3333-4333-8333-333333333333", "text": "C" },
+                  { "id": "44444444-4444-4444-8444-444444444444", "text": "Пробел" }
+                ]
+              },
+              "answer_key": { "correct": "33333333-3333-4333-8333-333333333333" },
+              "settings": { "grading": "auto", "show_answer": "after_wrong" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "free_text",
+              "max_score": 10,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Задание в мире: первая дорожка" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "marks": [{ "type": "bold" }], "text": "Мир." },
+                        { "type": "text", "text": " Плоский мир, творческий режим. Встань на ровное место, перед тобой должно быть не меньше 12 свободных блоков." }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "marks": [{ "type": "bold" }], "text": "Задание." },
+                        { "type": "text", "text": " Собери программу, которая по команде «дорога» строит перед игроком каменную дорожку длиной 10 блоков." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Какие блоки понадобятся" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "«при команде в чате» из раздела «Игрок» — запуск программы." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "«телепортировать агента к игроку» — агент встаёт рядом с тобой." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "«задать предмет агента»: камень, 64 штуки, слот 1." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "«повторить 10 раз» из раздела «Циклы»." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Внутри цикла: «агент ставит блок вниз» и «агент перемещается вперёд на 1»." }] }] }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Что сдать" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Текст: ссылку на проект (в MakeCode кнопка «Поделиться» → «Опубликовать»)." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Файл: скриншот дорожки в мире (клавиша F2 или «Камера» в инвентаре), PNG или JPG." }] }] }
+                      ]
+                    }
+                  ]
+                },
+                "require_text": true,
+                "min_files": 1,
+                "max_files": 1,
+                "allowed_mime": ["image/png", "image/jpeg"]
+              },
+              "answer_key": {
+                "reference": null,
+                "criteria": "Дорожка ровно из 10 блоков камня, без пропусков. Повторение сделано циклом, а не десятью копиями блоков. Программа запускается чат-командой «дорога».",
+                "files": []
+              },
+              "settings": { "grading": "manual" }
+            }
+          }
+        ]
+      },
+      {
+        "title": "Циклы для строительства",
+        "steps": [
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "theory",
+              "max_score": 0,
+              "content": {
+                "body": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Цикл в цикле" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Цикл «повторить ... раз» выполняет вложенные в него блоки нужное число раз." }
+                      ]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "makecode" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "[Циклы] повторить 4 раз\n    [Агент] агент перемещается вперёд на 2\n    [Агент] агент поворачивает налево\nконец"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Агент четыре раза проходит два блока и поворачивает налево. Он обходит квадрат и возвращается туда, откуда начал." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Цикл внутри цикла" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Чтобы построить стену, нужно выложить ряд блоков, подняться на уровень выше и выложить ещё ряд. Ряд — это внутренний цикл, а повторение рядов — внешний." }
+                      ]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "makecode" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "[Циклы] повторить 3 раз  - три ряда в высоту\n    [Циклы] повторить 5 раз  - пять блоков в ряду\n        [Агент] агент ставит блок вперёд\n        [Агент] агент перемещается вправо на 1\n    конец\n    [Агент] агент перемещается влево на 5\n    [Агент] агент перемещается вверх на 1\nконец"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Внимательно смотри, в какой цикл вставлен блок. Блок, который стоит внутри внутреннего цикла, выполнится 15 раз, а блок во внешнем — только 3." }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "answer_key": {},
+              "settings": { "grading": "none" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "single_choice",
+              "max_score": 1,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Агент стоит на месте и выполняет программу. Где он окажется?" }
+                      ]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "makecode" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "[Циклы] повторить 4 раз\n    [Агент] агент перемещается вперёд на 3\n    [Агент] агент поворачивает направо\nконец"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "options": [
+                  { "id": "11111111-1111-4111-8111-111111111111", "text": "На 12 блоков впереди" },
+                  { "id": "22222222-2222-4222-8222-222222222222", "text": "На 3 блока правее" },
+                  { "id": "33333333-3333-4333-8333-333333333333", "text": "Там же, откуда начал" },
+                  { "id": "44444444-4444-4444-8444-444444444444", "text": "На 3 блока впереди и 3 правее" }
+                ]
+              },
+              "answer_key": { "correct": "33333333-3333-4333-8333-333333333333" },
+              "settings": { "grading": "auto", "show_answer": "after_wrong" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "free_text",
+              "max_score": 10,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Задание в мире: стена 5 × 3" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "marks": [{ "type": "bold" }], "text": "Мир." },
+                        { "type": "text", "text": " Плоский мир, творческий режим." }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "marks": [{ "type": "bold" }], "text": "Задание." },
+                        { "type": "text", "text": " По команде «стена» агент строит перед собой стену из кирпича шириной 5 и высотой 3 блока. Возьми программу из теории как основу, но проверь её в мире: подходит ли направление, куда ставятся блоки." }
+                      ]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Материал: блок «задать предмет агента» — кирпичи, 64 штуки, слот 1." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Стена ровная, без дыр, ровно 15 блоков." }] }] }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Сдай ссылку на проект MakeCode (текстом) и скриншот стены (файлом)." }
+                      ]
+                    }
+                  ]
+                },
+                "require_text": true,
+                "min_files": 1,
+                "max_files": 1,
+                "allowed_mime": ["image/png", "image/jpeg"]
+              },
+              "answer_key": {
+                "reference": null,
+                "criteria": "Стена 5 × 3 из кирпича, без пропусков и лишних блоков. Использован цикл внутри цикла. Программа запускается чат-командой «стена».",
+                "files": []
+              },
+              "settings": { "grading": "manual" }
+            }
+          }
+        ]
+      },
+      {
+        "title": "Инженерная задача",
+        "steps": [
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "free_text",
+              "max_score": 15,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Проект: мост через реку" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Перед тобой река шириной 8 блоков. Построй через неё мост программой — руками ставить блоки нельзя." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Как подготовить мир" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Выкопай или построй канал шириной 8 блоков и залей его водой. Если ведёшь занятие с учителем, он может выдать готовый мир." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Требования к мосту" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Мост начинается на одном берегу и заканчивается на другом." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Ширина настила — 3 блока." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "По краям настила стоят перила высотой 1 блок." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Мост строится одной чат-командой «мост»." }] }] }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Что сдать" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Текст: ссылка на проект MakeCode и короткое объяснение (не меньше 100 символов) — какие циклы использовал и зачем." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Файл: скриншот моста сбоку или сверху, PNG или JPG." }] }] }
+                      ]
+                    }
+                  ]
+                },
+                "require_text": true,
+                "min_files": 1,
+                "max_files": 1,
+                "allowed_mime": ["image/png", "image/jpeg"]
+              },
+              "answer_key": {
+                "reference": null,
+                "criteria": "Мост соединяет берега, настил 3 блока в ширину без дыр. Есть перила с обеих сторон. Длина моста задана циклом, а не десятью копиями блоков. Объяснение совпадает с программой. Дополнительно: длину моста можно поменять в одном месте — через переменную из раздела «Переменные».",
+                "files": []
+              },
+              "settings": { "grading": "manual" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "multiple_choice",
+              "max_score": 2,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Какие блоки меняют мир вокруг агента, а не только его положение? Выбери все." }
+                      ]
+                    }
+                  ]
+                },
+                "options": [
+                  { "id": "11111111-1111-4111-8111-111111111111", "text": "агент ставит блок вниз" },
+                  { "id": "22222222-2222-4222-8222-222222222222", "text": "агент перемещается вперёд на 1" },
+                  { "id": "33333333-3333-4333-8333-333333333333", "text": "агент ломает блок впереди" },
+                  { "id": "44444444-4444-4444-8444-444444444444", "text": "агент поворачивает налево" },
+                  { "id": "55555555-5555-4555-8555-555555555555", "text": "телепортировать агента к игроку" }
+                ]
+              },
+              "answer_key": {
+                "correct": [
+                  "11111111-1111-4111-8111-111111111111",
+                  "33333333-3333-4333-8333-333333333333"
+                ]
+              },
+              "settings": { "grading": "auto", "scoring": "all_or_nothing" }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

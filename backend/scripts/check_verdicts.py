@@ -68,6 +68,8 @@ async def signup_student(client: httpx.AsyncClient) -> dict:
             "email": f"{name}@example.com",
             "username": name,
             "password": secrets.token_urlsafe(16),
+            "name": "Проверка",
+            "surname": "Вердиктов",
         },
     )
     r.raise_for_status()

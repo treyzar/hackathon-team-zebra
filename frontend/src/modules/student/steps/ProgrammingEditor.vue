@@ -1,15 +1,22 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { LANGUAGES, type ProgrammingLanguage } from "../../languages";
 import { useProgrammingEditor } from "./useProgrammingEditor";
 
-const props = defineProps<{ modelValue: string; disabled?: boolean }>();
+const props = defineProps<{
+  modelValue: string;
+  language: ProgrammingLanguage;
+  disabled?: boolean;
+}>();
 const emit = defineEmits<{ "update:modelValue": [value: string] }>();
 
 const host = ref<HTMLElement | null>(null);
+const info = computed(() => LANGUAGES[props.language]);
 
 const { mobile, editorFailed } = useProgrammingEditor({
   host,
   modelValue: () => props.modelValue,
+  language: () => info.value.editor,
   disabled: () => Boolean(props.disabled),
   onChange: (value) => emit("update:modelValue", value),
 });
@@ -23,8 +30,8 @@ function updateFromTextarea(event: Event): void {
   <div class="programming-editor">
     <div class="programming-editor-bar">
       <span class="programming-editor-dot" />
-      Python 3
-      <span class="programming-editor-file">main.py</span>
+      {{ info.title }}
+      <span class="programming-editor-file">{{ info.fileName }}</span>
     </div>
 
     <textarea
@@ -32,7 +39,7 @@ function updateFromTextarea(event: Event): void {
       class="programming-editor-mobile"
       :value="modelValue"
       :disabled="disabled"
-      aria-label="Код решения на Python"
+      :aria-label="`Код решения на ${info.title}`"
       spellcheck="false"
       @input="updateFromTextarea"
     />
@@ -41,7 +48,7 @@ function updateFromTextarea(event: Event): void {
       v-else
       ref="host"
       class="programming-editor-host"
-      aria-label="Код решения на Python"
+      :aria-label="`Код решения на ${info.title}`"
     />
   </div>
 </template>
@@ -96,6 +103,10 @@ function updateFromTextarea(event: Event): void {
   outline: 0;
   background: #fff;
   color: #0f172a;
-  font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font:
+    14px/1.6 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
 }
 </style>

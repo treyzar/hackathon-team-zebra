@@ -38,6 +38,15 @@ const stepCount = computed(
   () => course.value?.modules.reduce((sum, module) => sum + module.steps.length, 0) ?? 0,
 );
 const selectedStepId = ref<number | null>(null);
+// The step editor comes back here with ?added=<id> after creating a step.
+const addedStep = computed(() => {
+  const id = Number(route.query.added);
+  for (const [index, module] of (course.value?.modules ?? []).entries()) {
+    const step = module.steps.find((item) => item.id === id);
+    if (step) return { step, module, number: index + 1 };
+  }
+  return null;
+});
 const selectedStep = computed(() => {
   for (const module of course.value?.modules ?? []) {
     const index = module.steps.findIndex((step) => step.id === selectedStepId.value);
@@ -80,6 +89,9 @@ async function load(): Promise<void> {
     const data = await courseApi.course(courseId.value);
     course.value = data;
     void loadStepTitles(data);
+    const added = Number(route.query.added);
+    if (data.modules.some((module) => module.steps.some((step) => step.id === added)))
+      selectedStepId.value = added;
     if (
       !data.modules.some((module) => module.steps.some((step) => step.id === selectedStepId.value))
     )
@@ -289,8 +301,14 @@ async function deleteModule(module: Module): Promise<void> {
   }
 }
 
+async function dismissAdded(): Promise<void> {
+  const { added: _added, ...query } = route.query;
+  await router.replace({ query });
+}
+
 async function deleteStep(step: StepSummary): Promise<void> {
   if (!window.confirm(`Удалить шаг #${step.id}?`)) return;
+  if (step.id === addedStep.value?.step.id) await dismissAdded();
   busy.value = true;
   error.value = "";
   try {
@@ -312,12 +330,14 @@ watch(courseId, load);
     class="admin-page admin-page--detail"
     :class="{ 'admin-page--course-structure': tab === 'structure' }"
   >
-    <Teleport to="#admin-page-header">
+    <Teleport defer to="#admin-page-header">
       <div class="admin-toolbar admin-toolbar--detail">
         <div>
-          <RouterLink class="admin-link" :to="ADMIN_COURSES_ROUTE.path">← Все курсы</RouterLink>
-          <h2>{{ course?.title ?? "Курс" }}</h2>
-          <p v-if="course">{{ course.modules.length }} модулей · {{ stepCount }} шагов</p>
+          <p class="admin-breadcrumbs">
+            <RouterLink :to="ADMIN_COURSES_ROUTE.path">Курсы</RouterLink> ›
+            {{ course?.title ?? "Курс" }}
+          </p>
+          <h2>Конструктор курса</h2>
         </div>
         <div class="admin-actions">
           <span
@@ -344,6 +364,34 @@ watch(courseId, load);
     </Teleport>
     <p v-if="error" class="admin-error" role="alert">{{ error }}</p>
     <p v-if="success" class="admin-success" role="status">{{ success }}</p>
+    <div v-if="addedStep && tab === 'structure'" class="course-added" role="status">
+      <strong
+        >✓ Шаг «{{ stepTitles[addedStep.step.id] || stepTypeLabels[addedStep.step.type] }}»
+        добавлен в модуль {{ addedStep.number }}</strong
+      >
+      <span v-if="course?.is_published && !addedStep.step.is_hidden">и уже виден ученикам</span>
+      <span class="course-added-spacer" />
+      <RouterLink
+        class="course-added-action"
+        :to="{
+          name: ADMIN_STEP_NEW_ROUTE.name,
+          params: { moduleId: addedStep.module.id },
+          query: { courseId, moduleTitle: addedStep.module.title },
+        }"
+        >+ Добавить ещё шаг</RouterLink
+      >
+      <button
+        class="course-added-action"
+        type="button"
+        :disabled="busy"
+        @click="deleteStep(addedStep.step)"
+      >
+        Отменить
+      </button>
+      <button class="course-added-close" type="button" aria-label="Скрыть" @click="dismissAdded">
+        ×
+      </button>
+    </div>
     <div v-if="loading" class="admin-panel admin-empty">Загружаем курс…</div>
     <template v-else-if="course">
       <template v-if="tab === 'structure'">
@@ -437,6 +485,7 @@ watch(courseId, load);
                       class="admin-list-item course-step-row"
                       :class="{
                         'course-step-row--selected': selectedStepId === step.id,
+                        'course-step-row--added': addedStep?.step.id === step.id,
                         'course-drop-before': isDropTarget(
                           { kind: 'step', moduleId: module.id, id: step.id },
                           false,
@@ -475,6 +524,9 @@ watch(courseId, load);
                           stepTitles[step.id] || `Шаг ${moduleIndex + 1}.${stepIndex + 1}`
                         }}</span>
                         <small v-if="step.is_hidden" class="course-step-hidden">Скрыт</small>
+                        <small v-if="addedStep?.step.id === step.id" class="course-step-new"
+                          >НОВЫЙ</small
+                        >
                       </button>
                       <details class="course-step-menu">
                         <summary :aria-label="`Действия для шага ${step.id}`">⋯</summary>
@@ -496,7 +548,7 @@ watch(courseId, load);
                       params: { moduleId: module.id },
                       query: { courseId, moduleTitle: module.title },
                     }"
-                    >+ Добавить шаг</RouterLink
+                    >+ Шаг в модуль {{ moduleIndex + 1 }}</RouterLink
                   >
                 </article>
               </div>
@@ -806,10 +858,10 @@ watch(courseId, load);
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 42px;
+  min-height: 34px;
   margin-top: 6px;
-  border: 2px dashed #c9d5fc;
-  border-radius: 12px;
+  border: 1px dashed var(--color-primary-pale);
+  border-radius: 10px;
   background: transparent;
   color: #3457f0;
   font-size: 14px;
@@ -818,6 +870,61 @@ watch(courseId, load);
 }
 .course-add-step-row:hover {
   background: #eaf0fe;
+}
+.course-step-row--added,
+.course-step-row--added.course-step-row--selected {
+  border: 2px solid var(--color-success);
+  background: #f3fbf6;
+}
+.course-step-new {
+  color: var(--color-success);
+  font-size: 11px;
+  font-weight: 700;
+}
+.course-added {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px 16px;
+  border: 1px solid #bfe3cd;
+  border-radius: var(--radius-control);
+  background: var(--color-success-soft);
+}
+.course-added strong {
+  color: var(--color-success);
+}
+.course-added span {
+  color: var(--color-muted);
+}
+.course-added .course-added-spacer {
+  flex: 1;
+}
+.course-added-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.course-added-action:hover {
+  text-decoration: underline;
+}
+.course-added-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 20px;
+  cursor: pointer;
+}
+.course-added-close:hover {
+  background: #d6efe0;
 }
 .course-drop-before {
   box-shadow: inset 0 3px #3457f0;

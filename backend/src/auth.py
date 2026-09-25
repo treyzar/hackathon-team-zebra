@@ -182,16 +182,23 @@ async def signup(
         #    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username is already taken")
 
     new_user = User(
-        username=data.username, email=data.email, password=hasher.hash(data.password)
+        username=data.username,
+        email=data.email,
+        name=data.name,
+        surname=data.surname,
+        patronymic=data.patronymic,
+        password=hasher.hash(data.password),
     )
     try:
         db.add(new_user)
         await db.flush()
     except IntegrityError as e:
+        # Two signups with the same email/username at once: the check above
+        # passed for both, the unique constraint stopped the second.
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email or Username already taken",
+            detail="Email or username already taken",
         ) from e
 
     return issue_tokens(new_user)

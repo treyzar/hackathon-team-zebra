@@ -38,20 +38,20 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
     },
     {
       ...STUDENT_COURSES_ROUTE,
-      label: "Курсы",
-      description: "Доступные курсы и шаги",
+      label: "Мои курсы",
+      description: "Курсы, на которые вы записаны",
       icon: "courses",
     },
     {
       ...WORKSPACE_SECTION_ROUTES.studentSkills,
-      label: "Навыки",
+      label: "Карта навыков",
       description: "Ваш путь в программировании",
       icon: "skills",
     },
     {
       ...WORKSPACE_SECTION_ROUTES.studentHistory,
-      label: "История",
-      description: "Попытки и отзывы",
+      label: "Мои работы",
+      description: "Отправленные решения и отзывы",
       icon: "history",
     },
     {
@@ -123,4 +123,15 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
 
 export function navigationForRole(role: UserRole | null): NavigationItem[] {
   return role ? navigationByRole[role] : [];
+}
+
+/** A section stays highlighted on its nested pages, e.g. a course inside "Курсы". */
+export function isNavigationItemActive(item: NavigationItem, path: string): boolean {
+  return path === item.path || path.startsWith(`${item.path}/`);
+}
+
+export function roleLabel(role: UserRole | null): string {
+  if (role === "student") return "Ученик";
+  if (role === "curator") return "Куратор";
+  return "Администратор";
 }

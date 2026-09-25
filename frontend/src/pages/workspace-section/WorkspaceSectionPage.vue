@@ -31,44 +31,44 @@ const section = computed(() =>
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  min-height: 320px;
-  padding: 42px;
-  border: 1px solid #e0e7f1;
-  border-radius: 18px;
-  background: #fff;
+  min-height: 280px;
+  padding: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 }
 .empty-icon {
   display: grid;
   width: 52px;
   height: 52px;
   place-items: center;
-  border-radius: 14px;
-  background: #eaf0fe;
-  color: #3457f0;
+  border-radius: var(--radius-control);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 .empty-kicker {
   margin: 28px 0 9px;
-  color: #3457f0;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.17em;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
 }
 .section-empty h2 {
   margin: 0;
-  color: #0f172a;
-  font-size: 28px;
-  letter-spacing: -0.035em;
+  color: var(--color-text);
+  font-size: 24px;
+  font-weight: 700;
 }
 .section-empty > p:not(.empty-kicker) {
   margin: 9px 0 0;
-  color: #65728a;
+  color: var(--color-muted);
   font-size: 14px;
 }
 .section-empty a {
   margin-top: 32px;
-  color: #3457f0;
-  font-size: 13px;
-  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 15px;
+  font-weight: 600;
   text-decoration: none;
 }
 .section-empty a:hover {

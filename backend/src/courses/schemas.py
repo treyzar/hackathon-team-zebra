@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from courses.models import StepAccess
 from progress.schemas import ProgressSummary, StepProgress, Totals
@@ -10,6 +10,7 @@ from steps.base import Grading, RichText, ShowAnswer
 from submissions.models import SubmissionStatus
 
 SLUG = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+EXPORT_SCHEMA_VERSION = 2
 
 
 class ORM(BaseModel):
@@ -224,3 +225,36 @@ class SubmissionOut(ORM):
     # Detailed feedback that reveals the correct answer (e.g. which options
     # were right); present only when the step's show_answer allows it.
     explanation: dict[str, Any] | None = None
+
+
+# import / export
+
+
+class ExportedStep(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    is_hidden: bool = False
+    payload: StepPayload
+
+
+class ExportedModule(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    title: str
+    steps: list[ExportedStep] = []
+
+
+class ExportedCourse(CourseCreate):
+    model_config = ConfigDict(extra="forbid")
+    modules: list[ExportedModule] = []
+
+
+class CourseDocument(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    schema_version: Literal[EXPORT_SCHEMA_VERSION]
+    course: ExportedCourse
+
+
+class ImportResult(BaseModel):
+    course_id: int
+    slug: str
+    title: str
+    warnings: list[str] = []

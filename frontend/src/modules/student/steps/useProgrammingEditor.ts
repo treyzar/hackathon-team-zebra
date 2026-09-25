@@ -1,11 +1,18 @@
 import { nextTick, onBeforeUnmount, onMounted, type Ref, ref, watch } from "vue";
 import * as monaco from "monaco-editor/editor/editor.api";
 import "monaco-editor/languages/definitions/python/register";
+import "monaco-editor/languages/definitions/javascript/register";
+import "monaco-editor/languages/definitions/cpp/register";
+import "monaco-editor/languages/definitions/csharp/register";
+import "monaco-editor/languages/definitions/go/register";
+import "monaco-editor/languages/definitions/pascal/register";
 import EditorWorker from "monaco-editor/editor/editor.worker?worker";
 
 interface UseProgrammingEditorOptions {
   host: Ref<HTMLElement | null>;
   modelValue: () => string;
+  // Monaco language id.
+  language: () => string;
   disabled: () => boolean;
   onChange: (value: string) => void;
 }
@@ -38,7 +45,7 @@ export function useProgrammingEditor(options: UseProgrammingEditorOptions) {
     try {
       editor = monaco.editor.create(options.host.value, {
         value: options.modelValue(),
-        language: "python",
+        language: options.language(),
         theme: "vs",
         readOnly: options.disabled(),
         automaticLayout: false,
@@ -91,6 +98,11 @@ export function useProgrammingEditor(options: UseProgrammingEditorOptions) {
 
   watch(options.modelValue, (value) => {
     if (editor && editor.getValue() !== value) editor.setValue(value);
+  });
+
+  watch(options.language, (value) => {
+    const model = editor?.getModel();
+    if (model) monaco.editor.setModelLanguage(model, value);
   });
 
   watch(options.disabled, (value) => {

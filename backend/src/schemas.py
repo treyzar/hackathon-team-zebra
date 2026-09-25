@@ -12,6 +12,9 @@ class UserSignup(BaseModel):
     email: EmailStr
     username: str = Field(min_length=6, max_length=20, pattern="^[a-zA-Z0-9_-]+$")
     password: str = Field(min_length=8, max_length=64)
+    name: str = Field(min_length=1, max_length=60)
+    surname: str = Field(min_length=1, max_length=60)
+    patronymic: str = Field(max_length=60, default="")
 
     @field_validator("email")
     @classmethod
@@ -24,6 +27,9 @@ class UserResponse(BaseModel):
     username: str
     email: EmailStr
     role: Role
+    name: str
+    surname: str
+    patronymic: str
     model_config = {"from_attributes": True}
 
 

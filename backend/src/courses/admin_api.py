@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import json
+
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access_docs import access_note
 from auth import require_admin
 from courses import service as svc
+from courses.export_import import export_as_json
+from courses.export_import import import_course as import_from_json
 from courses.models import Course, Enrollment, Module, Step, StepRevision
+from courses.pdf_export import export_as_pdf
 from courses.schemas import (
     AdminCourseTree,
     AdminModuleOut,
@@ -18,6 +23,7 @@ from courses.schemas import (
     EnrolledStudent,
     EnrollIn,
     EnrollResult,
+    ImportResult,
     ModuleIn,
     Order,
     RevisionOut,
@@ -359,3 +365,57 @@ async def unenroll(course_id: int, user_id: int, db: AsyncSession = Depends(acce
     if enrollment is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not enrolled")
     await db.delete(enrollment)
+
+
+@authoring.get("/courses/{course_id}/export")
+async def export_course_json(
+    course_id: int, db: AsyncSession = Depends(access_db)
+) -> Response:
+    course = await svc.get_course(db, course_id)
+    document = await export_as_json(db, course)
+    body = json.dumps(document, ensure_ascii=False, indent=2).encode("utf-8")
+    return Response(
+        content=body,
+        media_type="application/json; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{course.slug}.json"'},
+    )
+
+
+@authoring.get("/courses/{course_id}/export_pdf")
+async def export_course_pdf(
+    course_id: int, db: AsyncSession = Depends(access_db)
+) -> Response:
+    course = await svc.get_course(db, course_id)
+    pdf = await export_as_pdf(db, course, include_answers=True)
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{course.slug}.pdf"'},
+    )
+
+
+@authoring.post("/courses/import", response_model=ImportResult, status_code=201)
+async def import_course(
+    file: UploadFile,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(access_db),
+) -> ImportResult:
+    raw = await file.read()
+    course, warnings = await import_from_json(db, user, raw)
+    return ImportResult(
+        course_id=course.id,
+        slug=course.slug,
+        title=course.title,
+        warnings=warnings,
+    )
+
+
+# @authoring.post("/courses/import", response_model=CourseOut, status_code=201)
+# async def import_course(
+#    file: UploadFile,
+#    user: User = Depends(require_admin),
+#    db: AsyncSession = Depends(access_db),
+# ) -> CourseOut:
+#    raw = await file.read()
+#    course, _warnings = await import_course(db, user, raw)
+#    return course

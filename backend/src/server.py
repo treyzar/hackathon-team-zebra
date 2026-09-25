@@ -15,6 +15,8 @@ from health import health
 from languages_api import programming_languages
 from notifications.notifications_api import notifications
 from progress.api import progress_api
+from questions.staff_api import staff_questions
+from questions.student_api import student_questions
 from schemas import UserResponse
 from submissions.review_api import review
 
@@ -44,6 +46,8 @@ api.include_router(authoring)
 api.include_router(learning)
 api.include_router(progress_api)
 api.include_router(review)
+api.include_router(student_questions)
+api.include_router(staff_questions)
 api.include_router(files)
 api.include_router(notifications)
 api.include_router(programming_languages)

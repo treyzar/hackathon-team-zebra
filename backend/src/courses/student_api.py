@@ -8,8 +8,8 @@ from courses import service as svc
 from courses.access import (
     enrolled_course_ids,
     ensure_enrolled,
-    ensure_unlocked,
     locked_steps,
+    open_step,
 )
 from courses.models import Course, Step, StepRevision
 from courses.schemas import (
@@ -36,14 +36,6 @@ from submissions import service as sub_svc
 from submissions.models import Submission
 
 learning = APIRouter(tags=["learning"])
-
-
-async def _open_step(db: AsyncSession, user: User, step_id: int):
-    """A visible step the user may open: 404 if hidden, 403 if still locked."""
-    step, rev, module = await svc.get_step(db, step_id, for_student=True)
-    await ensure_enrolled(db, user, module.course_id)
-    await ensure_unlocked(db, user, step, module)
-    return step, rev, module
 
 
 async def _explanations(
@@ -187,7 +179,7 @@ async def get_step(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(access_db),
 ):
-    step, rev, module = await _open_step(db, user, step_id)
+    step, rev, module = await open_step(db, user, step_id)
     parsed = svc.parse(step, rev)
     stats = (await stats_for(db, user.id, [step.id]))[step.id]
     block = sub_svc.submit_block_reason(parsed, stats)
@@ -228,7 +220,7 @@ async def get_answer(
     db: AsyncSession = Depends(access_db),
 ) -> dict:
     """The correct answer, when the step's show_answer policy allows it."""
-    step, rev, _ = await _open_step(db, user, step_id)
+    step, rev, _ = await open_step(db, user, step_id)
     parsed = svc.parse(step, rev)
     stats = (await stats_for(db, user.id, [step.id]))[step.id]
     if not sub_svc.answer_available(parsed, stats):
@@ -251,7 +243,7 @@ async def submit(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(access_db),
 ):
-    step, rev, _ = await _open_step(db, user, step_id)
+    step, rev, _ = await open_step(db, user, step_id)
     sub = await sub_svc.submit(db, user, step, rev, data.answer)
     return (await _submissions_out(db, user, [sub]))[0]
 
@@ -267,7 +259,7 @@ async def my_submissions(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(access_db),
 ):
-    step, _, _ = await _open_step(db, user, step_id)
+    step, _, _ = await open_step(db, user, step_id)
     query = (
         select(Submission)
         .where(Submission.user_id == user.id, Submission.step_id == step.id)

@@ -7,7 +7,7 @@ from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from courses.models import Course, Enrollment, Module, Step, StepAccess
-from courses.service import visible_steps_in_order
+from courses.service import get_step, visible_steps_in_order
 from models import Role, User
 from submissions.models import Submission, SubmissionStatus
 
@@ -90,3 +90,12 @@ async def ensure_enrolled(db: AsyncSession, user: User, course_id: int) -> None:
         return
     if await db.get(Enrollment, (course_id, user.id)) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Course not found")
+
+
+async def open_step(db: AsyncSession, user: User, step_id: int):
+    """A visible step the user may open: 404 if hidden or not enrolled,
+    403 if still locked."""
+    step, rev, module = await get_step(db, step_id, for_student=True)
+    await ensure_enrolled(db, user, module.course_id)
+    await ensure_unlocked(db, user, step, module)
+    return step, rev, module

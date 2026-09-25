@@ -13,6 +13,7 @@ dependencies = [
     "pyjwt>=2.14.0",
     "python-dotenv>=1.2.3",
     "sqlalchemy>=2.0.54",
+    "weasyprint>=70.0",
 ]
 
 [tool.pytest.ini_options]

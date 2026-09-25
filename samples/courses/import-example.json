@@ -1,0 +1,266 @@
+{
+  "schema_version": 2,
+  "course": {
+    "slug": "python-basics",
+    "title": "Основы Python",
+    "description": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Короткий курс для 5–7 классов: ввод и вывод, числа, строки, ветвления и цикл for."
+            }
+          ]
+        }
+      ]
+    },
+    "step_access": "all",
+    "modules": [
+      {
+        "title": "Ввод, вывод, числа",
+        "steps": [
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "theory",
+              "max_score": 0,
+              "content": {
+                "body": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "input и print" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "input() читает строку, int(...) превращает её в число." }
+                      ]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "python" },
+                      "content": [
+                        { "type": "text", "text": "a = int(input())\nprint(a * 2)" }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "answer_key": {},
+              "settings": { "grading": "none" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "single_choice",
+              "max_score": 1,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [{ "type": "text", "text": "Что вернёт input()?" }]
+                    }
+                  ]
+                },
+                "options": [
+                  { "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "text": "Число" },
+                  { "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "text": "Строку" },
+                  { "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc", "text": "Список" }
+                ]
+              },
+              "answer_key": { "correct": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" },
+              "settings": { "grading": "auto", "show_answer": "after_wrong" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "number",
+              "max_score": 2,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [{ "type": "text", "text": "Сколько будет 7 × 8?" }]
+                    }
+                  ]
+                },
+                "kind": "integer"
+              },
+              "answer_key": { "value": 56 },
+              "settings": {
+                "grading": "auto",
+                "max_attempts": 2,
+                "show_answer": "after_attempts_exhausted"
+              }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "short_text",
+              "max_score": 1,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Каким словом в Python записывается ветвление «иначе»?" }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "answer_key": { "accepted": ["else"], "case_sensitive": false },
+              "settings": { "grading": "auto" }
+            }
+          }
+        ]
+      },
+      {
+        "title": "Практика",
+        "steps": [
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "multiple_choice",
+              "max_score": 3,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Какие из этих значений — целые числа в Python?" }
+                      ]
+                    }
+                  ]
+                },
+                "options": [
+                  { "id": "11111111-1111-4111-8111-111111111111", "text": "7" },
+                  { "id": "22222222-2222-4222-8222-222222222222", "text": "3.14" },
+                  { "id": "33333333-3333-4333-8333-333333333333", "text": "-42" },
+                  { "id": "44444444-4444-4444-8444-444444444444", "text": "\"5\"" }
+                ]
+              },
+              "answer_key": {
+                "correct": [
+                  "11111111-1111-4111-8111-111111111111",
+                  "33333333-3333-4333-8333-333333333333"
+                ]
+              },
+              "settings": {
+                "grading": "auto",
+                "scoring": "partial",
+                "show_answer": "after_wrong"
+              }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "programming",
+              "max_score": 10,
+              "content": {
+                "statement": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Удвоить число" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "На вход дано одно целое число. Выведите его удвоенное значение."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "languages": ["python3"],
+                "time_limit_ms": 1000,
+                "memory_limit_mb": 256,
+                "template": "n = int(input())\n# ваш код\n",
+                "samples": [
+                  { "input": "3\n", "output": "6" },
+                  { "input": "-1\n", "output": "-2" }
+                ]
+              },
+              "answer_key": {
+                "test_groups": [
+                  {
+                    "name": "скрытые",
+                    "points": 10,
+                    "tests": [
+                      { "input": "0\n", "output": "0" },
+                      { "input": "1000000000\n", "output": "2000000000" },
+                      { "input": "-7\n", "output": "-14" }
+                    ]
+                  }
+                ],
+                "reference_solution": "print(int(input()) * 2)\n"
+              },
+              "settings": { "grading": "tests", "scoring": "all_or_nothing" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "free_text",
+              "max_score": 5,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Объясни разницу" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Чем отличается цикл for от цикла while? Приведи пример, где удобнее каждый из них."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "require_text": true,
+                "min_files": 0,
+                "max_files": 0,
+                "allowed_mime": []
+              },
+              "answer_key": {
+                "reference": null,
+                "criteria": "Названо, что for перебирает известную последовательность, while повторяется, пока условие истинно. Приведены осмысленные примеры на каждый случай.",
+                "files": []
+              },
+              "settings": { "grading": "manual" }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

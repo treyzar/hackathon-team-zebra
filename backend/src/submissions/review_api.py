@@ -5,8 +5,9 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import Select, select
+from sqlalchemy import Select, and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from access_docs import access_note
 from auth import require_curator
@@ -30,16 +31,37 @@ class ReviewListItem(BaseModel):
     score: float | None
     student_id: int
     student_username: str
+    student_name: str
+    student_surname: str
+    student_patronymic: str
     step_id: int
     step_type: str
     max_score: int
     course_id: int
+    task_title: str
+    task_number: str
     course_title: str
     module_title: str
     # Deadline of the step for the student's group and whether the
     # submission came after it (a mark only).
     deadline_due_at: datetime | None
     is_late: bool
+    # How long it has waited for a curator, counted from the moment it was
+    # sent (for tests + review that includes the short judge run); null once
+    # it is not waiting any more. Computed per request, not stored.
+    waiting_seconds: int | None
+    attempts_before: int
+
+
+class CourseQueue(BaseModel):
+    course_id: int
+    course_title: str
+    # Whole queue of the course, even when ``submissions`` is cut.
+    total: int
+    late: int
+    oldest_at: datetime
+    longest_waiting_seconds: int
+    submissions: list[ReviewListItem]
 
 
 class ReviewDetail(ReviewListItem):
@@ -63,8 +85,33 @@ class Verdict(BaseModel):
 
 
 def _visible(user: User) -> Select:
+    # Алиас для "предыдущих" сабмитов того же пользователя/шага
+    prev = aliased(Submission)
+
+    prev_attempts = (
+        select(func.count(prev.id))
+        .where(
+            and_(
+                prev.user_id == Submission.user_id,
+                prev.step_id == Submission.step_id,
+                prev.id < Submission.id,
+            )
+        )
+        .correlate(Submission)
+        .scalar_subquery()
+        .label("attempts_before")
+    )
+
     query = (
-        select(Submission, User, Step, StepRevision, Module, Course)
+        select(
+            Submission,
+            User,
+            Step,
+            StepRevision,
+            Module,
+            Course,
+            prev_attempts,
+        )
         .join(User, User.id == Submission.user_id)
         .join(Step, Step.id == Submission.step_id)
         .join(StepRevision, StepRevision.id == Submission.step_revision_id)
@@ -76,11 +123,28 @@ def _visible(user: User) -> Select:
     return query
 
 
+def get_step_title(rev_content: dict) -> str | None:
+    for node in rev_content.get("content", []):
+        if node.get("type") == "heading" and node.get("attrs", {}).get("zebra_title"):
+            return "".join(
+                child.get("text", "")
+                for child in node.get("content", [])
+                if child.get("type") == "text"
+            )
+    return None
+
+
 def _item(row, due_at, cls=ReviewListItem, **extra):
-    sub, student, step, rev, module, course = row
+    sub, student, step, rev, module, course, attempts_before = row
     return cls(
         deadline_due_at=due_at,
         is_late=is_late(sub, due_at),
+        waiting_seconds=(
+            int((svc.now() - sub.created_at).total_seconds())
+            if sub.status == SubmissionStatus.PENDING_REVIEW
+            else None
+        ),
+        attempts_before=attempts_before,
         id=sub.id,
         status=sub.status,
         created_at=sub.created_at,
@@ -88,10 +152,15 @@ def _item(row, due_at, cls=ReviewListItem, **extra):
         score=sub.score,
         student_id=student.id,
         student_username=student.username,
+        student_name=student.name,
+        student_surname=student.surname,
+        student_patronymic=student.patronymic,
         step_id=step.id,
         step_type=step.type,
         max_score=rev.max_score,
         course_id=course.id,
+        task_title=get_step_title(rev.content),
+        task_number=f"{module.position}.{step.position}",
         course_title=course.title,
         module_title=module.title,
         **extra,
@@ -110,7 +179,7 @@ async def _get(db: AsyncSession, user: User, submission_id: int, lock=False):
 
 
 async def _detail(db: AsyncSession, row) -> ReviewDetail:
-    sub, _, step, rev, _, _ = row
+    sub, _, step, rev, _, _, _ = row
     parsed = svc.parse(step, rev)
     due = await submission_deadlines(db, [sub])
     return _item(
@@ -152,6 +221,47 @@ async def list_submissions(
     rows = (await db.execute(query)).all()
     due = await submission_deadlines(db, [row[0] for row in rows])
     return [_item(row, due[row[0].id]) for row in rows]
+
+
+@review.get("/courses", response_model=list[CourseQueue])
+@access_note("Куратор видит только решения учеников своих групп, администратор — все.")
+async def queue_by_course(
+    student_id: int | None = None,
+    per_course: int = Query(default=50, ge=1, le=200),
+    user: User = Depends(require_curator),
+    db: AsyncSession = Depends(access_db),
+):
+    """Решения, ждущие ручной проверки, по курсам.
+
+    Курсы — начиная с того, где работа ждёт дольше всех; внутри курса —
+    от старых к новым. `total`, `late` и `longest_waiting_seconds` — по всей
+    очереди курса, даже если `submissions` обрезан до `per_course`
+    (остальное — через `GET /review/submissions?course_id=`).
+    `waiting_seconds` у решения — сколько секунд оно ждёт с момента отправки."""
+    query = _visible(user).where(Submission.status == SubmissionStatus.PENDING_REVIEW)
+    if student_id is not None:
+        query = query.where(Submission.user_id == student_id)
+    # The whole queue is loaded: counts and "late" marks are computed, not
+    # stored, and a pending-review queue stays small.
+    rows = (await db.execute(query.order_by(Submission.id))).all()
+    due = await submission_deadlines(db, [row[0] for row in rows])
+
+    # Rows go oldest first, so courses are met in order of their oldest work.
+    by_course: dict[int, list[ReviewListItem]] = {}
+    for row in rows:
+        by_course.setdefault(row[5].id, []).append(_item(row, due[row[0].id]))
+    return [
+        CourseQueue(
+            course_id=items[0].course_id,
+            course_title=items[0].course_title,
+            total=len(items),
+            late=sum(i.is_late for i in items),
+            oldest_at=min(i.created_at for i in items),
+            longest_waiting_seconds=max(i.waiting_seconds or 0 for i in items),
+            submissions=items[:per_course],
+        )
+        for items in by_course.values()
+    ]
 
 
 @review.get("/submissions/{submission_id}", response_model=ReviewDetail)
