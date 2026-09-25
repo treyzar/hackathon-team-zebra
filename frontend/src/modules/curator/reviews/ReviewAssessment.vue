@@ -18,7 +18,7 @@ watch(
   () => props.detail.id,
   () => {
     const autoScore = props.detail.auto_score;
-    mode.value = "partial";
+    mode.value = "full";
     score.value = autoScore ?? Math.max(0, Math.floor(props.detail.max_score / 2));
     comment.value = "";
     error.value = "";
