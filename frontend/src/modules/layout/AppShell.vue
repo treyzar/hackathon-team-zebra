@@ -77,7 +77,6 @@ async function logout(): Promise<void> {
       :username="username"
       @logout="logout"
     />
-
     <template v-if="menuOpen">
       <button
         class="navigation-backdrop"

@@ -5,6 +5,7 @@ import { RouterLink, useRoute } from "vue-router";
 import type { UserRole } from "@/api/http";
 import BrandMark from "./BrandMark.vue";
 import NavigationIcon from "./NavigationIcon.vue";
+import NotificationBell from "@/modules/notifications/NotificationBell.vue";
 import { isNavigationItemActive, navigationForRole, roleLabel } from "./items";
 
 const props = defineProps<{
@@ -75,7 +76,7 @@ onMounted(async () => {
       </RouterLink>
       <slot />
     </div>
-
+    <NotificationBell variant="sidebar" v-if="role !== 'admin'" />
     <div class="side-account">
       <span class="side-avatar" aria-hidden="true">{{ username.slice(0, 1).toUpperCase() }}</span>
       <span class="side-account-copy">
@@ -162,6 +163,7 @@ onMounted(async () => {
   min-height: 0;
   overflow-y: auto;
 }
+
 .side-link {
   display: flex;
   align-items: center;
