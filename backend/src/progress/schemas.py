@@ -141,3 +141,92 @@ class RatingRow(BaseModel):
     username: str
     points: float
     steps_completed: int
+
+
+# --- analytics of a course for one group -----------------------------------
+
+
+class ModuleStats(BaseModel):
+    module_id: int
+    title: str
+    # Students of the group: all steps completed / some attempts / none.
+    students_passed: int
+    students_in_progress: int
+    students_not_started: int
+    # Of the (student, task) pairs whose first attempt is graded, how many
+    # reached the maximum on it, in whole percents; null if there are none.
+    first_attempt_percent: int | None
+    # Attempts per (student, task) pair with at least one attempt.
+    avg_attempts: float | None
+    # Submissions rejected by a curator.
+    returns: int
+
+
+class StudentInfo(BaseModel):
+    student_id: int
+    username: str
+    name: str
+    surname: str
+    patronymic: str
+
+
+class StudentModule(BaseModel):
+    module_id: int
+    # passed | in_progress | not_started
+    state: str
+    steps_total: int
+    steps_completed: int
+    # Any attempt at a task (a step with points) of the module.
+    has_submissions: bool
+    # A step whose last attempt was rejected and not resubmitted yet.
+    has_unresolved_return: bool
+
+
+class StudentAnalytics(StudentInfo):
+    lag: Lag
+    # When the student last sent anything in the course; the frontend shows
+    # it as "today", "yesterday", "N days ago" in the viewer's time zone.
+    last_submission_at: datetime | None
+    modules: list[StudentModule]
+
+
+class CourseAnalytics(BaseModel):
+    course_id: int
+    group_id: int
+    students_total: int
+    modules: list[ModuleStats]
+    students: list[StudentAnalytics]
+
+
+class StepColumn(BaseModel):
+    step_id: int
+    # 1-based number of the step within the module.
+    position: int
+    type: str
+    title: str
+    max_score: int
+
+
+class StepCell(BaseModel):
+    step_id: int
+    # not_started | checking | failed | attempts_exhausted | partial | passed
+    state: str
+    earned: float
+    max_score: int
+    completed: bool
+    attempts: int
+    # Null: no graded first attempt yet, or theory.
+    first_attempt_solved: bool | None
+    has_unresolved_return: bool
+    last_submission_at: datetime | None
+
+
+class StudentSteps(StudentInfo):
+    steps: list[StepCell]
+
+
+class ModuleAnalytics(BaseModel):
+    course_id: int
+    module: ModuleStats
+    steps: list[StepColumn]
+    students: list[StudentSteps]

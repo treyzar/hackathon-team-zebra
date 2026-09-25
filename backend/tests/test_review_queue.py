@@ -180,7 +180,7 @@ def para(*texts):
     ],
 )
 def test_step_title(content, title):
-    from submissions.review_api import get_step_title
+    from courses.service import get_step_title
 
     assert get_step_title(content) == title
 

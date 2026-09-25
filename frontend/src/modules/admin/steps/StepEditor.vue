@@ -456,7 +456,7 @@ watch(
                 :class="{ active: submissionMode === 'link' }"
                 @click="setSubmissionMode('link')"
               >
-                Ссылка
+                Текст
               </button>
               <button
                 type="button"
@@ -470,7 +470,7 @@ watch(
                 :class="{ active: submissionMode === 'either' }"
                 @click="setSubmissionMode('either')"
               >
-                Ссылка или файл
+                Текст или файл
               </button>
             </div>
             <div class="admin-form">
@@ -778,9 +778,6 @@ watch(
                     <option value="per_group">За группы тестов</option>
                   </select></label
                 ></template
-              >
-              <label class="admin-check"
-                ><input type="checkbox" checked disabled /> Обязательный</label
               >
             </div>
           </section>

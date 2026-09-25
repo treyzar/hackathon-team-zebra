@@ -34,8 +34,8 @@ const cards: {
     type: "programming",
   },
   {
-    label: "Проект",
-    description: "Scratch, Minecraft или другое: ссылка, скриншот или файл",
+    label: "Произвольный ответ",
+    description: "Scratch, Minecraft или другое: текст, ссылка, скриншот или файл",
     grading: "КУРАТОР",
     icon: "⚑",
     type: "free_text",
@@ -83,10 +83,6 @@ onBeforeUnmount(() => {
           <span class="step-picker-description">{{ card.description }}</span>
           <span class="admin-section-label">{{ card.grading }}</span>
         </button>
-        <div class="step-picker-help">
-          <strong>Нужен другой тип?</strong
-          ><span>Тип шага задаёт форму, экран ученика и правило проверки.</span>
-        </div>
       </div>
       <div class="step-picker-footer">
         <span
