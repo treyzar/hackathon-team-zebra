@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://cifrovye-zodchie.ru/schemas/course-import-v1.json",
+  "$id": "https://cifrovye-zodchie.ru/schemas/course-import-v2.json",
   "title": "CourseImport",
-  "description": "Тело файла для POST /api/admin/courses/import (multipart/form-data, поле file).",
+  "description": "Тело файла для POST /api/admin/courses/import (multipart/form-data, поле file). Тот же формат, что отдаёт GET /api/admin/courses/{id}/export.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "course"],
   "properties": {
-    "schema_version": { "const": 1, "description": "Версия формата, сейчас всегда 1." },
+    "schema_version": { "const": 2, "description": "Версия формата; сейчас всегда 2." },
     "course": { "$ref": "#/$defs/course" }
   },
   "$defs": {
@@ -17,8 +17,8 @@
     },
     "richText": {
       "type": "object",
-      "description": "Документ TipTap/ProseMirror.",
-      "required": ["type", "content"],
+      "description": "Документ TipTap/ProseMirror. Содержимое узлов (attrs, marks) не проверяется.",
+      "required": ["type"],
       "properties": {
         "type": { "const": "doc" },
         "content": { "type": "array", "items": { "type": "object" } }
@@ -39,24 +39,16 @@
       "required": ["slug", "title", "modules"],
       "additionalProperties": false,
       "properties": {
-        "slug": {
-          "type": "string",
-          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-          "maxLength": 100
-        },
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 100 },
         "title": { "type": "string", "minLength": 1, "maxLength": 200 },
         "description": { "$ref": "#/$defs/richText" },
         "step_access": { "enum": ["all", "sequential"], "default": "all" },
-        "modules": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "$ref": "#/$defs/module" }
-        }
+        "modules": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/module" } }
       }
     },
     "module": {
       "type": "object",
-      "required": ["title", "steps"],
+      "required": ["title"],
       "additionalProperties": false,
       "properties": {
         "title": { "type": "string", "minLength": 1, "maxLength": 200 },
@@ -64,15 +56,26 @@
       }
     },
     "step": {
+      "type": "object",
+      "required": ["payload"],
+      "additionalProperties": false,
+      "properties": {
+        "is_hidden": { "type": "boolean", "default": false },
+        "payload": { "$ref": "#/$defs/payload" }
+      }
+    },
+    "payload": {
       "oneOf": [
-        { "$ref": "#/$defs/theoryStep" },
-        { "$ref": "#/$defs/singleChoiceStep" },
-        { "$ref": "#/$defs/multipleChoiceStep" },
-        { "$ref": "#/$defs/freeTextStep" },
-        { "$ref": "#/$defs/programmingStep" }
+        { "$ref": "#/$defs/theoryPayload" },
+        { "$ref": "#/$defs/singleChoicePayload" },
+        { "$ref": "#/$defs/multipleChoicePayload" },
+        { "$ref": "#/$defs/freeTextPayload" },
+        { "$ref": "#/$defs/programmingPayload" },
+        { "$ref": "#/$defs/numberPayload" },
+        { "$ref": "#/$defs/shortTextPayload" }
       ]
     },
-    "theoryStep": {
+    "theoryPayload": {
       "type": "object",
       "required": ["type", "content"],
       "additionalProperties": false,
@@ -93,7 +96,29 @@
         }
       }
     },
-    "singleChoiceStep": {
+    "choiceContent": {
+      "type": "object",
+      "required": ["question", "options"],
+      "additionalProperties": false,
+      "properties": {
+        "question": { "$ref": "#/$defs/richText" },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "required": ["id", "text"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/uuid" },
+              "text": { "type": "string", "minLength": 1, "maxLength": 2000 }
+            }
+          }
+        }
+      }
+    },
+    "singleChoicePayload": {
       "type": "object",
       "required": ["type", "max_score", "content", "answer_key"],
       "additionalProperties": false,
@@ -118,7 +143,7 @@
         }
       }
     },
-    "multipleChoiceStep": {
+    "multipleChoicePayload": {
       "type": "object",
       "required": ["type", "max_score", "content", "answer_key"],
       "additionalProperties": false,
@@ -150,29 +175,7 @@
         }
       }
     },
-    "choiceContent": {
-      "type": "object",
-      "required": ["question", "options"],
-      "additionalProperties": false,
-      "properties": {
-        "question": { "$ref": "#/$defs/richText" },
-        "options": {
-          "type": "array",
-          "minItems": 2,
-          "maxItems": 50,
-          "items": {
-            "type": "object",
-            "required": ["id", "text"],
-            "additionalProperties": false,
-            "properties": {
-              "id": { "$ref": "#/$defs/uuid" },
-              "text": { "type": "string", "minLength": 1, "maxLength": 2000 }
-            }
-          }
-        }
-      }
-    },
-    "freeTextStep": {
+    "freeTextPayload": {
       "type": "object",
       "required": ["type", "max_score", "content"],
       "additionalProperties": false,
@@ -223,9 +226,9 @@
         }
       }
     },
-    "programmingStep": {
+    "programmingPayload": {
       "type": "object",
-      "required": ["type", "max_score", "content", "answer_key"],
+      "required": ["type", "max_score", "content"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "programming" },
@@ -265,8 +268,8 @@
                 "required": ["input", "output"],
                 "additionalProperties": false,
                 "properties": {
-                  "input": { "type": "string", "maxLength": 1000000 },
-                  "output": { "type": "string", "maxLength": 1000000 }
+                  "input": { "type": "string", "maxLength": 1000000, "default": "" },
+                  "output": { "type": "string", "maxLength": 1000000, "default": "" }
                 }
               }
             }
@@ -281,11 +284,11 @@
               "maxItems": 50,
               "items": {
                 "type": "object",
-                "required": ["name", "points", "tests"],
+                "required": ["name", "tests"],
                 "additionalProperties": false,
                 "properties": {
                   "name": { "type": "string", "minLength": 1, "maxLength": 200 },
-                  "points": { "type": "integer", "minimum": 0 },
+                  "points": { "type": "integer", "minimum": 0, "default": 0 },
                   "tests": {
                     "type": "array",
                     "minItems": 1,
@@ -327,6 +330,79 @@
               "enum": ["all_or_nothing", "per_group"],
               "default": "all_or_nothing"
             },
+            "max_attempts": { "$ref": "#/$defs/maxAttempts" },
+            "show_answer": { "$ref": "#/$defs/showAnswer" }
+          }
+        }
+      }
+    },
+    "numberPayload": {
+      "type": "object",
+      "required": ["type", "max_score", "content", "answer_key"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "number" },
+        "max_score": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "content": {
+          "type": "object",
+          "required": ["question"],
+          "additionalProperties": false,
+          "properties": {
+            "question": { "$ref": "#/$defs/richText" },
+            "kind": { "enum": ["integer", "decimal"], "default": "integer" },
+            "precision": { "type": "integer", "minimum": 0, "maximum": 10, "default": 2 }
+          }
+        },
+        "answer_key": {
+          "type": "object",
+          "required": ["value"],
+          "additionalProperties": false,
+          "properties": {
+            "value": { "oneOf": [{ "type": "number" }, { "type": "string" }] }
+          }
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "grading": { "const": "auto" },
+            "max_attempts": { "$ref": "#/$defs/maxAttempts" },
+            "show_answer": { "$ref": "#/$defs/showAnswer" }
+          }
+        }
+      }
+    },
+    "shortTextPayload": {
+      "type": "object",
+      "required": ["type", "max_score", "content"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "short_text" },
+        "max_score": { "type": "integer", "minimum": 0, "maximum": 1000 },
+        "content": {
+          "type": "object",
+          "required": ["question"],
+          "additionalProperties": false,
+          "properties": { "question": { "$ref": "#/$defs/richText" } }
+        },
+        "answer_key": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "accepted": {
+              "type": "array",
+              "maxItems": 50,
+              "items": { "type": "string", "maxLength": 500 },
+              "default": []
+            },
+            "case_sensitive": { "type": "boolean", "default": false }
+          }
+        },
+        "settings": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "grading": { "enum": ["auto", "manual"], "default": "auto" },
             "max_attempts": { "$ref": "#/$defs/maxAttempts" },
             "show_answer": { "$ref": "#/$defs/showAnswer" }
           }

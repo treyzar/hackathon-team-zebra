@@ -381,7 +381,7 @@ async def export_course_json(
     )
 
 
-@authoring.get("/courses/{course_id}/export.pdf")
+@authoring.get("/courses/{course_id}/export_pdf")
 async def export_course_pdf(
     course_id: int, db: AsyncSession = Depends(access_db)
 ) -> Response:

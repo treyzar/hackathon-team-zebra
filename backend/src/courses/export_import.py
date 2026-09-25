@@ -10,17 +10,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from courses import service
 from courses.models import Course, Module, Step, StepRevision
-from courses.schemas import CourseCreate, ModuleIn, ExportedCourse, ExportedModule, ExportedStep, CourseDocument
+from courses.schemas import (
+    CourseCreate,
+    ModuleIn,
+    ExportedCourse,
+    ExportedModule,
+    ExportedStep,
+    CourseDocument,
+    EXPORT_SCHEMA_VERSION
+)
 from files.models import File, FileStatus
 from models import User
 from steps import StepPayload
-from steps.registry import _payload_model
 
 _payload_adapter = TypeAdapter(StepPayload)
-EXPORT_SCHEMA_VERSION = 2
-
-def payload_type(type:StepType):
-    return _payload_model(type)
 
 def unprocessable(msg: str = "Unprocessable") -> HTTPException:
     return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=msg)
@@ -216,15 +219,14 @@ async def export_as_json(db: AsyncSession, course: Course) -> dict[str, Any]:
         if rev is None:
             continue
         parsed = service.parse(step, rev)
-        by_module[step.module_id].append(
-            ExportedStep(is_hidden=step.is_hidden, payload=payload_type(parsed.type)(
-    type=parsed.type.key,
-    max_score=parsed.max_score,
-    content=parsed.content,
-    answer_key=parsed.answer_key,
-    settings=parsed.settings,
-))
-        )
+        payload = _payload_adapter.validate_python(            {
+                "type": parsed.type.key,
+                "max_score": parsed.max_score,
+                "content": parsed.content,
+                "answer_key": parsed.answer_key,
+                "settings": parsed.settings,
+            })
+        by_module[step.module_id].append(ExportedStep(is_hidden=step.is_hidden, payload=payload))
 
     document = CourseDocument(
         schema_version=EXPORT_SCHEMA_VERSION,

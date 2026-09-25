@@ -10,7 +10,7 @@ from steps.base import Grading, RichText, ShowAnswer
 from submissions.models import SubmissionStatus
 
 SLUG = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
-
+EXPORT_SCHEMA_VERSION = 2
 
 class ORM(BaseModel):
     model_config = {"from_attributes": True}
