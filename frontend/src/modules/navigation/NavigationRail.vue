@@ -21,11 +21,7 @@ const items = computed(() => navigationForRole(props.role));
 </script>
 
 <template>
-  <aside
-    class="navigation-rail"
-    :class="{ 'navigation-rail--large': large }"
-    aria-label="Разделы"
-  >
+  <aside class="navigation-rail" :class="{ 'navigation-rail--large': large }" aria-label="Разделы">
     <button
       class="rail-button"
       type="button"

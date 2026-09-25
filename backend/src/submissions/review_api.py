@@ -131,7 +131,7 @@ def get_step_title(rev_content: dict) -> str | None:
                 for child in node.get("content", [])
                 if child.get("type") == "text"
             )
-    return None
+    return "заглушка"
 
 
 def _item(row, due_at, cls=ReviewListItem, **extra):

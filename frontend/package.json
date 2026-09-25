@@ -11,6 +11,7 @@
     "type-check": "vue-tsc --build",
     "test:admin": "rolldown tests/admin.test.ts --platform node --format esm --file dist-test/admin.test.mjs && node --test dist-test/admin.test.mjs",
     "test:student": "rolldown tests/student.test.ts --platform node --format esm --file dist-test/student.test.mjs && node --test dist-test/student.test.mjs",
+    "test:curator": "rolldown tests/curator.test.ts --platform node --format esm --file dist-test/curator.test.mjs && node --test dist-test/curator.test.mjs",
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",

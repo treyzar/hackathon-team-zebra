@@ -27,11 +27,16 @@ const labels: Record<AdminRole, string> = {
   curator: "Куратор",
   admin: "Администратор",
 };
+function fullName(user: AdminUser): string {
+  return [user.surname, user.name, user.patronymic].filter(Boolean).join(" ") || user.username;
+}
 const filtered = computed(() =>
   users.value.filter(
     (user) =>
       user.role === filter.value &&
-      `${user.username} ${user.email}`.toLowerCase().includes(query.value.toLowerCase()),
+      `${fullName(user)} ${user.username} ${user.email}`
+        .toLowerCase()
+        .includes(query.value.trim().toLowerCase()),
   ),
 );
 const selectedUser = computed(
@@ -169,7 +174,7 @@ onMounted(load);
             class="admin-input"
             style="max-width: 280px"
             aria-label="Поиск пользователя"
-            placeholder="Имя или почта"
+            placeholder="ФИО, логин или почта"
           />
         </div>
         <div v-if="loading" class="admin-table-wrap admin-empty">Загружаем пользователей…</div>
@@ -189,9 +194,8 @@ onMounted(load);
                     @change="toggleAll"
                   />
                 </th>
-                <th>Имя</th>
-                <th>Класс</th>
-                <th>Группа</th>
+                <th>ФИО</th>
+                <th v-if="filter === 'student'">Группа</th>
                 <th>Вход</th>
                 <th>Был</th>
               </tr>
@@ -209,23 +213,19 @@ onMounted(load);
                 </td>
                 <td>
                   <button class="user-select" type="button" @click="selectedUserId = user.id">
-                    {{ user.username }}</button
+                    {{ fullName(user) }}</button
                   ><small
-                    >{{ user.email }} <span v-if="user.id === auth.user?.id">· это вы</span></small
+                    >{{ user.username }} · {{ user.email }}
+                    <span v-if="user.id === auth.user?.id">· это вы</span></small
                   >
                 </td>
-                <td class="admin-muted">—</td>
                 <td
+                  v-if="filter === 'student'"
                   :class="{
-                    'user-no-group':
-                      user.role === 'student' && membershipsComplete && !memberships[user.id],
+                    'user-no-group': membershipsComplete && !memberships[user.id],
                   }"
                 >
-                  {{
-                    user.role === "student"
-                      ? memberships[user.id] || (membershipsComplete ? "не в группе" : "—")
-                      : "—"
-                  }}
+                  {{ memberships[user.id] || (membershipsComplete ? "не в группе" : "—") }}
                 </td>
                 <td class="admin-muted">—</td>
                 <td class="admin-muted">—</td>
