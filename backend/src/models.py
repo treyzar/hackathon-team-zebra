@@ -5,10 +5,6 @@ from sqlalchemy import DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
-# remoev later
-# def get_current_time():
-#    return datetime.now(timezone.utc)
-
 
 class BaseDB(AsyncAttrs, DeclarativeBase):
     __abstract__ = True
