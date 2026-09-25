@@ -2,6 +2,7 @@
 
 import uuid
 
+import pytest
 from conftest import requires_db
 
 pytestmark = requires_db
@@ -587,3 +588,110 @@ async def test_option_breakdown_follows_show_answer(client, admin, course, make_
     assert marks[A] == (True, True) and marks[B] == (False, True)
     single = (await client.get(f"/submissions/{first['id']}", headers=h)).json()
     assert single["explanation"] == older["explanation"]
+
+
+async def test_manual_review_creates_notification(
+    client, admin, course, groups_setup, make_user
+):
+    step_id = await add_step(client, admin, course[1], free_text())
+    (_, curator, _, student) = groups_setup[0]
+
+    sub_id = (await submit(client, student, step_id, {"text": "essay"})).json()["id"]
+    r = await client.post(
+        f"/review/submissions/{sub_id}",
+        json={"verdict": "accepted", "comment": "ok"},
+        headers=curator,
+    )
+    assert r.status_code == 200, r.text
+
+    listing = (await client.get("/notifications", headers=student)).json()
+    assert len(listing) == 1
+    n = listing[0]
+    assert n["type"] == "submission_reviewed"
+    assert n["severity"] == "success"
+    assert n["read_at"] is None
+    assert n["payload"] == {
+        "submission_id": sub_id,
+        "step_id": step_id,
+        "course_id": course[0],
+        "verdict": "accepted",
+        "score": 5,
+        "max_score": 5,
+    }
+
+    count = (await client.get("/notifications/unread_count", headers=student)).json()
+    assert count == {"count": 1}
+
+    r = await client.post(f"/notifications/{n['id']}/read", headers=student)
+    assert r.status_code == 200 and r.json()["read_at"] is not None
+    count = (await client.get("/notifications/unread_count", headers=student)).json()
+    assert count == {"count": 0}
+
+    _, other = await make_user()
+    assert (await client.get("/notifications", headers=other)).json() == []
+
+
+async def test_manual_review_rejected_severity(client, admin, course, groups_setup):
+    step_id = await add_step(client, admin, course[1], free_text())
+    (_, curator, _, student) = groups_setup[0]
+
+    sub_id = (await submit(client, student, step_id, {"text": "essay"})).json()["id"]
+    r = await client.post(
+        f"/review/submissions/{sub_id}",
+        json={"verdict": "rejected"},
+        headers=curator,
+    )
+    assert r.status_code == 200, r.text
+
+    n = (await client.get("/notifications", headers=student)).json()[0]
+    assert n["severity"] == "warning"
+    assert n["payload"]["verdict"] == "rejected"
+    assert n["payload"]["score"] == 0
+
+
+async def test_mark_all_read(client, admin, course, groups_setup):
+    step_id = await add_step(client, admin, course[1], free_text())
+    (_, curator, _, student) = groups_setup[0]
+    sub_id = (await submit(client, student, step_id, {"text": "essay"})).json()["id"]
+    await client.post(
+        f"/review/submissions/{sub_id}",
+        json={"verdict": "accepted"},
+        headers=curator,
+    )
+    r = await client.post("/notifications/read_all", headers=student)
+    assert r.json() == {"count": 0}
+    unread = await client.get("/notifications?unread_only=true", headers=student)
+    assert unread.json() == []
+
+
+async def test_notification_dedup(client, make_user):
+    from database import async_factory
+    from notifications.models import NotificationType
+    from notifications.payloads import HelloPayload
+    from notifications.service import create_notification
+
+    user_id, headers = await make_user()
+    async with async_factory() as db:
+        for _ in range(3):
+            await create_notification(
+                db,
+                user_id,
+                NotificationType.HELLO,
+                HelloPayload(username="x"),
+                dedup_key="hello:once",
+            )
+            await db.commit()
+
+    r = await client.get("/notifications", headers=headers)
+    assert len(r.json()) == 1
+
+
+async def test_notification_payload_validated(client, make_user):
+    from database import async_factory
+    from notifications.models import NotificationType
+    from notifications.service import create_notification
+
+    user_id, _ = await make_user()
+    async with async_factory() as db:
+        with pytest.raises(ValueError):
+            await create_notification(db, user_id, NotificationType.HELLO)

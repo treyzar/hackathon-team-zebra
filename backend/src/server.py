@@ -12,9 +12,9 @@ from files.api import files
 from groups.api import groups
 from groups.deadlines import deadlines
 from health import health
+from notifications.api import notifications
 from schemas import UserResponse
 from submissions.review_api import review
-from notifications.api import notifications
 
 app = FastAPI(
     title="Sasha",

@@ -6,7 +6,6 @@ from auth import get_current_user
 from database import access_db
 from models import User
 from notifications import service
-from notifications.models import Notification
 from notifications.schemas import NotificationOut, UnreadCount
 
 notifications = APIRouter(prefix="/notifications", tags=["notifications"])

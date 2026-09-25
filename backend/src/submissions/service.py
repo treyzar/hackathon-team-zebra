@@ -9,17 +9,18 @@ from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from courses.models import Step, StepRevision
+from courses.models import Module, Step, StepRevision
 from courses.service import now, parse
 from files.models import File, FilePurpose, FileStatus
 from models import User
+from notifications.models import NotificationType
+from notifications.models import Severity as NotificationSeverity
+from notifications.payloads import SubmissionReviewedPayload
+from notifications.service import create_notification
 from steps.base import FileInfo, GradeResult, Grading, ShowAnswer
 from steps.registry import ParsedRevision
 from submissions.models import Submission, SubmissionStatus
 
-from notifications.models import NotificationType, Severity as NotificationSeverity
-from notifications.payloads import SubmissionReviewedPayload
-from notifications.service import create_notification
 
 def unprocessable(detail) -> HTTPException:
     return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail)

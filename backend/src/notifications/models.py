@@ -1,11 +1,13 @@
 import enum
 from datetime import datetime
 from typing import Any
-from sqlalchemy import (DateTime,ForeignKey,Index,String,UniqueConstraint,Enum,text)
+
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped,mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 
 from models import BaseDB, User
+
 
 class NotificationType(enum.StrEnum):
     # payload: {step_id, course_id, deadline: datetime, hours_left: int}
