@@ -1,17 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from access_docs import access_note
-from auth import get_current_user, require_curator
+from auth import get_current_user, require_curator, require_roles
 from courses import service as courses_svc
 from courses.access import ensure_enrolled
 from courses.models import Course
 from database import access_db
 from groups.service import group_students, manageable_group, student_group_id
-from models import User
+from models import Role, User
 from progress.analytics import course_analytics, module_analytics
 from progress.lag import LagStatus, group_lag
-from progress.rating import group_rating, my_rating
+from progress.rating import my_rating, rating_of
 from progress.schemas import (
     CourseAnalytics,
     CourseProgressOut,
@@ -25,6 +25,7 @@ from progress.schemas import (
 from progress.service import course_progress
 
 progress_api = APIRouter(tags=["progress"])
+require_student = require_roles(Role.STUDENT)
 
 
 async def student_course(db: AsyncSession, course_id: int, user: User) -> Course:
@@ -136,46 +137,39 @@ async def lagging_students(
     )
 
 
-@progress_api.get("/courses/{course_id}/rating", response_model=MyRating)
+@progress_api.get("/rating", response_model=MyRating)
 @access_note(
-    "Только свои данные: баллы, место в группе и обезличенные цели — сколько "
-    "баллов у ближайшего места выше и у первого места, сколько нужно набрать "
-    "(больше `gap`), чтобы их обойти, и в каких шагах эти баллы взять. Без "
-    "группы рейтинга нет (404). Формула и правила — в README, раздел «Рейтинг»."
+    "Только ученик и только свои данные: итог и его составляющие (баллы по "
+    "каждому своему курсу и бонус за серию), место в группе и обезличенные "
+    "цели — рейтинг ближайшего места выше и первого места, сколько нужно "
+    "набрать (больше `gap`), чтобы их обойти, и в каких шагах эти баллы "
+    "взять. Без группы — только итог и составляющие. Правила — в README, "
+    "раздел «Рейтинг»."
 )
 async def get_my_rating(
-    course_id: int,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_student),
     db: AsyncSession = Depends(access_db),
 ):
-    course = await student_course(db, course_id, user)
     group_id = await student_group_id(db, user)
-    if group_id is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not in a group")
-    rating = await group_rating(
-        db, course, await group_students(db, group_id, course.id)
+    students = await group_students(db, group_id) if group_id else [user]
+    return await my_rating(
+        db, user, await rating_of(db, students), in_group=group_id is not None
     )
-    return await my_rating(db, course, user, rating)
 
 
-@progress_api.get(
-    "/groups/{group_id}/courses/{course_id}/rating", response_model=list[RatingRow]
-)
+@progress_api.get("/groups/{group_id}/rating", response_model=list[RatingRow])
 @access_note(
     "Куратор — только для своей группы, администратор — для любой. Рейтинг "
-    "группы по курсу с именами, по местам."
+    "группы по местам: имена, итог, баллы по каждому курсу ученика и бонус за "
+    "серию."
 )
 async def get_group_rating(
     group_id: int,
-    course_id: int,
     user: User = Depends(require_curator),
     db: AsyncSession = Depends(access_db),
 ):
     await manageable_group(db, user, group_id)
-    course = await courses_svc.get_course(db, course_id)
-    rating = await group_rating(
-        db, course, await group_students(db, group_id, course.id)
-    )
+    rating = await rating_of(db, await group_students(db, group_id))
     return rating.rows()
 
 

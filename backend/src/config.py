@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     # In-memory cache of test files in each worker process.
     worker_file_cache_mb: int = 64
 
+    # Where a day starts and ends for the rating's streak of days.
+    timezone: str = "Europe/Moscow"
+
     @property
     def database_url(self) -> URL:
         url = make_url(self.db_url)

@@ -6,7 +6,7 @@ import {
   payloadFromForm,
   validateStepForm,
 } from "../src/modules/admin/steps/editor-model";
-import { textToDoc } from "../src/modules/admin/shared/format";
+import { fullName, textToDoc } from "../src/modules/admin/shared/format";
 import {
   docImageIds,
   docToQuillOps,
@@ -14,6 +14,8 @@ import {
   quillOpsToDoc,
 } from "../src/modules/admin/steps/quill-document";
 import type { Step } from "../src/modules/admin/shared/types";
+import { orderByRating, ratingParts } from "../src/modules/admin/groups/rating";
+import type { GroupRatingRow } from "../src/modules/admin/groups/types";
 import { parseMethodText } from "../src/modules/admin/courses/method-parser";
 import { reorderIds } from "../src/modules/admin/courses/reorder";
 
@@ -234,4 +236,58 @@ test("method preview identifies step boundaries and unsupported step types", () 
       ["1.3.3", false],
     ],
   );
+});
+
+test("group rating: parts of the total and members by place", () => {
+  const row = (
+    student_id: number,
+    place: number,
+    days = 0,
+    courses = [{ course_id: 1, title: "Python", points: 6 }],
+  ): GroupRatingRow => ({
+    place,
+    student_id,
+    username: `u${student_id}`,
+    name: "",
+    surname: "",
+    patronymic: "",
+    total: 0,
+    courses,
+    streak: { days, bonus: 2 * days, active_today: true },
+  });
+  assert.equal(
+    ratingParts(
+      row(1, 1, 3, [
+        { course_id: 1, title: "Python", points: 6 },
+        { course_id: 2, title: "Алгоритмы", points: 4 },
+      ]),
+    ),
+    "Python 6 · Алгоритмы 4 · серия 3 дн. +6",
+  );
+  assert.equal(ratingParts(row(1, 1)), "Python 6");
+  assert.equal(ratingParts(row(1, 1, 0, [])), "Нет курсов");
+
+  const members = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }];
+  // Ties keep the list order; a member missing from the rating goes last.
+  const rows = [row(3, 1), row(1, 2), row(4, 2)];
+  assert.deepEqual(
+    orderByRating(members, rows).map((m) => m.id),
+    [3, 1, 4, 2],
+  );
+  assert.deepEqual(orderByRating(members, null), members);
+});
+
+test("a user is shown by full name, or by username without one", () => {
+  const user = {
+    id: 1,
+    username: "ivanov",
+    email: "i@example.com",
+    role: "student" as const,
+    name: "Иван",
+    surname: "Иванов",
+    patronymic: "",
+  };
+  assert.equal(fullName(user), "Иванов Иван");
+  assert.equal(fullName({ ...user, patronymic: "Петрович" }), "Иванов Иван Петрович");
+  assert.equal(fullName({ ...user, name: "", surname: "" }), "ivanov");
 });

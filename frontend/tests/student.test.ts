@@ -2,10 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildAnswer } from "../src/modules/student/steps/answer";
 import {
+  daysText,
   documentTitle,
   pointsText,
+  ratingGoalText,
+  ratingPlaceText,
   stepDocument,
+  streakText,
 } from "../src/modules/student/courses/presentation";
+import type { MyRating } from "../src/modules/student/courses/types";
 import { renderRichText, richTextImageIds } from "../src/modules/student/courses/rich-text";
 import {
   failedTests,
@@ -113,4 +118,56 @@ test("programming results show the judge verdict instead of a generic wrong stat
   assert.equal(verdictLabel("time_limit"), "превышено время");
   assert.equal(verdictLabel("compilation_error"), "ошибка компиляции");
   assert.equal(verdictLabel("wrong_answer"), "неверный ответ");
+});
+
+function myRating(overrides: Partial<MyRating> = {}): MyRating {
+  return {
+    total: 12,
+    courses: [{ course_id: 1, title: "Python", points: 8 }],
+    streak: { days: 2, bonus: 4, active_today: true },
+    group_size: 4,
+    place: 2,
+    tied_with: 0,
+    next_place: { place: 1, points: 14, gap: 2, plan: [5], reachable: true },
+    first_place: { place: 1, points: 14, gap: 2, plan: [5], reachable: true },
+    opportunities: [],
+    ...overrides,
+  };
+}
+
+test("rating texts: place, goal and streak", () => {
+  assert.equal(pointsText(2.5), "2.5 балла");
+  assert.equal(daysText(1), "1 день");
+  assert.equal(daysText(3), "3 дня");
+  assert.equal(daysText(12), "12 дней");
+
+  const rating = myRating();
+  assert.equal(ratingPlaceText(rating), "2 место из 4");
+  assert.equal(ratingGoalText(rating), "Наберите больше 2 баллов, чтобы подняться на 1 место");
+  const blocked = myRating({
+    next_place: { place: 1, points: 14, gap: 2, plan: [], reachable: false },
+  });
+  assert.match(ratingGoalText(blocked) ?? "", /^До 1 места 2 балла: /);
+  const gap = (value: number) =>
+    ratingGoalText(
+      myRating({ next_place: { place: 1, points: 9, gap: value, plan: [], reachable: true } }),
+    );
+  assert.match(gap(21) ?? "", /больше 21 балла,/);
+  assert.match(gap(1.5) ?? "", /больше 1.5 балла,/);
+  assert.match(gap(11) ?? "", /больше 11 баллов,/);
+  assert.equal(
+    ratingGoalText(myRating({ place: 1, next_place: null })),
+    "Вы на первом месте в группе",
+  );
+  // Without a group there is no place and no goal.
+  const alone = myRating({ group_size: null, place: null, next_place: null });
+  assert.equal(ratingPlaceText(alone), null);
+  assert.equal(ratingGoalText(alone), null);
+
+  assert.equal(streakText(rating.streak), "Серия 2 дня");
+  assert.equal(
+    streakText({ days: 2, bonus: 4, active_today: false }),
+    "Серия 2 дня — отправьте решение сегодня, чтобы не прервать",
+  );
+  assert.match(streakText({ days: 0, bonus: 0, active_today: false }), /^Серии нет/);
 });

@@ -98,6 +98,8 @@ class StudentLagRow(BaseModel):
 class Opportunity(BaseModel):
     """A step where the student can still earn points."""
 
+    course_id: int
+    course_title: str
     step_id: int
     module_id: int
     module_title: str
@@ -112,26 +114,46 @@ class Opportunity(BaseModel):
 
 class RankTarget(BaseModel):
     place: int
+    # The rating of that place.
     points: float
-    # To overtake, earn MORE than this; equal points only share the place.
+    # To overtake, earn MORE than this; equal ratings only share the place.
     # None when the student is already there.
     gap: float | None
-    # Steps (ids from opportunities, in course order) that are enough to
-    # overtake; reachable is False when all opportunities together are not.
+    # Steps (ids from opportunities, in order) that are enough to overtake;
+    # reachable is False when all opportunities together are not.
     plan: list[int]
     reachable: bool
 
 
-class MyRating(BaseModel):
+class CoursePoints(BaseModel):
     course_id: int
-    group_size: int
+    title: str
     points: float
-    place: int
-    # How many other students have exactly the same points.
-    tied_with: int
-    # The nearest higher result; None when the student is first.
-    next_place: RankTarget | None
-    first_place: RankTarget
+
+
+class Streak(BaseModel):
+    # Days in a row with a submission that earned points or waits for a check.
+    days: int
+    # 2 points per day of the streak.
+    bonus: int
+    # False: today has no such submission yet, the streak is kept from
+    # yesterday and ends unless the student sends something today.
+    active_today: bool
+
+
+class MyRating(BaseModel):
+    # Sum of courses[].points and streak.bonus.
+    total: float
+    courses: list[CoursePoints]
+    streak: Streak
+    # The fields below are null for a student without a group.
+    group_size: int | None = None
+    place: int | None = None
+    # How many groupmates have exactly the same rating.
+    tied_with: int | None = None
+    # The nearest higher rating; null when the student is first.
+    next_place: RankTarget | None = None
+    first_place: RankTarget | None = None
     opportunities: list[Opportunity]
 
 
@@ -139,8 +161,12 @@ class RatingRow(BaseModel):
     place: int
     student_id: int
     username: str
-    points: float
-    steps_completed: int
+    name: str
+    surname: str
+    patronymic: str
+    total: float
+    courses: list[CoursePoints]
+    streak: Streak
 
 
 # --- analytics of a course for one group -----------------------------------
