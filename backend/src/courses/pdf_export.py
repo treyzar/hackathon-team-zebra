@@ -1,74 +1,20 @@
 from __future__ import annotations
-from weasyprint import HTML
+
 import asyncio
 import base64 as _b64
 import html as _html
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from weasyprint import CSS, HTML
 
 from courses import service
 from courses.models import Course, Step, StepRevision
 from files.models import File, FileStatus
 
-
-_PDF_CSS = """
-@page { size: A4; margin: 20mm 18mm 22mm 18mm;
-        @bottom-right { content: counter(page) " / " counter(pages);
-                        font-size: 9pt; color: #7a879c; } }
-* { box-sizing: border-box; }
-body { font-family: "DejaVu Sans", "PT Sans", "Noto Sans", sans-serif;
-       color: #1d2b43; font-size: 11.5pt; line-height: 1.55; margin: 0; }
-h1 { font-size: 24pt; margin: 0 0 6pt; color: #0f172a; letter-spacing: -0.02em; }
-h2 { font-size: 18pt; margin: 0 0 10pt; color: #0f172a; letter-spacing: -0.02em;
-     break-before: page; }
-h2.first { break-before: auto; }
-h3 { font-size: 14pt; margin: 14pt 0 6pt; color: #0f172a; }
-h4 { font-size: 12pt; margin: 12pt 0 4pt; }
-p  { margin: 0 0 8pt; }
-ul, ol { margin: 0 0 8pt 18pt; padding: 0; }
-li { margin: 2pt 0; }
-code { font-family: "DejaVu Sans Mono", monospace; font-size: 10pt;
-       background: #f1f3f9; padding: 1pt 4pt; border-radius: 3pt; }
-pre { font-family: "DejaVu Sans Mono", monospace; font-size: 10pt;
-      background: #f6f7fb; border: 1px solid #e1e6f0; border-radius: 6pt;
-      padding: 8pt 10pt; white-space: pre-wrap; word-wrap: break-word; }
-pre code { background: none; padding: 0; }
-blockquote { border-left: 3pt solid #aebeff; background: #f5f7ff;
-             padding: 6pt 10pt; margin: 8pt 0; color: #42516b; }
-img { max-width: 100%; height: auto; display: block; margin: 10pt auto;
-      border-radius: 6pt; }
-hr { border: 0; border-top: 1px solid #e1e6f0; margin: 14pt 0; }
-.muted { color: #6e7b91; font-size: 10pt; }
-.cover { padding-bottom: 8pt; margin-bottom: 20pt;
-         border-bottom: 2pt solid #3457f0; }
-.kicker { color: #3457f0; font-size: 9.5pt; font-weight: 800;
-          letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 6pt; }
-.meta { margin-top: 8pt; color: #4a546b; font-size: 10.5pt; }
-.meta span { margin-right: 14pt; }
-.step { margin: 0 0 18pt; padding: 12pt 14pt; border: 1px solid #e1e6f0;
-        border-radius: 8pt; break-inside: avoid; }
-.step-title { font-size: 13pt; margin: 2pt 0 6pt; color: #0f172a; }
-.step-meta { color: #6e7b91; font-size: 9.5pt; }
-.step-type { display: inline-block; padding: 1pt 6pt; border-radius: 4pt;
-             background: #eaf0fe; color: #3457f0; font-size: 9pt;
-             font-weight: 700; }
-.hidden-flag { color: #b8520f; }
-.answer-key { margin-top: 10pt; padding: 8pt 10pt; background: #fff8ec;
-              border: 1px dashed #e7c79a; border-radius: 6pt; font-size: 10.5pt;
-              break-inside: avoid; }
-.answer-key h5 { margin: 0 0 4pt; font-size: 10.5pt; color: #8a5414;
-                 text-transform: uppercase; letter-spacing: 0.08em; }
-.answer-key ul { margin: 0 0 4pt 16pt; }
-.correct-mark { color: #17915a; font-weight: 700; }
-.wrong-mark { color: #9aa4b6; }
-.test-group { margin-top: 6pt; }
-.test-group-name { font-weight: 700; color: #42516b; }
-.test-row { margin: 3pt 0 6pt; }
-.test-row pre { margin: 2pt 0; font-size: 9.5pt; }
-.missing-image { color: #b33a3a; font-size: 10pt; }
-"""
+_PDF_CSS = CSS(filename=str(Path(__file__).with_name("pdf_export.css")))
 
 _STEP_TYPE_LABELS = {
     "theory": "Теория",
@@ -269,7 +215,9 @@ async def export_as_pdf(
     images = await _load_images(db, image_ids)
 
     html = _build_pdf_html(course, modules, parsed_by_module, images, include_answers)
-    return await asyncio.to_thread(lambda: HTML(string=html).write_pdf())
+    return await asyncio.to_thread(
+        lambda: HTML(string=html).write_pdf(stylesheets=[_PDF_CSS])
+    )
 
 
 def _build_pdf_html(
@@ -278,16 +226,13 @@ def _build_pdf_html(
     total_steps = sum(len(v) for v in parsed_by_module.values())
     visibility = "опубликован" if course.is_published else "черновик"
     access = (
-        "по очереди"
-        if course.step_access.value == "sequential"
-        else "все шаги сразу"
+        "по очереди" if course.step_access.value == "sequential" else "все шаги сразу"
     )
     description_html = _render_doc(course.description, images)
 
     parts: list[str] = [
         "<!doctype html><html lang='ru'><head><meta charset='utf-8'>",
         f"<title>{_escape(course.title)}</title>",
-        f"<style>{_PDF_CSS}</style>",
         "</head><body>",
         "<section class='cover'>",
         "<div class='kicker'>Курс · Zebra</div>",
@@ -333,7 +278,9 @@ def _render_step_pdf(
     content = parsed.content.model_dump(mode="json")
     answer_key = parsed.answer_key.model_dump(mode="json")
 
-    raw_body = content.get("body") or content.get("question") or content.get("statement")
+    raw_body = (
+        content.get("body") or content.get("question") or content.get("statement")
+    )
     title, body = _split_title(raw_body)
     body_html = _render_doc(body, images)
 
@@ -369,7 +316,7 @@ def _render_step_specific(step_type: str, content: dict, answer_key: dict) -> st
         correct = answer_key.get("correct")
         correct_set = {correct} if isinstance(correct, str) else set(correct or [])
         items = [
-            f"<li>{'<span class=\"correct-mark\">✓</span> ' if o.get('id') in correct_set else '<span class=\"wrong-mark\">·</span> '}"
+            f"<li>{'<span class="correct-mark">✓</span> ' if o.get('id') in correct_set else '<span class="wrong-mark">·</span> '}"
             f"{_escape(o.get('text') or '')}</li>"
             for o in options
         ]
@@ -388,14 +335,14 @@ def _render_step_specific(step_type: str, content: dict, answer_key: dict) -> st
                 )
         template = content.get("template")
         if template:
-            rows.append(f"<h4>Шаблон кода</h4><pre><code>{_escape(template)}</code></pre>")
+            rows.append(
+                f"<h4>Шаблон кода</h4><pre><code>{_escape(template)}</code></pre>"
+            )
         return f"<div style='margin-top:8pt'>{''.join(rows)}</div>" if rows else ""
     return ""
 
 
-def _render_answer_key(
-    step_type: str, content: dict, answer_key: dict, images
-) -> str:
+def _render_answer_key(step_type: str, content: dict, answer_key: dict, images) -> str:
     rows: list[str] = []
     if step_type in ("single_choice", "multiple_choice"):
         correct = answer_key.get("correct")
@@ -440,10 +387,14 @@ def _render_answer_key(
                 )
                 for i, test in enumerate(group.get("tests") or [], 1):
                     inp = test.get("input") or (
-                        f"<файл #{test['input_file']}>" if test.get("input_file") else ""
+                        f"<файл #{test['input_file']}>"
+                        if test.get("input_file")
+                        else ""
                     )
                     out = test.get("output") or (
-                        f"<файл #{test['output_file']}>" if test.get("output_file") else ""
+                        f"<файл #{test['output_file']}>"
+                        if test.get("output_file")
+                        else ""
                     )
                     rows.append(
                         f"<div class='test-row'>Тест {i}"

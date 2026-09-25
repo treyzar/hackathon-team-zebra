@@ -1,23 +1,20 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from fastapi import HTTPException, status
-from pydantic import ValidationError, TypeAdapter
+from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from courses import service
 from courses.models import Course, Module, Step, StepRevision
 from courses.schemas import (
-    CourseCreate,
-    ModuleIn,
+    EXPORT_SCHEMA_VERSION,
+    CourseDocument,
     ExportedCourse,
     ExportedModule,
     ExportedStep,
-    CourseDocument,
-    EXPORT_SCHEMA_VERSION
 )
 from files.models import File, FileStatus
 from models import User
@@ -25,8 +22,10 @@ from steps import StepPayload
 
 _payload_adapter = TypeAdapter(StepPayload)
 
+
 def unprocessable(msg: str = "Unprocessable") -> HTTPException:
     return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=msg)
+
 
 def _first_error(error: ValidationError, where: str = "") -> str:
     errors = error.errors(include_url=False)
@@ -52,7 +51,9 @@ def _collect_referenced_file_ids(payload: dict[str, Any]) -> set[int]:
     def walk(value: Any) -> None:
         if isinstance(value, dict):
             for key, item in value.items():
-                if key in ("file_id", "input_file", "output_file") and isinstance(item, int):
+                if key in ("file_id", "input_file", "output_file") and isinstance(
+                    item, int
+                ):
                     ids.add(item)
                 elif key == "files" and isinstance(item, list):
                     ids.update(x for x in item if isinstance(x, int))
@@ -94,7 +95,9 @@ def _prune_missing_files(payload: dict[str, Any], available: set[int]) -> int:
             if isinstance(value.get("files"), list) and all(
                 isinstance(x, int) or x is None for x in value["files"]
             ):
-                kept = [x for x in value["files"] if isinstance(x, int) and x in available]
+                kept = [
+                    x for x in value["files"] if isinstance(x, int) and x in available
+                ]
                 dropped += len(value["files"]) - len(kept)
                 value["files"] = kept
             for key in ("file_id", "input_file", "output_file"):
@@ -219,14 +222,18 @@ async def export_as_json(db: AsyncSession, course: Course) -> dict[str, Any]:
         if rev is None:
             continue
         parsed = service.parse(step, rev)
-        payload = _payload_adapter.validate_python(            {
+        payload = _payload_adapter.validate_python(
+            {
                 "type": parsed.type.key,
                 "max_score": parsed.max_score,
                 "content": parsed.content,
                 "answer_key": parsed.answer_key,
                 "settings": parsed.settings,
-            })
-        by_module[step.module_id].append(ExportedStep(is_hidden=step.is_hidden, payload=payload))
+            }
+        )
+        by_module[step.module_id].append(
+            ExportedStep(is_hidden=step.is_hidden, payload=payload)
+        )
 
     document = CourseDocument(
         schema_version=EXPORT_SCHEMA_VERSION,

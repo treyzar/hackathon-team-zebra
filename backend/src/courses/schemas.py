@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field
 
 from courses.models import StepAccess
 from progress.schemas import ProgressSummary, StepProgress, Totals
@@ -11,6 +11,7 @@ from submissions.models import SubmissionStatus
 
 SLUG = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
 EXPORT_SCHEMA_VERSION = 2
+
 
 class ORM(BaseModel):
     model_config = {"from_attributes": True}
@@ -250,6 +251,7 @@ class CourseDocument(BaseModel):
     model_config = ConfigDict(extra="forbid")
     schema_version: Literal[EXPORT_SCHEMA_VERSION]
     course: ExportedCourse
+
 
 class ImportResult(BaseModel):
     course_id: int
