@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,3 +34,13 @@ async def detach_on_role_change(db: AsyncSession, user: User) -> None:
         membership = await db.get(GroupStudent, user.id)
         if membership:
             await db.delete(membership)
+
+
+async def manageable_group(db: AsyncSession, user: User, group_id: int) -> Group:
+    """The group, if the user may manage it: admins any, curators their own."""
+    group = await db.get(Group, group_id)
+    if not group:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Group not found")
+    if user.role != Role.ADMIN and group.curator_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your group")
+    return group

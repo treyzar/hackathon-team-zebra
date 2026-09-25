@@ -6,11 +6,10 @@ from access_docs import access_note
 from auth import get_current_user
 from courses import service as svc
 from courses.access import ensure_unlocked, locked_steps
-from courses.models import Course, Module, Step, StepRevision
+from courses.models import Course, Step, StepRevision
 from courses.schemas import (
-    CourseListItem,
-    StepProgress,
     StudentCourse,
+    StudentCourseListItem,
     StudentModule,
     StudentStep,
     StudentStepSummary,
@@ -26,6 +25,8 @@ from groups.deadlines import (
 )
 from groups.deadlines import view as deadline_view
 from models import User
+from progress.service import course_progress
+from progress.stats import stats_for
 from submissions import service as sub_svc
 from submissions.models import Submission
 
@@ -48,7 +49,7 @@ async def _explanations(
     for step_id in {s.step_id for s in subs}:
         step = await db.get(Step, step_id)
         current = await db.get(StepRevision, step.current_revision_id)
-        stats = (await sub_svc.stats_for(db, user.id, [step_id]))[step_id]
+        stats = (await stats_for(db, user.id, [step_id]))[step_id]
         if sub_svc.answer_available(svc.parse(step, current), stats):
             open_steps[step_id] = step
     result: dict[int, dict | None] = {}
@@ -80,21 +81,28 @@ async def _submissions_out(
     ]
 
 
-def _progress(stats: sub_svc.StepStats) -> StepProgress:
-    return StepProgress(state=stats.state, best_score=stats.best_score)
-
-
-@learning.get("/courses", response_model=list[CourseListItem])
+@learning.get("/courses", response_model=list[StudentCourseListItem])
 @access_note("Только опубликованные курсы.")
 async def list_courses(
-    _: User = Depends(get_current_user), db: AsyncSession = Depends(access_db)
+    user: User = Depends(get_current_user), db: AsyncSession = Depends(access_db)
 ):
     query = (
         select(Course)
         .where(Course.is_published, Course.deleted_at.is_(None))
         .order_by(Course.title)
     )
-    return (await db.scalars(query)).all()
+    items = []
+    for course in await db.scalars(query):
+        progress = (await course_progress(db, course, [user]))[user.id]
+        items.append(
+            StudentCourseListItem(
+                id=course.id,
+                slug=course.slug,
+                title=course.title,
+                progress=progress.summary(),
+            )
+        )
+    return items
 
 
 @learning.get("/courses/{course_id}", response_model=StudentCourse)
@@ -111,13 +119,7 @@ async def get_course(
     course = await svc.get_course(db, course_id)
     if not course.is_published:
         raise svc.not_found("Course")
-    modules = (
-        await db.scalars(
-            select(Module)
-            .where(Module.course_id == course.id, Module.deleted_at.is_(None))
-            .order_by(Module.position)
-        )
-    ).all()
+    modules = await svc.live_modules(db, course.id)
     rows = (
         await db.execute(
             select(Step, StepRevision.max_score)
@@ -130,7 +132,7 @@ async def get_course(
             .order_by(Step.position)
         )
     ).all()
-    stats = await sub_svc.stats_for(db, user.id, [step.id for step, _ in rows])
+    progress = (await course_progress(db, course, [user]))[user.id]
     locked = await locked_steps(db, user, course)
     group_id = await student_group_id(db, user)
     deadlines = await effective_deadlines(db, group_id, course.id)
@@ -141,7 +143,7 @@ async def get_course(
                 id=step.id,
                 type=step.type,
                 max_score=max_score,
-                progress=_progress(stats[step.id]),
+                progress=progress.by_step[step.id].as_schema(),
                 locked=step.id in locked,
                 deadline=deadline_view(step.id, deadlines.get(step.id)),
             )
@@ -152,8 +154,15 @@ async def get_course(
         title=course.title,
         description=course.description,
         step_access=course.step_access,
+        progress=progress.summary(),
         modules=[
-            StudentModule(id=m.id, title=m.title, steps=steps[m.id]) for m in modules
+            StudentModule(
+                id=m.id,
+                title=m.title,
+                progress=progress.module_totals(m.id),
+                steps=steps[m.id],
+            )
+            for m in modules
         ],
     )
 
@@ -171,8 +180,10 @@ async def get_step(
 ):
     step, rev, module = await _open_step(db, user, step_id)
     parsed = svc.parse(step, rev)
-    stats = (await sub_svc.stats_for(db, user.id, [step.id]))[step.id]
+    stats = (await stats_for(db, user.id, [step.id]))[step.id]
     block = sub_svc.submit_block_reason(parsed, stats)
+    course = await db.get(Course, module.course_id)
+    progress = (await course_progress(db, course, [user]))[user.id]
     group_id = await student_group_id(db, user)
     deadlines = await effective_deadlines(db, group_id, module.course_id)
     return StudentStep(
@@ -187,7 +198,7 @@ async def get_step(
         max_attempts=parsed.settings.max_attempts,
         show_answer=parsed.settings.show_answer,
         attempts_used=stats.attempts_used,
-        progress=_progress(stats),
+        progress=progress.by_step[step.id].as_schema(),
         answer_available=sub_svc.answer_available(parsed, stats),
         can_submit=block is None,
         submit_block_reason=block,
@@ -210,7 +221,7 @@ async def get_answer(
     """The correct answer, when the step's show_answer policy allows it."""
     step, rev, _ = await _open_step(db, user, step_id)
     parsed = svc.parse(step, rev)
-    stats = (await sub_svc.stats_for(db, user.id, [step.id]))[step.id]
+    stats = (await stats_for(db, user.id, [step.id]))[step.id]
     if not sub_svc.answer_available(parsed, stats):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "The answer is not available")
     return parsed.type.reveal(parsed.answer_key)

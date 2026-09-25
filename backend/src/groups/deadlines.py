@@ -22,6 +22,7 @@ from courses.models import Module, Step
 from courses.schemas import DeadlineView
 from database import access_db
 from groups.models import Deadline, Group, GroupStudent
+from groups.service import manageable_group
 from models import Role, User
 
 deadlines = APIRouter(prefix="/groups", tags=["deadlines"])
@@ -42,10 +43,7 @@ async def effective_deadlines(
     have none."""
     if group_id is None:
         return {}
-    order = [
-        step_id
-        for step_id, _ in await courses_svc.visible_steps_in_order(db, course_id)
-    ]
+    order = [s.id for s in await courses_svc.visible_steps_in_order(db, course_id)]
     own = dict(
         (
             await db.execute(
@@ -155,15 +153,6 @@ def view(step_id: int, eff: Effective | None) -> DeadlineView | None:
     )
 
 
-async def _manageable_group(db: AsyncSession, user: User, group_id: int) -> Group:
-    group = await db.get(Group, group_id)
-    if not group:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Group not found")
-    if user.role != Role.ADMIN and group.curator_id != user.id:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your group")
-    return group
-
-
 async def _live_step(db: AsyncSession, step_id: int) -> Step:
     step, _, _ = await courses_svc.get_step(db, step_id)
     return step
@@ -197,10 +186,10 @@ async def course_deadlines(
     user: User = Depends(require_curator),
     db: AsyncSession = Depends(access_db),
 ):
-    await _manageable_group(db, user, group_id)
+    await manageable_group(db, user, group_id)
     await courses_svc.get_course(db, course_id)
     effective = await effective_deadlines(db, group_id, course_id)
-    order = [s for s, _ in await courses_svc.visible_steps_in_order(db, course_id)]
+    order = [s.id for s in await courses_svc.visible_steps_in_order(db, course_id)]
     steps = {s.id: s for s in await db.scalars(select(Step).where(Step.id.in_(order)))}
     own = {
         d.step_id: d
@@ -235,7 +224,7 @@ async def set_deadline(
     user: User = Depends(require_curator),
     db: AsyncSession = Depends(access_db),
 ):
-    await _manageable_group(db, user, group_id)
+    await manageable_group(db, user, group_id)
     await _live_step(db, step_id)
     deadline = await db.scalar(
         select(Deadline).where(
@@ -260,7 +249,7 @@ async def delete_deadline(
     user: User = Depends(require_curator),
     db: AsyncSession = Depends(access_db),
 ):
-    await _manageable_group(db, user, group_id)
+    await manageable_group(db, user, group_id)
     deadline = await db.scalar(
         select(Deadline).where(
             Deadline.group_id == group_id, Deadline.step_id == step_id

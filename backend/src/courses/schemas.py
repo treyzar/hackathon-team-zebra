@@ -4,6 +4,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from courses.models import StepAccess
+from progress.schemas import ProgressSummary, StepProgress, Totals
 from steps import StepPayload
 from steps.base import Grading, RichText, ShowAnswer
 from submissions.models import SubmissionStatus
@@ -124,10 +125,8 @@ class CourseListItem(ORM):
     title: str
 
 
-class StepProgress(BaseModel):
-    # none | in_progress | solved | failed
-    state: str = "none"
-    best_score: float | None = None
+class StudentCourseListItem(CourseListItem):
+    progress: ProgressSummary
 
 
 class DeadlineView(BaseModel):
@@ -151,12 +150,14 @@ class StudentStepSummary(BaseModel):
 class StudentModule(BaseModel):
     id: int
     title: str
+    progress: Totals
     steps: list[StudentStepSummary]
 
 
 class StudentCourse(CourseListItem):
     description: dict[str, Any]
     step_access: StepAccess
+    progress: ProgressSummary
     modules: list[StudentModule]
 
 

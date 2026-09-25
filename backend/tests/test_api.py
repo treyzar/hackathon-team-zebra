@@ -114,9 +114,9 @@ async def test_auto_grading_attempts_and_answer(client, admin, course, make_user
 
     step = (await client.get(f"/steps/{step_id}", headers=h)).json()
     assert step["attempts_used"] == 2
-    assert step["progress"] == {"state": "solved", "best_score": 2}
+    assert (step["progress"]["state"], step["progress"]["earned"]) == ("passed", 2)
     course_view = (await client.get(f"/courses/{course[0]}", headers=h)).json()
-    assert course_view["modules"][0]["steps"][0]["progress"]["state"] == "solved"
+    assert course_view["modules"][0]["steps"][0]["progress"]["state"] == "passed"
 
 
 async def test_invalid_answer_is_422(client, admin, course, make_user):
@@ -179,11 +179,14 @@ async def test_revisions_history_and_breaking_change(client, admin, course, make
     old = await client.get(f"/admin/steps/{step_id}/revisions/1", headers=admin[1])
     assert old.json()["answer_key"] == {"correct": A}
 
-    # The earlier (correct under rev 1) submission no longer counts.
+    # The earlier result (correct under rev 1) is kept in progress, and the
+    # student gets fresh attempts for the new version.
     subs = (await client.get(f"/steps/{step_id}/submissions", headers=h)).json()
     assert subs[0]["is_outdated"]
     step = (await client.get(f"/steps/{step_id}", headers=h)).json()
-    assert step["progress"]["state"] == "none" and step["attempts_used"] == 0
+    assert step["progress"]["state"] == "passed"
+    assert step["progress"]["from_previous_version"]
+    assert step["attempts_used"] == 0 and step["can_submit"]
 
     wrong_type = {"type": "theory", "content": {"body": DOC}}
     r = await client.post(
