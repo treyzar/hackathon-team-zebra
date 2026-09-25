@@ -14,8 +14,32 @@ import {
   waitingLabel,
 } from "../src/modules/curator/reviews/presentation";
 import type { ReviewListItem } from "../src/modules/curator/reviews/types";
+import { questionUpdate } from "../src/modules/curator/questions/presentation";
+import type { StaffQuestion } from "../src/modules/curator/questions/types";
 
 const works = [11, 12, 13].map((id) => ({ id })) as ReviewListItem[];
+
+test("question answer changes preserve group visibility unless the curator changes it", () => {
+  const question = {
+    answer: "Сначала посчитай координату",
+    visibility: "group",
+  } as StaffQuestion;
+  assert.deepEqual(questionUpdate(question, "Сначала посчитай координату", "group"), {});
+  assert.deepEqual(questionUpdate(question, " Новый ответ ", "group"), {
+    answer: "Новый ответ",
+  });
+  assert.deepEqual(questionUpdate(question, "Сначала посчитай координату", "course"), {
+    visibility: "course",
+  });
+  assert.deepEqual(
+    questionUpdate({ ...question, answer: null, visibility: "private" }, " Новый ответ ", "course"),
+    { answer: "Новый ответ", visibility: "course" },
+  );
+  assert.deepEqual(
+    questionUpdate({ ...question, visibility: "course" }, "Сначала посчитай координату", "private"),
+    { visibility: "private" },
+  );
+});
 
 test("curator review queue is the first navigation item and stays active on a work", () => {
   const first = navigationByRole.curator[0];
@@ -74,7 +98,12 @@ test("title is read from the marked heading in the answered revision", () => {
 });
 
 test("queue uses title and number supplied by the review API", () => {
-  const work = { id: 12, step_id: 42, task_title: "Кот по кругу", task_number: "1.2.4" } as ReviewListItem;
+  const work = {
+    id: 12,
+    step_id: 42,
+    task_title: "Кот по кругу",
+    task_number: "1.2.4",
+  } as ReviewListItem;
   assert.equal(reviewTaskTitle(work), "Кот по кругу");
   assert.equal(stepNumber(work), "1.2.4");
   assert.equal(reviewTaskTitle({ ...work, task_title: "" }), "Задание #42");

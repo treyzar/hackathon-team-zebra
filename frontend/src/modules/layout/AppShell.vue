@@ -8,6 +8,7 @@ import SideNavigation from "@/modules/navigation/SideNavigation.vue";
 import CoursesMenu from "@/modules/student/courses/CoursesMenu.vue";
 import { LOGIN_ROUTE } from "@/pages/login/constants";
 import { CURATOR_REVIEW_ROUTE } from "@/pages/curator/review/constants";
+import { CURATOR_QUESTIONS_ROUTE } from "@/pages/curator/questions/constants";
 import { STUDENT_COURSE_ROUTE } from "@/pages/student/course/constants";
 import { STUDENT_STEP_ROUTE } from "@/pages/student/step/constants";
 import { useAuthStore } from "@/stores/auth";
@@ -21,6 +22,7 @@ const contentBody = ref<HTMLElement | null>(null);
 
 const isStudent = computed(() => auth.role === "student");
 const isReviewDetail = computed(() => route.name === CURATOR_REVIEW_ROUTE.name);
+const isCuratorQuestions = computed(() => route.name === CURATOR_QUESTIONS_ROUTE.name);
 const username = computed(() => auth.user?.username ?? "");
 const homeItem = computed(() => navigationForRole(auth.role)[0]);
 const pageTitle = computed(
@@ -56,6 +58,7 @@ async function logout(): Promise<void> {
       'app-shell--student': isStudent,
       'app-shell--student-course': isStudentCourse,
       'app-shell--review-detail': isReviewDetail,
+      'app-shell--curator-questions': isCuratorQuestions,
     }"
   >
     <NavigationRail
@@ -216,7 +219,8 @@ async function logout(): Promise<void> {
   overflow: hidden;
   padding: 0;
 }
-.app-shell--review-detail .content-body {
+.app-shell--review-detail .content-body,
+.app-shell--curator-questions .content-body {
   overflow: hidden;
   padding: 0;
 }
@@ -289,7 +293,8 @@ async function logout(): Promise<void> {
   .app-shell--student-course .content-body {
     padding: 0;
   }
-  .app-shell--review-detail .content-body {
+  .app-shell--review-detail .content-body,
+  .app-shell--curator-questions .content-body {
     overflow-y: auto;
     padding: 0;
   }
