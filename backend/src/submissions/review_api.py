@@ -123,6 +123,17 @@ def _visible(user: User) -> Select:
     return query
 
 
+def get_step_title(rev_content: dict) -> str | None:
+    for node in rev_content.get("content", []):
+        if node.get("type") == "heading" and node.get("attrs", {}).get("zebra_title"):
+            return "".join(
+                child.get("text", "")
+                for child in node.get("content", [])
+                if child.get("type") == "text"
+            )
+    return None
+
+
 def _item(row, due_at, cls=ReviewListItem, **extra):
     sub, student, step, rev, module, course, attempts_before = row
     return cls(
@@ -148,7 +159,7 @@ def _item(row, due_at, cls=ReviewListItem, **extra):
         step_type=step.type,
         max_score=rev.max_score,
         course_id=course.id,
-        task_title=step.title,
+        task_title=get_step_title(rev.content),
         task_number=f"{module.position}.{step.position}",
         course_title=course.title,
         module_title=module.title,
