@@ -224,3 +224,10 @@ class SubmissionOut(ORM):
     # Detailed feedback that reveals the correct answer (e.g. which options
     # were right); present only when the step's show_answer allows it.
     explanation: dict[str, Any] | None = None
+
+
+class ImportResult(BaseModel):
+    course_id: int
+    slug: str
+    title: str
+    warnings: list[str] = []

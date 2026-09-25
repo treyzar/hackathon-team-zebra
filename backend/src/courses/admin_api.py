@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import json
+from fastapi import APIRouter, Depends, Response, HTTPException, UploadFile, status
+from fastapi import File as UploadBody
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access_docs import access_note
 from auth import require_admin
 from courses import service as svc
+from courses.export_import import import_course, export_as_pdf, export_as_json
 from courses.models import Course, Enrollment, Module, Step, StepRevision
 from courses.schemas import (
     AdminCourseTree,
@@ -24,6 +27,7 @@ from courses.schemas import (
     RevisionSummary,
     StepFlags,
     StepSave,
+    ImportResult
 )
 from database import access_db
 from groups.models import Group, GroupStudent
@@ -359,3 +363,18 @@ async def unenroll(course_id: int, user_id: int, db: AsyncSession = Depends(acce
     if enrollment is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not enrolled")
     await db.delete(enrollment)
+
+@authoring.get("/courses/{course_id}/export")
+async def export_course_json(
+    course_id: int, db: AsyncSession = Depends(access_db)
+) -> Response:
+    course = await svc.get_course(db, course_id)
+    document = await export_as_json(db, course)
+    body = json.dumps(document, ensure_ascii=False, indent=2).encode("utf-8")
+    return Response(
+        content=body,
+        media_type="application/json; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{course.slug}.json"'
+        },
+    )
