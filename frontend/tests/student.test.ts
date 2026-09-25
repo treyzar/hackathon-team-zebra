@@ -7,6 +7,12 @@ import {
   stepDocument,
 } from "../src/modules/student/courses/presentation";
 import { renderRichText, richTextImageIds } from "../src/modules/student/courses/rich-text";
+import {
+  failedTests,
+  groupStatus,
+  resultStatus,
+  verdictLabel,
+} from "../src/modules/student/steps/result-presentation";
 
 test("student answers use the API shape for each step type", () => {
   const draft = {
@@ -87,4 +93,24 @@ test("points agree with the number in Russian", () => {
   assert.equal(pointsText(14), "14 баллов");
   assert.equal(pointsText(21), "21 балл");
   assert.equal(pointsText(0), "0 баллов");
+});
+
+test("programming results show the judge verdict instead of a generic wrong status", () => {
+  const details = {
+    samples: [],
+    groups: [
+      {
+        name: "Основная группа",
+        passed: false,
+        tests: [{ verdict: "runtime_error", input: "secret", output: "secret" }],
+      },
+    ],
+  };
+  assert.equal(resultStatus("wrong", details), "Ошибка выполнения");
+  assert.equal(groupStatus(details.groups[0]!), "ошибка выполнения");
+  assert.deepEqual(failedTests(details.groups[0]!), [{ number: 1, verdict: "ошибка выполнения" }]);
+  assert.equal(resultStatus("partial", details), "Частично верно");
+  assert.equal(verdictLabel("time_limit"), "превышено время");
+  assert.equal(verdictLabel("compilation_error"), "ошибка компиляции");
+  assert.equal(verdictLabel("wrong_answer"), "неверный ответ");
 });
