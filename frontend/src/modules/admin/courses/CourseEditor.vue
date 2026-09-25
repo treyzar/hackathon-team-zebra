@@ -351,9 +351,11 @@ watch(courseId, load);
             @click="tab = tab === 'structure' ? 'passport' : 'structure'"
           >
             {{ tab === "structure" ? "Настройки" : "К структуре" }}</button
-          ><RouterLink class="admin-button" :to="ADMIN_IMPORT_ROUTE.path"
-            >Импорт методички</RouterLink
-          ><RouterLink
+          >
+          <RouterLink class="admin-button" :to="ADMIN_IMPORT_ROUTE.path"
+            >Импорт / экспорт</RouterLink
+          >
+          <RouterLink
             v-if="course"
             class="admin-button admin-button--primary"
             :to="{ name: ADMIN_PUBLISH_ROUTE.name, params: { courseId } }"

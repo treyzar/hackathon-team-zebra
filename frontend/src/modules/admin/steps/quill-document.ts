@@ -45,17 +45,45 @@ export function quillOpsToDoc(ops: QuillOp[]): RichText {
   const content: Node[] = [];
   let inline: Node[] = [];
   function endLine(attributes: Record<string, unknown>): void {
-    const line = block(inline, attributes);
-    inline = [];
     const list = attributes.list;
+    const codeBlock = attributes["code-block"];
+
     if (list === "ordered" || list === "bullet") {
       const type = list === "ordered" ? "orderedList" : "bulletList";
+      const item = {type: "listItem", content: [block(inline, attributes)]};
+      inline = [];
       const previous = content[content.length - 1];
-      const item = { type: "listItem", content: [line] };
       if (previous?.type === type) (previous.content as Node[]).push(item);
-      else content.push({ type, content: [item] });
-    } else content.push(line);
-  }
+      else content.push({type, content: [item]});
+      return;
+    }
+
+    if (codeBlock) {
+      const text = inline
+        .map((node) => (node.type === "text" ? String(node.text ?? "") : ""))
+        .join("");
+      inline = [];
+      const language = codeBlock === true ? "plain" : String(codeBlock);
+      const previous = content[content.length - 1];
+      if (previous?.type === "codeBlock" &&
+        (previous.attrs as Record<string, unknown> | undefined)?.language === language) {
+        const prev = previous.content as { type: string; text?: string }[];
+        const head = prev[0];
+        prev[0] = { type: "text", text: head?.text ? `${head.text}\n${text}` : text };
+        return;
+      }
+      content.push({
+        type: "codeBlock",
+        attrs: { language },
+        content: [{ type: "text", text }],
+      });
+      return;
+    }
+
+  const line = block(inline, attributes);
+  inline = [];
+  content.push(line);
+}
   for (const op of ops) {
     // Quill stores block formatting on newline operations; ProseMirror stores it on the block node.
     if (typeof op.insert === "string") {
@@ -140,12 +168,23 @@ export function docToQuillOps(doc: RichText, urls: Map<number, string>): QuillOp
           inlineOps(Array.isArray(paragraph.content) ? paragraph.content : [], ops, urls);
           ops.push({ insert: "\n", attributes: { blockquote: true } });
         }
+      } else if (node.type === "codeBlock") {
+        const language = (node.attrs as Record<string, unknown> | undefined)?.language;
+        const attributes: Record<string, unknown> = {
+          "code-block": typeof language === "string" ? language : true,
+        };
+        const text = (Array.isArray(node.content) ? node.content : [])
+          .map((child) => (child as { text?: string }).text ?? "")
+          .join("");
+        for (const line of text.split("\n")) {
+          if (line) ops.push({ insert: line });
+          ops.push({ insert: "\n", attributes });
+        }
       } else {
         inlineOps(Array.isArray(node.content) ? node.content : [], ops, urls);
         const attributes: Record<string, unknown> = {};
         if (node.type === "heading") attributes.header = Number((node.attrs as Node)?.level ?? 1);
         if (node.type === "blockquote") attributes.blockquote = true;
-        if (node.type === "codeBlock") attributes["code-block"] = true;
         if (list) attributes.list = list;
         ops.push({ insert: "\n", ...(Object.keys(attributes).length ? { attributes } : {}) });
       }
