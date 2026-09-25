@@ -13,6 +13,7 @@ import { signupRoutes } from "@/pages/signup/routes";
 import { studentRoutes } from "@/pages/student/routes";
 import { workspaceSectionRoutes } from "@/pages/workspace-section/routes";
 import { useAuthStore } from "@/stores/auth";
+import { useNotificationsStore } from "@/stores/notifications";
 
 declare module "vue-router" {
   interface RouteMeta {
@@ -61,6 +62,9 @@ export function createAppRouter(pinia: Pinia) {
       return { name: DASHBOARD_ROUTE.name };
     }
 
+    if (to.meta.requiresAuth && auth.isAuthenticated) {
+      void useNotificationsStore(pinia).refreshUnread();
+    }
     return true;
   });
 

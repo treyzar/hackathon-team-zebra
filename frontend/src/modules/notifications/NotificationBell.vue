@@ -69,12 +69,10 @@ async function markAll(): Promise<void> {
 }
 
 onMounted(() => {
-  store.startPolling();
   document.addEventListener("mousedown", onDocClick);
   document.addEventListener("keydown", onKey);
 });
 onBeforeUnmount(() => {
-  store.stopPolling();
   document.removeEventListener("mousedown", onDocClick);
   document.removeEventListener("keydown", onKey);
 });
