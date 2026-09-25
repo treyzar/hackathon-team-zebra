@@ -5,7 +5,7 @@ import { progressText, stepLabels } from "../presentation";
 import { STUDENT_COURSES_ROUTE } from "@/pages/student/courses/constants";
 import { STUDENT_STEP_ROUTE } from "@/pages/student/step/constants";
 
-const props = defineProps<{
+defineProps<{
   course: Course;
   selectedStepId?: number;
   titles: Map<number, string>;

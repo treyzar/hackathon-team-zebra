@@ -170,10 +170,6 @@ onBeforeUnmount(() => {
   background: #eaf0fe;
   padding: 15px;
 }
-.step-picker-card--disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
 .step-picker-icon {
   display: grid;
   width: 40px;
