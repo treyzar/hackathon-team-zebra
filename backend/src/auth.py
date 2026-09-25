@@ -190,8 +190,7 @@ async def signup(
     except IntegrityError as e:
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email or Username already taken",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         ) from e
 
     return issue_tokens(new_user)
