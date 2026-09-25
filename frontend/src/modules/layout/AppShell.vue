@@ -3,23 +3,28 @@ import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { navigationForRole } from "@/modules/navigation/items";
+import NavigationRail from "@/modules/navigation/NavigationRail.vue";
 import SideNavigation from "@/modules/navigation/SideNavigation.vue";
+import TopNavigation from "@/modules/navigation/TopNavigation.vue";
 import { LOGIN_ROUTE } from "@/pages/login/constants";
 import { STUDENT_COURSE_ROUTE } from "@/pages/student/course/constants";
 import { STUDENT_STEP_ROUTE } from "@/pages/student/step/constants";
 import { useAuthStore } from "@/stores/auth";
 
-const COLLAPSED_KEY = "zebra.navigation.collapsed";
-
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
-const collapsed = ref(
-  typeof window !== "undefined" && window.localStorage.getItem(COLLAPSED_KEY) === "true",
-);
-const mobileOpen = ref(false);
+const menuOpen = ref(false);
 const contentBody = ref<HTMLElement | null>(null);
 
+// Each cabinet has its own navigation in the mockups: students get a light top bar,
+// curators a sidebar, admins an icon rail that opens the full menu as a drawer.
+const layout = computed(() => {
+  if (auth.role === "student") return "top";
+  if (auth.role === "admin") return "rail";
+  return "side";
+});
+const username = computed(() => auth.user?.username ?? "");
 const homeItem = computed(() => navigationForRole(auth.role)[0]);
 const pageTitle = computed(
   () => (route.meta.title as string | undefined) ?? homeItem.value?.label ?? "Главная",
@@ -27,12 +32,16 @@ const pageTitle = computed(
 const pageDescription = computed(
   () => (route.meta.description as string | undefined) ?? homeItem.value?.description ?? "",
 );
+const isStudentCourse = computed(
+  () =>
+    auth.role === "student" &&
+    (route.name === STUDENT_COURSE_ROUTE.name || route.name === STUDENT_STEP_ROUTE.name),
+);
 
-watch(collapsed, (value) => window.localStorage.setItem(COLLAPSED_KEY, String(value)));
 watch(
   () => route.fullPath,
   () => {
-    mobileOpen.value = false;
+    menuOpen.value = false;
     if (contentBody.value) contentBody.value.scrollTop = 0;
   },
 );
@@ -49,90 +58,68 @@ async function logout(): Promise<void> {
 <template>
   <div
     class="app-shell"
-    :class="{
-      'app-shell--collapsed': collapsed,
-      'app-shell--admin': auth.role === 'admin',
-      'app-shell--student-course':
-        auth.role === 'student' &&
-        (route.name === STUDENT_COURSE_ROUTE.name || route.name === STUDENT_STEP_ROUTE.name),
-    }"
+    :class="[`app-shell--${layout}`, { 'app-shell--student-course': isStudentCourse }]"
   >
-    <button
-      v-if="mobileOpen"
-      class="navigation-backdrop"
-      type="button"
-      aria-label="Закрыть меню"
-      @click="mobileOpen = false"
-    />
-
-    <SideNavigation
+    <TopNavigation
+      v-if="layout === 'top'"
       :role="auth.role"
-      :username="auth.user?.username ?? ''"
-      :collapsed="collapsed && !mobileOpen"
-      :mobile-open="mobileOpen"
-      @toggle-collapse="collapsed = !collapsed"
-      @navigate="mobileOpen = false"
+      :username="username"
+      :menu-open="menuOpen"
+      @open-menu="menuOpen = true"
+      @logout="logout"
+    />
+    <NavigationRail
+      v-else-if="layout === 'rail'"
+      class="app-shell-navigation"
+      :role="auth.role"
+      :username="username"
+      :menu-open="menuOpen"
+      @open-menu="menuOpen = true"
+    />
+    <SideNavigation
+      v-else
+      class="app-shell-navigation"
+      :role="auth.role"
+      :username="username"
       @logout="logout"
     />
 
-    <main class="content-island">
-      <header v-if="auth.role !== 'admin'" class="content-header">
-        <button
-          class="mobile-menu-button"
-          type="button"
-          aria-label="Открыть меню"
-          aria-controls="app-navigation"
-          :aria-expanded="mobileOpen"
-          @click="mobileOpen = true"
-        >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            aria-hidden="true"
-          >
-            <path d="M4 7h16M4 12h16M4 17h16" />
-          </svg>
-        </button>
-        <div class="content-heading">
-          <p class="content-eyebrow">КОД РОСТА <span aria-hidden="true">/</span> ЛИЧНЫЙ КАБИНЕТ</p>
-          <h1>{{ pageTitle }}</h1>
-          <p class="content-description">{{ pageDescription }}</p>
-        </div>
-        <div class="header-account" :title="auth.user?.email">
-          <span class="header-account-dot" aria-hidden="true" />
-          <span>{{ auth.user?.username }}</span>
-        </div>
-      </header>
+    <template v-if="menuOpen">
+      <button
+        class="navigation-backdrop"
+        type="button"
+        aria-label="Закрыть меню"
+        tabindex="-1"
+        @click="menuOpen = false"
+      />
+      <SideNavigation
+        overlay
+        :role="auth.role"
+        :username="username"
+        @navigate="menuOpen = false"
+        @close="menuOpen = false"
+        @logout="logout"
+      />
+    </template>
 
-      <header v-if="auth.role === 'admin'" class="admin-shell-header">
+    <main class="app-main">
+      <header v-if="layout !== 'top'" class="page-header">
         <button
-          class="mobile-menu-button"
+          class="page-menu-button"
           type="button"
           aria-label="Открыть меню"
           aria-controls="app-navigation"
-          :aria-expanded="mobileOpen"
-          @click="mobileOpen = true"
+          :aria-expanded="menuOpen"
+          @click="menuOpen = true"
         >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            aria-hidden="true"
-          >
-            <path d="M4 7h16M4 12h16M4 17h16" />
-          </svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
         </button>
-        <div id="admin-page-header" class="admin-shell-header-content" />
-        <h1 class="admin-shell-fallback">{{ pageTitle }}</h1>
+        <!-- Admin pages teleport their own title and actions here. -->
+        <div v-if="layout === 'rail'" id="admin-page-header" class="page-header-slot" />
+        <div class="page-header-fallback">
+          <h1>{{ pageTitle }}</h1>
+          <p v-if="layout === 'side' && pageDescription">{{ pageDescription }}</p>
+        </div>
       </header>
 
       <div
@@ -140,7 +127,7 @@ async function logout(): Promise<void> {
         class="content-body"
         role="region"
         aria-label="Содержимое страницы"
-        tabindex="0"
+        tabindex="-1"
       >
         <slot />
       </div>
@@ -151,92 +138,59 @@ async function logout(): Promise<void> {
 <style scoped>
 .app-shell {
   display: grid;
-  grid-template-columns: 258px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  padding: 16px 16px 16px 0;
-  background: #0b1220;
-  transition: grid-template-columns 0.22s ease;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
-.app-shell--collapsed {
-  grid-template-columns: 76px minmax(0, 1fr);
+.app-shell--top {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
 }
-.content-island {
+.app-main {
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  height: 100%;
-  overflow: hidden;
-  border: 1px solid #e4e9f3;
-  border-radius: 26px;
-  background: #f7f9fd;
-  box-shadow: 0 24px 70px #01081857;
 }
-.content-header {
+.page-header {
   display: flex;
   flex: none;
-  align-items: flex-start;
-  gap: 24px;
-  min-height: 158px;
-  padding: 42px 52px 34px;
-  border-bottom: 1px solid #e5eaf3;
-  background: #fff;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 32px 0;
 }
-.content-heading {
+.app-shell--rail .page-header {
+  min-height: 68px;
+  padding: 12px 32px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.page-header-slot {
   flex: 1;
   min-width: 0;
 }
-.content-eyebrow {
-  margin: 0 0 13px;
-  color: #3457f0;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.17em;
+.page-header-slot:empty,
+.page-header:has(.page-header-slot:not(:empty)) .page-header-fallback {
+  display: none;
 }
-.content-eyebrow span {
-  padding: 0 8px;
-  color: #aeb8cc;
+.page-header-fallback {
+  flex: 1;
+  min-width: 0;
 }
-.content-heading h1 {
+.page-header-fallback h1 {
   margin: 0;
-  color: #0f172a;
-  font-size: clamp(28px, 2.7vw, 36px);
-  font-weight: 750;
-  letter-spacing: -0.045em;
-  line-height: 1.13;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
 }
-.content-description {
-  margin: 9px 0 0;
-  color: #65728a;
+.page-header-fallback p {
+  margin: 4px 0 0;
+  color: var(--color-muted);
   font-size: 14px;
-}
-.header-account {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  max-width: 180px;
-  margin-top: 8px;
-  padding: 9px 13px;
-  overflow: hidden;
-  border: 1px solid #e3e9f3;
-  border-radius: 999px;
-  background: #f9fbff;
-  color: #42516b;
-  font-size: 12px;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.header-account-dot {
-  width: 7px;
-  height: 7px;
-  flex: none;
-  border-radius: 50%;
-  background: #17915a;
-  box-shadow: 0 0 0 3px #dff6eb;
 }
 .content-body {
   flex: 1;
@@ -244,125 +198,76 @@ async function logout(): Promise<void> {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
-  padding: 40px 52px 64px;
-}
-.admin-shell-header {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 16px;
-  min-height: 68px;
-  padding: 12px 32px;
-  border-bottom: 1px solid #e1e6f0;
-  background: #fff;
-}
-.admin-shell-header-content {
-  flex: 1;
-  min-width: 0;
-}
-.admin-shell-header-content:empty,
-.admin-shell-header:has(.admin-shell-header-content:not(:empty)) .admin-shell-fallback {
-  display: none;
-}
-.admin-shell-fallback {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 700;
-}
-.app-shell--admin .content-body {
   padding: 24px 32px 48px;
-  background: #f4f6fb;
+  outline: none;
+}
+.app-shell--top .content-body {
+  padding: 32px 48px 56px;
 }
 .app-shell--student-course .content-body {
   overflow: hidden;
   padding: 0;
 }
-.mobile-menu-button {
+.page-menu-button {
   display: none;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   flex: none;
   place-items: center;
-  border: 1px solid #e2e8f3;
-  border-radius: 11px;
-  background: #fff;
-  color: #0f172a;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
 }
-.mobile-menu-button:focus-visible {
-  outline: 3px solid #3457f0;
-  outline-offset: 3px;
+.page-menu-button svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 .navigation-backdrop {
-  display: none;
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: #0b122059;
+  cursor: default;
 }
-@media (max-width: 1199px) {
-  .content-header {
-    padding-right: 36px;
-    padding-left: 36px;
-  }
-  .content-body {
-    padding-right: 36px;
-    padding-left: 36px;
+@media (max-width: 1100px) {
+  .app-shell--top .content-body {
+    padding-right: 24px;
+    padding-left: 24px;
   }
 }
 @media (max-width: 767px) {
-  .app-shell,
-  .app-shell--collapsed {
-    display: block;
-    padding: 9px;
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .content-island {
-    border-radius: 20px;
+  .app-shell-navigation {
+    display: none;
   }
-  .content-header {
-    align-items: flex-start;
-    min-height: 150px;
-    gap: 14px;
-    padding: 25px 21px 27px;
+  .page-header,
+  .app-shell--rail .page-header {
+    padding: 16px;
   }
-  .mobile-menu-button {
+  .page-menu-button {
     display: grid;
   }
-  .content-eyebrow {
-    margin-top: 3px;
-    font-size: 9px;
+  .page-header-fallback h1 {
+    font-size: 24px;
   }
-  .content-heading h1 {
-    font-size: 28px;
-  }
-  .content-description {
-    font-size: 12px;
-  }
-  .content-body {
-    padding: 25px 20px 40px;
-  }
-  .admin-shell-header {
-    padding: 16px 20px;
-  }
-  .app-shell--admin .content-body {
+  .content-body,
+  .app-shell--top .content-body {
     padding: 20px 16px 36px;
   }
   .app-shell--student-course .content-body {
     padding: 0;
-  }
-  .header-account {
-    display: none;
-  }
-  .navigation-backdrop {
-    position: fixed;
-    z-index: 20;
-    inset: 0;
-    display: block;
-    width: 100%;
-    border: 0;
-    background: #061024a6;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .app-shell {
-    transition: none;
   }
 }
 </style>

@@ -13,6 +13,14 @@ import type { CourseListItem } from "./types";
 import { STUDENT_COURSE_ROUTE } from "@/pages/student/course/constants";
 import { STUDENT_STEP_ROUTE } from "@/pages/student/step/constants";
 
+const props = withDefaults(
+  defineProps<{
+    /** Home page mode: the next step and points above the course list. */
+    overview?: boolean;
+  }>(),
+  { overview: false },
+);
+
 const courses = ref<CourseListItem[]>([]);
 const loading = ref(true);
 const error = ref("");
@@ -23,7 +31,9 @@ const nextCourse = computed(() =>
 );
 const totals = computed(() => ({
   steps: courses.value.reduce((sum, course) => sum + course.progress.steps_completed, 0),
+  stepsTotal: courses.value.reduce((sum, course) => sum + course.progress.steps_total, 0),
   points: courses.value.reduce((sum, course) => sum + course.progress.points_earned, 0),
+  pointsMax: courses.value.reduce((sum, course) => sum + course.progress.points_max, 0),
 }));
 
 async function load(): Promise<void> {
@@ -32,7 +42,7 @@ async function load(): Promise<void> {
   try {
     courses.value = await listCourses();
     const course = courses.value.find((item) => item.progress.next_step_id != null);
-    if (course?.progress.next_step_id != null) {
+    if (props.overview && course?.progress.next_step_id != null) {
       try {
         const step = await getStep(course.progress.next_step_id);
         nextTitle.value = documentTitle(
@@ -51,6 +61,10 @@ async function load(): Promise<void> {
   }
 }
 
+function percentOf(value: number, total: number): number {
+  return total ? Math.round((value / total) * 100) : 0;
+}
+
 onMounted(load);
 </script>
 
@@ -61,7 +75,7 @@ onMounted(load);
       {{ error }} <button type="button" @click="load">Повторить</button>
     </div>
     <template v-else>
-      <div class="student-catalog-top">
+      <div v-if="overview" class="student-catalog-top">
         <section class="student-hero">
           <template v-if="nextCourse?.progress.next_step_id != null">
             <p class="student-hero-kicker">
@@ -89,54 +103,56 @@ onMounted(load);
               {{
                 courses.length
                   ? "Все доступные шаги пройдены. Загляните в свои курсы."
-                  : "Здесь появятся опубликованные для вас курсы."
+                  : "Здесь появятся курсы, на которые вас записали."
               }}
             </p>
           </template>
         </section>
-        <section class="student-snapshot" aria-label="Ваш прогресс">
-          <h2>Ваш прогресс</h2>
-          <div class="student-snapshot-row">
-            <span>Курсов</span><strong>{{ courses.length }}</strong>
-          </div>
-          <div class="student-snapshot-row">
-            <span>Шагов пройдено</span><strong>{{ totals.steps }}</strong>
-          </div>
-          <div class="student-snapshot-row">
-            <span>Баллов набрано</span><strong>{{ totals.points }}</strong>
-          </div>
+        <section class="student-points" aria-labelledby="student-points-heading">
+          <h2 id="student-points-heading">Мои баллы</h2>
+          <p class="student-points-value">
+            <strong>{{ totals.points }}</strong>
+            <span v-if="totals.pointsMax">из {{ totals.pointsMax }}</span>
+          </p>
+          <span class="student-progress-track"
+            ><span :style="{ width: `${percentOf(totals.points, totals.pointsMax)}%` }"
+          /></span>
+          <dl class="student-points-facts">
+            <div>
+              <dt>Курсов</dt>
+              <dd>{{ courses.length }}</dd>
+            </div>
+            <div>
+              <dt>Шагов пройдено</dt>
+              <dd>{{ totals.steps }} из {{ totals.stepsTotal }}</dd>
+            </div>
+          </dl>
         </section>
       </div>
       <section aria-labelledby="student-courses-heading">
-        <div class="student-section-heading">
-          <h2 id="student-courses-heading">Мои курсы</h2>
-          <span>{{ courses.length }}</span>
+        <h2 id="student-courses-heading" class="student-section-heading">Мои курсы</h2>
+        <div v-if="!courses.length" class="student-empty">
+          Вас пока не записали ни на один курс.
         </div>
-        <div v-if="!courses.length" class="student-empty">Опубликованных курсов пока нет.</div>
         <div v-else class="student-course-grid">
           <RouterLink
-            v-for="(course, index) in courses"
+            v-for="course in courses"
             :key="course.id"
             class="student-course-card"
             :to="{ name: STUDENT_COURSE_ROUTE.name, params: { courseId: course.id } }"
           >
-            <span
-              class="student-course-mark"
-              :class="`student-course-mark--${index % 3}`"
-              aria-hidden="true"
-              >{{ String(index + 1).padStart(2, "0") }}</span
-            >
-            <span class="student-course-kicker"
-              >КУРС · {{ course.progress.steps_total }} ШАГОВ</span
-            >
+            <span class="student-course-meta">Курс · {{ course.progress.steps_total }} шагов</span>
             <strong>{{ course.title }}</strong>
             <span class="student-progress-track"
               ><span :style="{ width: `${course.progress.percent}%` }"
             /></span>
-            <span class="student-course-bottom"
-              >{{ progressText(course.progress.steps_completed, course.progress.steps_total) }}
-              <span aria-hidden="true">↗</span></span
-            >
+            <span v-if="course.progress.steps_completed" class="student-course-bottom">
+              <span>{{
+                progressText(course.progress.steps_completed, course.progress.steps_total)
+              }}</span>
+              <b>{{ course.progress.points_earned }} баллов</b>
+            </span>
+            <span v-else class="student-course-bottom">○ Не начато</span>
           </RouterLink>
         </div>
       </section>
@@ -148,124 +164,137 @@ onMounted(load);
 .student-catalog {
   display: flex;
   flex-direction: column;
-  gap: 29px;
-  max-width: 1450px;
+  gap: 24px;
+  max-width: 1440px;
   margin: 0 auto;
+  font-size: 18px;
+  line-height: 1.6;
 }
 .student-catalog-top {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 24px;
 }
 .student-hero {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  min-height: 292px;
+  gap: 12px;
   padding: 32px;
-  border-radius: 16px;
-  background: radial-gradient(120% 140% at 100% 0%, #1e2f66 0%, #0b1220 60%);
+  border-radius: var(--radius-card);
+  background: radial-gradient(120% 140% at 100% 0%, #1e2f66 0%, var(--color-ink) 60%);
   color: #fff;
 }
 .student-hero-kicker {
-  margin: 0 0 9px;
-  color: #9db1ff;
+  margin: 0;
+  color: var(--color-primary-light);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.08em;
 }
 .student-hero h2 {
   max-width: 690px;
-  margin: 0 0 9px;
-  font-size: clamp(26px, 3vw, 36px);
+  margin: 0;
+  font-size: clamp(28px, 3vw, 36px);
   font-weight: 800;
-  line-height: 1.12;
+  line-height: 1.1;
 }
 .student-hero p:not(.student-hero-kicker) {
-  margin: 0 0 20px;
-  color: #c9d5fc;
+  margin: 0;
+  color: var(--color-primary-pale);
   font-size: 15px;
 }
 .student-progress-track {
   display: block;
+  width: 100%;
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: #e1e6f0;
+  background: var(--color-border);
 }
 .student-progress-track > span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #3457f0;
+  background: var(--color-primary);
 }
 .student-progress-track--dark {
-  width: 100%;
-  max-width: 650px;
-  margin: auto 0 18px;
-  background: #26334d;
+  margin-top: 8px;
+  background: #131c30;
 }
 .student-progress-track--dark > span {
-  background: #7c95ff;
+  background: var(--color-primary-light);
 }
 .student-primary-button {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  min-height: 52px;
-  padding: 0 28px;
-  border-radius: 13px;
-  background: #3457f0;
-  color: white;
-  font-size: 16px;
+  gap: 12px;
+  min-height: 56px;
+  margin-top: 8px;
+  padding: 0 32px;
+  border-radius: 14px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 18px;
   font-weight: 700;
   text-decoration: none;
 }
 .student-primary-button:hover {
-  background: #2446d4;
+  background: var(--color-primary-hover);
+  color: #fff;
 }
-.student-snapshot {
+.student-points {
   display: flex;
   flex-direction: column;
-  min-height: 292px;
+  gap: 10px;
   padding: 24px;
-  border: 1px solid #e1e6f0;
-  border-radius: 16px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 }
-.student-snapshot h2 {
-  margin: 0 0 17px;
+.student-points h2 {
+  margin: 0;
   font-size: 18px;
+  font-weight: 700;
 }
-.student-snapshot-row {
+.student-points-value {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-top: 1px solid #edf0f6;
-  color: #59647a;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  color: var(--color-muted);
   font-size: 15px;
 }
-.student-snapshot-row strong {
-  color: #0f172a;
-  font-size: 23px;
+.student-points-value strong {
+  color: var(--color-text);
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1;
+}
+.student-points-facts {
+  display: grid;
+  margin: 4px 0 0;
+}
+.student-points-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 15px;
+}
+.student-points-facts dt {
+  color: var(--color-muted);
+}
+.student-points-facts dd {
+  margin: 0;
+  font-weight: 700;
 }
 .student-section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 0 20px;
-}
-.student-section-heading h2 {
-  margin: 0;
-  color: #0f172a;
+  margin: 0 0 16px;
   font-size: 24px;
-}
-.student-section-heading > span {
-  color: #68748a;
-  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
 }
 .student-course-grid {
   display: grid;
@@ -275,94 +304,66 @@ onMounted(load);
 .student-course-card {
   display: flex;
   flex-direction: column;
-  min-height: 230px;
+  gap: 8px;
   padding: 24px;
-  border: 1px solid #e1e6f0;
-  border-radius: 16px;
-  background: #fff;
-  color: #0f172a;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
   text-decoration: none;
   transition:
-    transform 0.15s,
+    border-color 0.15s,
     box-shadow 0.15s;
 }
 .student-course-card:hover {
-  transform: translateY(-2px);
+  border-color: var(--color-primary-pale);
   box-shadow: 0 12px 32px #14274b12;
+  color: var(--color-text);
 }
-.student-course-card:focus-visible {
-  outline: 3px solid #3457f0;
-  outline-offset: 2px;
-}
-.student-course-mark {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  margin-bottom: 16px;
-  border-radius: 10px;
-  background: #eaf0fe;
-  color: #3457f0;
-  font-size: 13px;
-  font-weight: 800;
-}
-.student-course-mark--1 {
-  background: #e4f5ec;
-  color: #17915a;
-}
-.student-course-mark--2 {
-  background: #efebfe;
-  color: #6e4fe8;
-}
-.student-course-kicker {
-  color: #67728a;
-  font-size: 11px;
-  font-weight: 750;
-  letter-spacing: 0.07em;
+.student-course-meta {
+  color: var(--color-muted);
+  font-size: 15px;
 }
 .student-course-card strong {
-  margin: 6px 0 20px;
-  font-size: 20px;
-  line-height: 1.25;
+  font-weight: 700;
+  line-height: 1.35;
 }
 .student-course-card .student-progress-track {
-  width: 100%;
   margin-top: auto;
 }
 .student-course-bottom {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 12px;
-  color: #59647a;
-  font-size: 14px;
+  color: var(--color-muted);
+  font-size: 15px;
 }
-.student-course-bottom span {
-  color: #3457f0;
-  font-size: 21px;
-  line-height: 1;
+.student-course-bottom b {
+  color: var(--color-text);
 }
 .student-empty {
-  padding: 34px;
-  border: 1px solid #e1e6f0;
-  border-radius: 16px;
-  background: #fff;
-  color: #65728a;
+  padding: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 16px;
 }
 .student-empty--error {
-  color: #a83a3a;
+  color: var(--color-danger);
 }
 .student-empty button {
   margin-left: 8px;
-  color: #3457f0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
   font-weight: 700;
+  cursor: pointer;
 }
 @media (max-width: 1100px) {
   .student-catalog-top {
     grid-template-columns: 1fr;
-  }
-  .student-snapshot {
-    min-height: auto;
   }
   .student-course-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -373,8 +374,7 @@ onMounted(load);
     grid-template-columns: 1fr;
   }
   .student-hero {
-    padding: 25px;
-    min-height: 280px;
+    padding: 24px;
   }
 }
 </style>

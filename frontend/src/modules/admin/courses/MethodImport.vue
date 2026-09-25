@@ -46,7 +46,7 @@ onMounted(async () => {
 
 <template>
   <div class="admin-page admin-page--detail method-page">
-    <Teleport to="#admin-page-header">
+    <Teleport defer to="#admin-page-header">
       <div class="admin-toolbar admin-toolbar--detail">
         <div class="method-heading">
           <RouterLink class="admin-link" :to="ADMIN_COURSES_ROUTE.path">← Курсы</RouterLink>

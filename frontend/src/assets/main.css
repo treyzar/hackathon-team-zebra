@@ -1,14 +1,54 @@
 @import "tailwindcss";
 
+/* Design tokens of the platform mockups: light ground, white cards, one blue accent. */
 :root {
-  font-family: "Onest", "Segoe UI", Arial, sans-serif;
-  color: #0f172a;
-  background: #0b1220;
+  --color-bg: #f4f6fb;
+  --color-surface: #fff;
+  --color-border: #e1e6f0;
+  --color-text: #0f172a;
+  --color-muted: #4a546b;
+  --color-subtle: #7c869c;
+  --color-primary: #3457f0;
+  --color-primary-hover: #2641c9;
+  --color-primary-soft: #eaf0fe;
+  --color-primary-light: #7c95ff;
+  --color-primary-pale: #c9d5fc;
+  --color-ink: #0b1220;
+  --color-success: #17915a;
+  --color-success-soft: #e4f5ec;
+  --color-warning: #b8520f;
+  --color-warning-soft: #fff1e6;
+  --color-warning-border: #f8d3b8;
+  --color-danger: #d23b3b;
+  --color-danger-soft: #fcebeb;
+  --color-neutral-soft: #f0f2f6;
+  --color-neutral: #5e677d;
+
+  --radius-field: 8px;
+  --radius-control: 12px;
+  --radius-card: 16px;
+  --font-sans: "Onest", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-bg);
   font-synthesis: none;
+  font-variant-numeric: tabular-nums;
 }
 
 html,
 body,
 #app {
   min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
 }

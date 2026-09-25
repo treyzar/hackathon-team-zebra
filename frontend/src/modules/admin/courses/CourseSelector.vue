@@ -23,7 +23,7 @@ onMounted(async () => {
 
 <template>
   <div class="admin-page">
-    <Teleport to="#admin-page-header">
+    <Teleport defer to="#admin-page-header">
       <div class="admin-toolbar">
         <div>
           <h2>Конструктор курсов</h2>

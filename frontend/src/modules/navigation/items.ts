@@ -124,3 +124,14 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
 export function navigationForRole(role: UserRole | null): NavigationItem[] {
   return role ? navigationByRole[role] : [];
 }
+
+/** A section stays highlighted on its nested pages, e.g. a course inside "Курсы". */
+export function isNavigationItemActive(item: NavigationItem, path: string): boolean {
+  return path === item.path || path.startsWith(`${item.path}/`);
+}
+
+export function roleLabel(role: UserRole | null): string {
+  if (role === "student") return "Ученик";
+  if (role === "curator") return "Куратор";
+  return "Администратор";
+}

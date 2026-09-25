@@ -215,6 +215,14 @@ onBeforeUnmount(() => {
                 <small v-if="item.deadline" class="student-step-deadline">{{
                   new Date(item.deadline.due_at).toLocaleDateString("ru-RU")
                 }}</small>
+                <small
+                  v-else-if="item.max_score"
+                  class="student-step-score"
+                  :class="{ 'student-step-score--earned': item.progress.completed }"
+                  >{{
+                    item.progress.completed ? `+${item.progress.earned}` : item.max_score
+                  }}</small
+                >
               </RouterLink>
             </div>
           </section>
@@ -295,12 +303,12 @@ onBeforeUnmount(() => {
 <style scoped>
 .student-workspace {
   display: grid;
-  grid-template-columns: 310px minmax(0, 1fr);
+  grid-template-columns: 320px minmax(0, 1fr);
   width: 100%;
   height: 100%;
   min-height: 0;
-  color: #0f172a;
-  background: #f4f6fb;
+  color: var(--color-text);
+  background: var(--color-bg);
 }
 .student-outline {
   display: flex;
@@ -311,69 +319,78 @@ onBeforeUnmount(() => {
 }
 .student-outline-head {
   flex: none;
-  padding: 24px 20px 17px;
-  border-bottom: 1px solid #edf0f6;
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--color-border);
 }
 .student-back-link {
-  color: #3457f0;
-  font-size: 14px;
-  font-weight: 650;
+  color: var(--color-primary);
+  font-size: 15px;
   text-decoration: none;
 }
 .student-outline-head h2 {
-  margin: 16px 0 5px;
+  margin: 8px 0 4px;
   font-size: 20px;
+  font-weight: 700;
   line-height: 1.25;
 }
 .student-outline-head p {
-  margin: 0 0 13px;
-  color: #5e677d;
-  font-size: 14px;
+  margin: 0 0 12px;
+  color: var(--color-muted);
+  font-size: 15px;
 }
 .student-outline-progress,
 .student-overview-progress {
-  height: 7px;
+  height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: #e1e6f0;
+  background: var(--color-border);
 }
 .student-outline-progress span,
 .student-overview-progress span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #3457f0;
+  background: var(--color-primary);
 }
 .student-outline-scroll {
   min-height: 0;
   overflow-y: auto;
-  padding: 11px 13px 28px;
+  padding: 4px 20px 28px;
 }
 .student-outline-module h3 {
-  margin: 18px 7px 9px;
-  color: #5e677d;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.07em;
+  margin: 16px 0 6px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   line-height: 1.4;
   text-transform: uppercase;
 }
 .student-outline-step {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 45px;
+  gap: 12px;
+  min-height: 44px;
   padding: 8px 10px;
-  border-radius: 10px;
-  color: #27344d;
-  font-size: 13px;
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  font-size: 15px;
   line-height: 1.3;
   text-decoration: none;
 }
 .student-outline-step small {
   display: block;
-  color: #7b8497;
-  font-size: 10px;
+  color: var(--color-subtle);
+  font-size: 12px;
+}
+.student-outline-step .student-step-score {
+  flex: none;
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+}
+.student-outline-step .student-step-score--earned {
+  color: var(--color-success);
 }
 .student-outline-step > span:nth-child(2) {
   flex: 1;
@@ -383,14 +400,16 @@ onBeforeUnmount(() => {
 .student-outline-step .student-step-deadline {
   flex: none;
   margin-left: auto;
-  color: #9a5a21;
+  color: var(--color-warning);
 }
 .student-outline-step:hover:not(.student-outline-step--locked) {
-  background: #f3f6ff;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
-.student-outline-step--active {
-  background: #eaf0fe;
-  box-shadow: inset 0 0 0 2px #c9d5fc;
+.student-outline-step--active,
+.student-outline-step--active:hover:not(.student-outline-step--locked) {
+  background: var(--color-primary-soft);
+  box-shadow: 0 0 0 3px var(--color-primary-pale);
   font-weight: 700;
 }
 .student-outline-step--locked {
@@ -401,9 +420,9 @@ onBeforeUnmount(() => {
   display: grid;
   flex: none;
   place-items: center;
-  width: 25px;
-  height: 25px;
-  border: 1.5px solid #8a93a8;
+  width: 26px;
+  height: 26px;
+  border: 2px solid #8a93a8;
   border-radius: 50%;
   color: #5e677d;
   font-size: 13px;
@@ -440,7 +459,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 32px clamp(25px, 4vw, 52px) 65px;
+  padding: 32px clamp(24px, 4vw, 48px) 64px;
 }
 .student-workspace-loading,
 .student-step-unavailable {
@@ -465,17 +484,17 @@ onBeforeUnmount(() => {
   max-width: 890px;
 }
 .student-overview-kicker {
-  margin: 0 0 11px;
-  color: #3457f0;
+  margin: 0 0 12px;
+  color: var(--color-primary);
   font-size: 12px;
-  font-weight: 750;
+  font-weight: 600;
   letter-spacing: 0.08em;
 }
 .student-course-overview h2 {
   margin: 0 0 12px;
-  font-size: clamp(29px, 3vw, 39px);
+  font-size: clamp(28px, 3vw, 36px);
   font-weight: 800;
-  line-height: 1.13;
+  line-height: 1.1;
 }
 .student-overview-stat {
   color: #5d687d;
@@ -495,14 +514,18 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  min-height: 54px;
-  padding: 0 26px;
-  border-radius: 13px;
-  background: #3457f0;
+  min-height: 56px;
+  padding: 0 32px;
+  border-radius: 14px;
+  background: var(--color-primary);
   color: #fff;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   text-decoration: none;
+}
+.student-overview-button:hover {
+  background: var(--color-primary-hover);
+  color: #fff;
 }
 .student-course-complete {
   display: inline-block;
@@ -513,8 +536,9 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 .student-course-overview h3 {
-  margin: 35px 0 16px;
-  font-size: 23px;
+  margin: 32px 0 16px;
+  font-size: 24px;
+  font-weight: 700;
 }
 .student-module-list {
   display: grid;
@@ -526,8 +550,8 @@ onBeforeUnmount(() => {
   gap: 17px;
   min-height: 84px;
   padding: 16px 20px;
-  border: 1px solid #e1e6f0;
-  border-radius: 15px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
   background: #fff;
 }
 .student-module-number {

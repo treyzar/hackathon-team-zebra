@@ -312,7 +312,7 @@ watch(courseId, load);
     class="admin-page admin-page--detail"
     :class="{ 'admin-page--course-structure': tab === 'structure' }"
   >
-    <Teleport to="#admin-page-header">
+    <Teleport defer to="#admin-page-header">
       <div class="admin-toolbar admin-toolbar--detail">
         <div>
           <RouterLink class="admin-link" :to="ADMIN_COURSES_ROUTE.path">← Все курсы</RouterLink>
