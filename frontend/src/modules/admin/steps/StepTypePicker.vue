@@ -10,7 +10,7 @@ const cards: {
   description: string;
   grading: string;
   icon: string;
-  type?: StepType;
+  type: StepType;
 }[] = [
   {
     label: "Теория",
@@ -27,18 +27,6 @@ const cards: {
     type: "multiple_choice",
   },
   {
-    label: "Scratch",
-    description: "Разбор блочной программы",
-    grading: "НЕТ В ТЕКУЩЕМ API",
-    icon: "⌘",
-  },
-  {
-    label: "Minecraft Education",
-    description: "Задание в игровом мире",
-    grading: "НЕТ В ТЕКУЩЕМ API",
-    icon: "◈",
-  },
-  {
     label: "Задача с тестами",
     description: "Python и проверка по тестам",
     grading: "АВТОПРОВЕРКА",
@@ -47,16 +35,10 @@ const cards: {
   },
   {
     label: "Проект",
-    description: "Текст и файлы по критериям",
+    description: "Scratch, Minecraft или другое: ссылка, скриншот или файл",
     grading: "КУРАТОР",
     icon: "⚑",
     type: "free_text",
-  },
-  {
-    label: "Сопоставление",
-    description: "Соедини блок и действие",
-    grading: "НЕТ В ТЕКУЩЕМ API",
-    icon: "⇄",
   },
 ];
 
@@ -92,13 +74,9 @@ onBeforeUnmount(() => {
           v-for="card in cards"
           :key="card.label"
           class="step-picker-card"
-          :class="{
-            'step-picker-card--selected': card.type === selected,
-            'step-picker-card--disabled': !card.type,
-          }"
+          :class="{ 'step-picker-card--selected': card.type === selected }"
           type="button"
-          :disabled="!card.type"
-          @click="card.type && (selected = card.type)"
+          @click="selected = card.type"
         >
           <span class="step-picker-icon" aria-hidden="true">{{ card.icon }}</span>
           <strong>{{ card.label }}</strong>

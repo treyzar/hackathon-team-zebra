@@ -23,24 +23,24 @@ defineProps<{ name: NavigationIconName }>();
       <path d="M9 21v-7h6v7" />
     </template>
     <template v-else-if="name === 'courses'">
-      <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z" />
-      <path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20M8 7h8" />
+      <path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z" />
     </template>
     <template v-else-if="name === 'skills'">
-      <circle cx="12" cy="5" r="2" />
-      <circle cx="5" cy="18" r="2" />
-      <circle cx="19" cy="18" r="2" />
-      <path d="m11 7-5 9m7-9 5 9M7 18h10" />
+      <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14" />
     </template>
     <template v-else-if="name === 'history'">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3.5 2" />
+      <path d="m4 13 2-8h12l2 8v6H4zM4 13h5l1 2h4l1-2h5" />
     </template>
     <template v-else-if="name === 'progress'">
       <path d="M4 20V13m5 7V8m5 12v-5m5 5V4" />
       <path d="M2 20h20" />
     </template>
-    <template v-else-if="name === 'learners' || name === 'users'">
+    <template v-else-if="name === 'users'">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="9" cy="11" r="2" />
+      <path d="M6 16c.6-1.4 1.7-2 3-2s2.4.6 3 2M14 10h4M14 13h3" />
+    </template>
+    <template v-else-if="name === 'learners'">
       <circle cx="9" cy="8" r="3" />
       <path d="M3 20v-2a6 6 0 0 1 12 0v2M17 5a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 5" />
     </template>
@@ -57,9 +57,8 @@ defineProps<{ name: NavigationIconName }>();
       <path d="M5.5 8h1M5.5 12h1M5.5 16h1" />
     </template>
     <template v-else-if="name === 'groups'">
-      <circle cx="8" cy="8" r="2.5" />
-      <circle cx="17" cy="8" r="2.5" />
-      <path d="M2.5 19v-1.5a5.5 5.5 0 0 1 11 0V19zm9 0v-1.5a5.5 5.5 0 0 1 10 0V19" />
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 19c0-3 2.7-5 6-5s6 2 6 5M16 5.2a3 3 0 0 1 0 5.6M18 14.5c1.8.6 3 2.2 3 4.5" />
     </template>
   </svg>
 </template>

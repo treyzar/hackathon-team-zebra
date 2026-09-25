@@ -5,6 +5,7 @@ import { getCourse, getStep } from "./api";
 import {
   documentTitle,
   errorMessage,
+  pointsText,
   progressText,
   stepDocument,
   stepLabels,
@@ -29,6 +30,15 @@ let disposed = false;
 const selected = computed(() =>
   course.value?.modules.flatMap((module) => module.steps).find((item) => item.id === props.stepId),
 );
+// The next step in course order, offered once the current one is done.
+const nextStep = computed(() => {
+  const steps = course.value?.modules.flatMap((module) => module.steps) ?? [];
+  const index = steps.findIndex((item) => item.id === props.stepId);
+  const next = index === -1 ? undefined : steps[index + 1];
+  return course.value && next && !next.locked
+    ? { name: STUDENT_STEP_ROUTE.name, params: { courseId: course.value.id, stepId: next.id } }
+    : null;
+});
 const stepNumber = computed(() => {
   if (!course.value || !props.stepId) return "";
   for (const [moduleIndex, module] of course.value.modules.entries()) {
@@ -246,6 +256,7 @@ onBeforeUnmount(() => {
             :key="step.id"
             :step="step"
             :number="stepNumber"
+            :next="nextStep"
             @refresh="refresh"
           />
           <div v-else class="student-step-unavailable">
@@ -258,7 +269,7 @@ onBeforeUnmount(() => {
           <h2>{{ course.title }}</h2>
           <div class="student-overview-stat">
             {{ progressText(course.progress.steps_completed, course.progress.steps_total) }} ·
-            {{ course.progress.points_earned }} из {{ course.progress.points_max }} баллов
+            {{ course.progress.points_earned }} из {{ pointsText(course.progress.points_max) }}
           </div>
           <div class="student-overview-progress">
             <span :style="{ width: `${course.progress.percent}%` }" />
@@ -303,7 +314,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .student-workspace {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: 310px minmax(0, 1fr);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -459,7 +470,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 32px clamp(24px, 4vw, 48px) 64px;
+  padding: 28px clamp(24px, 3vw, 36px) 64px;
 }
 .student-workspace-loading,
 .student-step-unavailable {

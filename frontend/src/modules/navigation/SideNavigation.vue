@@ -12,6 +12,8 @@ const props = defineProps<{
   username: string;
   /** Drawer mode: floats over the page and closes on Escape. */
   overlay?: boolean;
+  /** Bigger type and touch targets for young students. */
+  large?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -37,7 +39,7 @@ onMounted(async () => {
     id="app-navigation"
     ref="root"
     class="side-navigation"
-    :class="{ 'side-navigation--overlay': overlay }"
+    :class="{ 'side-navigation--overlay': overlay, 'side-navigation--large': large }"
     aria-label="Основная навигация"
     @keydown.esc="emit('close')"
   >
@@ -71,6 +73,7 @@ onMounted(async () => {
         <NavigationIcon :name="item.icon" />
         <span>{{ item.label }}</span>
       </RouterLink>
+      <slot />
     </div>
 
     <div class="side-account">
@@ -230,6 +233,37 @@ onMounted(async () => {
   font: inherit;
   font-size: 13px;
   cursor: pointer;
+}
+.side-navigation--large {
+  width: 320px;
+  gap: 6px;
+  padding: 14px;
+  font-size: 18px;
+}
+.side-navigation--large .side-link {
+  gap: 14px;
+  min-height: 52px;
+  padding: 0 14px;
+  border-radius: 14px;
+}
+.side-navigation--large .side-link :deep(.navigation-icon) {
+  width: 26px;
+  height: 26px;
+}
+.side-navigation--large .side-close {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+}
+.side-navigation--large .side-avatar {
+  width: 44px;
+  height: 44px;
+  background: var(--color-primary);
+  font-size: 15px;
+}
+.side-navigation--large .side-account-copy span,
+.side-navigation--large .side-logout {
+  font-size: 15px;
 }
 .side-logout:hover {
   color: var(--color-primary-hover);

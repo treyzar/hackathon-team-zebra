@@ -40,7 +40,7 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <AuthLayout title="Вход" subtitle="Войдите, чтобы продолжить работу.">
+  <AuthLayout title="Вход">
     <form class="auth-form" @submit.prevent="submit">
       <label class="auth-field">
         <span>Логин</span>

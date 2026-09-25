@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { navigationForRole } from "@/modules/navigation/items";
 import NavigationRail from "@/modules/navigation/NavigationRail.vue";
 import SideNavigation from "@/modules/navigation/SideNavigation.vue";
-import TopNavigation from "@/modules/navigation/TopNavigation.vue";
+import CoursesMenu from "@/modules/student/courses/CoursesMenu.vue";
 import { LOGIN_ROUTE } from "@/pages/login/constants";
 import { STUDENT_COURSE_ROUTE } from "@/pages/student/course/constants";
 import { STUDENT_STEP_ROUTE } from "@/pages/student/step/constants";
@@ -17,13 +17,10 @@ const router = useRouter();
 const menuOpen = ref(false);
 const contentBody = ref<HTMLElement | null>(null);
 
-// Each cabinet has its own navigation in the mockups: students get a light top bar,
-// curators a sidebar, admins an icon rail that opens the full menu as a drawer.
-const layout = computed(() => {
-  if (auth.role === "student") return "top";
-  if (auth.role === "admin") return "rail";
-  return "side";
-});
+// Each cabinet has its own navigation in the mockups: students and admins get an icon
+// rail that opens the full menu as a drawer (bigger for students), curators a sidebar.
+const layout = computed(() => (auth.role === "curator" ? "side" : "rail"));
+const isStudent = computed(() => auth.role === "student");
 const username = computed(() => auth.user?.username ?? "");
 const homeItem = computed(() => navigationForRole(auth.role)[0]);
 const pageTitle = computed(
@@ -58,22 +55,18 @@ async function logout(): Promise<void> {
 <template>
   <div
     class="app-shell"
-    :class="[`app-shell--${layout}`, { 'app-shell--student-course': isStudentCourse }]"
+    :class="[
+      `app-shell--${layout}`,
+      { 'app-shell--student': isStudent, 'app-shell--student-course': isStudentCourse },
+    ]"
   >
-    <TopNavigation
-      v-if="layout === 'top'"
-      :role="auth.role"
-      :username="username"
-      :menu-open="menuOpen"
-      @open-menu="menuOpen = true"
-      @logout="logout"
-    />
     <NavigationRail
-      v-else-if="layout === 'rail'"
+      v-if="layout === 'rail'"
       class="app-shell-navigation"
       :role="auth.role"
       :username="username"
       :menu-open="menuOpen"
+      :large="isStudent"
       @open-menu="menuOpen = true"
     />
     <SideNavigation
@@ -94,16 +87,19 @@ async function logout(): Promise<void> {
       />
       <SideNavigation
         overlay
+        :large="isStudent"
         :role="auth.role"
         :username="username"
         @navigate="menuOpen = false"
         @close="menuOpen = false"
         @logout="logout"
-      />
+      >
+        <CoursesMenu v-if="isStudent" @navigate="menuOpen = false" />
+      </SideNavigation>
     </template>
 
     <main class="app-main">
-      <header v-if="layout !== 'top'" class="page-header">
+      <header class="page-header">
         <button
           class="page-menu-button"
           type="button"
@@ -114,9 +110,13 @@ async function logout(): Promise<void> {
         >
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
         </button>
+        <template v-if="isStudent">
+          <p class="page-greeting">Привет, {{ username }}! Продолжим?</p>
+          <span class="page-account">{{ username }}</span>
+        </template>
         <!-- Admin pages teleport their own title and actions here. -->
-        <div v-if="layout === 'rail'" id="admin-page-header" class="page-header-slot" />
-        <div class="page-header-fallback">
+        <div v-else-if="layout === 'rail'" id="admin-page-header" class="page-header-slot" />
+        <div v-if="!isStudent" class="page-header-fallback">
           <h1>{{ pageTitle }}</h1>
           <p v-if="layout === 'side' && pageDescription">{{ pageDescription }}</p>
         </div>
@@ -146,10 +146,6 @@ async function logout(): Promise<void> {
   background: var(--color-bg);
   color: var(--color-text);
 }
-.app-shell--top {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
-}
 .app-main {
   display: flex;
   flex-direction: column;
@@ -168,6 +164,29 @@ async function logout(): Promise<void> {
   padding: 12px 32px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface);
+}
+.app-shell--student .page-header {
+  min-height: 0;
+  padding: 14px 40px;
+  font-size: 18px;
+}
+/* The course page has its own outline; the rail is enough navigation there. */
+.app-shell--student-course .page-header {
+  display: none;
+}
+.page-greeting {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--color-muted);
+}
+.page-account {
+  max-width: 220px;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .page-header-slot {
   flex: 1;
@@ -201,8 +220,8 @@ async function logout(): Promise<void> {
   padding: 24px 32px 48px;
   outline: none;
 }
-.app-shell--top .content-body {
-  padding: 32px 48px 56px;
+.app-shell--student .content-body {
+  padding: 22px 40px 48px;
 }
 .app-shell--student-course .content-body {
   overflow: hidden;
@@ -240,7 +259,8 @@ async function logout(): Promise<void> {
   cursor: default;
 }
 @media (max-width: 1100px) {
-  .app-shell--top .content-body {
+  .app-shell--student .page-header,
+  .app-shell--student .content-body {
     padding-right: 24px;
     padding-left: 24px;
   }
@@ -253,8 +273,15 @@ async function logout(): Promise<void> {
     display: none;
   }
   .page-header,
-  .app-shell--rail .page-header {
+  .app-shell--rail .page-header,
+  .app-shell--student .page-header {
     padding: 16px;
+  }
+  .page-account {
+    display: none;
+  }
+  .app-shell--student-course .page-header {
+    display: flex;
   }
   .page-menu-button {
     display: grid;
@@ -263,7 +290,7 @@ async function logout(): Promise<void> {
     font-size: 24px;
   }
   .content-body,
-  .app-shell--top .content-body {
+  .app-shell--student .content-body {
     padding: 20px 16px 36px;
   }
   .app-shell--student-course .content-body {

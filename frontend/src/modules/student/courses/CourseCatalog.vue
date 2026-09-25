@@ -5,6 +5,7 @@ import { getStep, listCourses } from "./api";
 import {
   documentTitle,
   errorMessage,
+  pointsText,
   progressText,
   stepDocument,
   stepLabels,
@@ -150,7 +151,7 @@ onMounted(load);
               <span>{{
                 progressText(course.progress.steps_completed, course.progress.steps_total)
               }}</span>
-              <b>{{ course.progress.points_earned }} баллов</b>
+              <b>{{ pointsText(course.progress.points_earned) }}</b>
             </span>
             <span v-else class="student-course-bottom">○ Не начато</span>
           </RouterLink>
@@ -164,7 +165,7 @@ onMounted(load);
 .student-catalog {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   max-width: 1440px;
   margin: 0 auto;
   font-size: 18px;
@@ -180,7 +181,7 @@ onMounted(load);
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
-  padding: 32px;
+  padding: 26px 28px;
   border-radius: var(--radius-card);
   background: radial-gradient(120% 140% at 100% 0%, #1e2f66 0%, var(--color-ink) 60%);
   color: #fff;
@@ -247,7 +248,7 @@ onMounted(load);
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 24px;
+  padding: 20px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -304,8 +305,8 @@ onMounted(load);
 .student-course-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 24px;
+  gap: 6px;
+  padding: 18px 20px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);

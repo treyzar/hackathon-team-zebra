@@ -1,6 +1,12 @@
 <script setup lang="ts">
-import { toRef } from "vue";
-import { blockReason, stepLabels } from "@/modules/student/courses/presentation";
+import { computed, toRef } from "vue";
+import { RouterLink, type RouteLocationRaw } from "vue-router";
+import {
+  blockReason,
+  pointsText,
+  pointsWord,
+  stepLabels,
+} from "@/modules/student/courses/presentation";
 import RichContent from "@/modules/student/courses/RichContent.vue";
 import type { StudentStep } from "@/modules/student/courses/types";
 import StepAnswerForm from "./StepAnswerForm.vue";
@@ -9,7 +15,12 @@ import StepResult from "./StepResult.vue";
 import { useStepPlayer } from "./useStepPlayer";
 import "./step-player.css";
 
-const props = defineProps<{ step: StudentStep; number: string }>();
+const props = defineProps<{
+  step: StudentStep;
+  number: string;
+  /** Where "Следующий шаг" leads; null on the last or a still locked step. */
+  next?: RouteLocationRaw | null;
+}>();
 const emit = defineEmits<{ refresh: [] }>();
 
 const {
@@ -41,23 +52,50 @@ const {
   step: toRef(props, "step"),
   onRefresh: () => emit("refresh"),
 });
+
+const passed = computed(
+  () =>
+    props.step.progress.state === "passed" ||
+    latest.value?.status === "correct" ||
+    latest.value?.status === "accepted",
+);
+const onReview = computed(() => !passed.value && latest.value?.status === "pending_review");
+// A passed or handed-in step lets the student move on; resubmitting becomes secondary.
+const canMoveOn = computed(() => Boolean(props.next) && (passed.value || onReview.value));
+const earned = computed(() => latest.value?.score ?? props.step.progress.earned);
 </script>
 
 <template>
   <article class="student-lesson">
-    <div class="student-lesson-meta">
-      {{ stepLabels[step.type] }} · шаг {{ number }}
-      <span v-if="step.deadline">
-        · до {{ new Date(step.deadline.due_at).toLocaleDateString("ru-RU") }}
+    <div class="student-lesson-top">
+      <span class="student-lesson-meta">
+        {{ stepLabels[step.type] }} · шаг {{ number }}
+        <span v-if="step.deadline">
+          · до {{ new Date(step.deadline.due_at).toLocaleDateString("ru-RU") }}
+        </span>
       </span>
+      <span v-if="passed" class="student-status student-status--passed">
+        ✓ Зачтено<template v-if="earned"> · +{{ earned }} {{ pointsWord(earned) }}</template>
+      </span>
+      <span v-else-if="onReview" class="student-status student-status--review">◷ На проверке</span>
+      <span v-else-if="step.max_score" class="student-status">{{
+        pointsText(step.max_score)
+      }}</span>
+      <RouterLink
+        v-if="next"
+        class="student-next-round"
+        :class="{ 'student-next-round--ready': passed || onReview }"
+        :to="next"
+        aria-label="Следующий шаг"
+        title="Следующий шаг"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+      </RouterLink>
     </div>
 
     <h2>{{ title }}</h2>
 
-    <div class="student-lesson-details">
-      <span v-if="step.max_score">
-        {{ step.max_score }} балл{{ step.max_score === 1 ? "" : "ов" }}
-      </span>
+    <div v-if="remaining !== null || step.progress.from_previous_version" class="student-lesson-details">
       <span v-if="remaining !== null">{{ remaining }} попыток осталось</span>
       <span v-if="step.progress.from_previous_version">
         Результат предыдущей версии учтён
@@ -98,9 +136,13 @@ const {
       </div>
 
       <div class="student-submit-row">
+        <RouterLink v-if="canMoveOn && next" class="student-submit-button" :to="next"
+          >Следующий шаг <span aria-hidden="true">→</span></RouterLink
+        >
         <button
           v-if="step.can_submit"
           class="student-submit-button"
+          :class="{ 'student-submit-button--secondary': canMoveOn }"
           type="button"
           :disabled="blocked"
           @click="submit"
@@ -116,7 +158,9 @@ const {
           }}
         </button>
 
-        <p v-else class="student-muted">{{ blockReason(step.submit_block_reason) }}</p>
+        <p v-else-if="!canMoveOn" class="student-muted">
+          {{ blockReason(step.submit_block_reason) }}
+        </p>
       </div>
     </section>
 

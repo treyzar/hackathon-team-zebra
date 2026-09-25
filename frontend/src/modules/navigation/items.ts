@@ -38,20 +38,20 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
     },
     {
       ...STUDENT_COURSES_ROUTE,
-      label: "Курсы",
-      description: "Доступные курсы и шаги",
+      label: "Мои курсы",
+      description: "Курсы, на которые вы записаны",
       icon: "courses",
     },
     {
       ...WORKSPACE_SECTION_ROUTES.studentSkills,
-      label: "Навыки",
+      label: "Карта навыков",
       description: "Ваш путь в программировании",
       icon: "skills",
     },
     {
       ...WORKSPACE_SECTION_ROUTES.studentHistory,
-      label: "История",
-      description: "Попытки и отзывы",
+      label: "Мои работы",
+      description: "Отправленные решения и отзывы",
       icon: "history",
     },
     {

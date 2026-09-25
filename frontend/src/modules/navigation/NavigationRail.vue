@@ -10,6 +10,8 @@ const props = defineProps<{
   role: UserRole | null;
   username: string;
   menuOpen: boolean;
+  /** Bigger touch targets for young students. */
+  large?: boolean;
 }>();
 
 const emit = defineEmits<{ openMenu: [] }>();
@@ -19,7 +21,11 @@ const items = computed(() => navigationForRole(props.role));
 </script>
 
 <template>
-  <aside class="navigation-rail" aria-label="Разделы">
+  <aside
+    class="navigation-rail"
+    :class="{ 'navigation-rail--large': large }"
+    aria-label="Разделы"
+  >
     <button
       class="rail-button"
       type="button"
@@ -99,6 +105,30 @@ const items = computed(() => navigationForRole(props.role));
 }
 .rail-spacer {
   flex: 1;
+}
+.navigation-rail--large {
+  gap: 8px;
+  width: 80px;
+}
+.navigation-rail--large .rail-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+}
+.navigation-rail--large .rail-button svg,
+.navigation-rail--large .rail-button :deep(.navigation-icon) {
+  width: 26px;
+  height: 26px;
+}
+.navigation-rail--large .rail-divider {
+  width: 44px;
+  margin: 4px 0;
+}
+.navigation-rail--large .rail-avatar {
+  width: 48px;
+  height: 48px;
+  background: var(--color-primary);
+  font-size: 15px;
 }
 .rail-avatar {
   display: grid;
