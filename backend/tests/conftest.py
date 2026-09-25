@@ -128,6 +128,9 @@ async def make_user(db_clean):
             user = User(
                 username=name,
                 email=f"{name}@example.com",
+                name="Имя",
+                surname=name.capitalize(),
+                patronymic="Отчество",
                 password=hasher.hash("password123"),
                 role=Role(role),
             )
