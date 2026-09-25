@@ -9,10 +9,13 @@ from courses.models import Course
 from database import access_db
 from groups.service import group_students, manageable_group, student_group_id
 from models import User
+from progress.analytics import course_analytics, module_analytics
 from progress.lag import LagStatus, group_lag
 from progress.rating import group_rating, my_rating
 from progress.schemas import (
+    CourseAnalytics,
     CourseProgressOut,
+    ModuleAnalytics,
     ModuleProgress,
     MyRating,
     RatingRow,
@@ -174,3 +177,61 @@ async def get_group_rating(
         db, course, await group_students(db, group_id, course.id)
     )
     return rating.rows()
+
+
+ANALYTICS_ACCESS = (
+    "Куратор — только для своей группы, администратор — для любой. Считаются "
+    "ученики группы, записанные на курс. Определения — в README, раздел "
+    "«Аналитика»."
+)
+
+
+@progress_api.get(
+    "/groups/{group_id}/courses/{course_id}/analytics",
+    response_model=CourseAnalytics,
+)
+@access_note(ANALYTICS_ACCESS)
+async def group_course_analytics(
+    group_id: int,
+    course_id: int,
+    user: User = Depends(require_curator),
+    db: AsyncSession = Depends(access_db),
+):
+    """Аналитика группы по курсу. По каждому модулю: сколько учеников его
+    прошли, в процессе и не начинали; процент решений с первой попытки;
+    среднее число попыток на задание; число возвратов с ручной проверки.
+    По каждому ученику: пройдено шагов в каждом модуле, есть ли решения по
+    задачам модуля и необработанный возврат; отставание от графика; время
+    последней отправки."""
+    await manageable_group(db, user, group_id)
+    course = await courses_svc.get_course(db, course_id)
+    students = await group_students(db, group_id, course.id)
+    return await course_analytics(db, course, group_id, students)
+
+
+@progress_api.get(
+    "/groups/{group_id}/courses/{course_id}/modules/{module_id}/analytics",
+    response_model=ModuleAnalytics,
+)
+@access_note(ANALYTICS_ACCESS)
+async def group_module_analytics(
+    group_id: int,
+    course_id: int,
+    module_id: int,
+    user: User = Depends(require_curator),
+    db: AsyncSession = Depends(access_db),
+):
+    """Подробно по модулю: шаги (номер, тип, название, максимум) и результат
+    каждого ученика группы по каждому шагу — состояние, баллы, число
+    попыток, решён ли с первой попытки, необработанный возврат, последняя
+    отправка. Плюс сводка модуля, как в аналитике курса."""
+    await manageable_group(db, user, group_id)
+    course = await courses_svc.get_course(db, course_id)
+    module = next(
+        (m for m in await courses_svc.live_modules(db, course.id) if m.id == module_id),
+        None,
+    )
+    if module is None:
+        raise courses_svc.not_found("Module")
+    students = await group_students(db, group_id, course.id)
+    return await module_analytics(db, course, module, students)

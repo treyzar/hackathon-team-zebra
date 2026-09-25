@@ -123,33 +123,6 @@ def _visible(user: User) -> Select:
     return query
 
 
-def _node_text(node: dict) -> str:
-    if node.get("type") == "text":
-        return node.get("text", "")
-    return " ".join(_node_text(child) for child in node.get("content", []))
-
-
-def get_step_title(rev_content: dict) -> str:
-    """Title of a step as the student's page shows it: the first heading of
-    the step's document, else its first non-empty line; "" if there is none.
-
-    The document is a field of the content (``body``, ``question``,
-    ``statement`` ...), found by shape so that every step type works."""
-    doc = next(
-        (
-            v
-            for v in rev_content.values()
-            if isinstance(v, dict) and v.get("type") == "doc"
-        ),
-        None,
-    )
-    nodes = doc.get("content", []) if doc else []
-    first = next((n for n in nodes if n.get("type") == "heading"), None) or next(
-        (n for n in nodes if _node_text(n).strip()), None
-    )
-    return " ".join(_node_text(first).split())[:100] if first else ""
-
-
 def _item(row, due_at, cls=ReviewListItem, **extra):
     sub, student, step, rev, module, course, attempts_before = row
     return cls(
@@ -175,7 +148,7 @@ def _item(row, due_at, cls=ReviewListItem, **extra):
         step_type=step.type,
         max_score=rev.max_score,
         course_id=course.id,
-        task_title=get_step_title(rev.content),
+        task_title=svc.get_step_title(rev.content),
         task_number=f"{module.position + 1}.{step.position + 1}",
         course_title=course.title,
         module_title=module.title,
