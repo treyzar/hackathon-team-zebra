@@ -1,5 +1,9 @@
 import type { UserRole } from "@/api/http";
 import { DASHBOARD_ROUTE } from "@/pages/dashboard/constants";
+import { ADMIN_BUILDER_ROUTE } from "@/pages/admin/builder/constants";
+import { ADMIN_COURSES_ROUTE } from "@/pages/admin/courses/constants";
+import { ADMIN_GROUPS_ROUTE } from "@/pages/admin/groups/constants";
+import { ADMIN_USERS_ROUTE } from "@/pages/admin/users/constants";
 import { WORKSPACE_SECTION_ROUTES } from "@/pages/workspace-section/constants";
 
 export type NavigationIconName =
@@ -90,25 +94,25 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
       icon: "home",
     },
     {
-      ...WORKSPACE_SECTION_ROUTES.adminCourses,
+      ...ADMIN_COURSES_ROUTE,
       label: "Курсы",
       description: "Черновики и опубликованные курсы",
       icon: "courses",
     },
     {
-      ...WORKSPACE_SECTION_ROUTES.adminBuilder,
+      ...ADMIN_BUILDER_ROUTE,
       label: "Конструктор",
       description: "Модули и шаги курсов",
       icon: "builder",
     },
     {
-      ...WORKSPACE_SECTION_ROUTES.adminGroups,
+      ...ADMIN_GROUPS_ROUTE,
       label: "Группы",
       description: "Группы и кураторы",
       icon: "groups",
     },
     {
-      ...WORKSPACE_SECTION_ROUTES.adminUsers,
+      ...ADMIN_USERS_ROUTE,
       label: "Пользователи",
       description: "Роли и участники",
       icon: "users",

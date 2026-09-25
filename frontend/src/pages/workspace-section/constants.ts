@@ -6,8 +6,4 @@ export const WORKSPACE_SECTION_ROUTES = {
   curatorLearners: { name: "curator-learners", path: "/curator/learners" },
   curatorReviews: { name: "curator-reviews", path: "/curator/reviews" },
   curatorQuestions: { name: "curator-questions", path: "/curator/questions" },
-  adminCourses: { name: "admin-courses", path: "/admin/courses" },
-  adminBuilder: { name: "admin-builder", path: "/admin/builder" },
-  adminGroups: { name: "admin-groups", path: "/admin/groups" },
-  adminUsers: { name: "admin-users", path: "/admin/users" },
 } as const;

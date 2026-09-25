@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppShell from "@/modules/layout/AppShell.vue";
+import "@/modules/admin/shared/admin.css";
 </script>
 
 <template>
