@@ -14,10 +14,30 @@ import {
   waitingLabel,
 } from "../src/modules/curator/reviews/presentation";
 import type { ReviewListItem } from "../src/modules/curator/reviews/types";
-import { questionUpdate } from "../src/modules/curator/questions/presentation";
+import {
+  questionUpdate,
+  questionsForFilter,
+  selectedQuestionId,
+} from "../src/modules/curator/questions/presentation";
 import type { StaffQuestion } from "../src/modules/curator/questions/types";
 
 const works = [11, 12, 13].map((id) => ({ id })) as ReviewListItem[];
+
+test("answering a question advances the unanswered queue and keeps it in all questions", () => {
+  const first = { id: 1, answer: null, can_answer: true } as StaffQuestion;
+  const second = { id: 2, answer: null, can_answer: true } as StaffQuestion;
+  const answered = [{ ...first, answer: "Объяснение" }, second];
+  assert.equal(selectedQuestionId([first, second], "unanswered", null), 1);
+  assert.equal(selectedQuestionId(answered, "unanswered", null), 2);
+  assert.deepEqual(
+    questionsForFilter(answered, "unanswered").map((item) => item.id),
+    [2],
+  );
+  assert.deepEqual(
+    questionsForFilter(answered, "all").map((item) => item.id),
+    [1, 2],
+  );
+});
 
 test("question answer changes preserve group visibility unless the curator changes it", () => {
   const question = {

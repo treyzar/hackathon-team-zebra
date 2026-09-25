@@ -131,7 +131,10 @@ onMounted(loadCourses);
 
         <div
           class="exchange-dropzone"
-          :class="{ 'exchange-dropzone--active': dragging, 'exchange-dropzone--selected': selectedFile }"
+          :class="{
+            'exchange-dropzone--active': dragging,
+            'exchange-dropzone--selected': selectedFile,
+          }"
           @dragenter.prevent="dragging = true"
           @dragover.prevent="dragging = true"
           @dragleave.prevent="dragging = false"
@@ -276,7 +279,9 @@ onMounted(loadCourses);
   border-radius: var(--radius-control);
   background: var(--color-bg);
   text-align: center;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
 }
 .exchange-dropzone--active,
 .exchange-dropzone--selected {

@@ -269,7 +269,7 @@ onBeforeUnmount(() => {
               :next="nextStep"
               @refresh="refresh"
             />
-            <StepComments :key="`comments-${step.id}`" :step-id="step.id"/>
+            <StepComments :key="`comments-${step.id}`" :step-id="step.id" />
           </template>
           <div v-else class="student-step-unavailable">
             <h2>Шаг не найден</h2>

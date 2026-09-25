@@ -1,4 +1,20 @@
-import type { QuestionUpdate, QuestionVisibility, StaffQuestion } from "./types";
+import type { QuestionFilter, QuestionUpdate, QuestionVisibility, StaffQuestion } from "./types";
+
+export function questionsForFilter(
+  items: StaffQuestion[],
+  filter: QuestionFilter,
+): StaffQuestion[] {
+  return filter === "all" ? items : items.filter((item) => item.answer === null);
+}
+
+export function selectedQuestionId(
+  items: StaffQuestion[],
+  filter: QuestionFilter,
+  requestedId: number | null,
+): number | null {
+  const visible = questionsForFilter(items, filter);
+  return visible.find((item) => item.id === requestedId)?.id ?? visible[0]?.id ?? null;
+}
 
 export function questionAuthor(question: StaffQuestion): string {
   const name = question.author_name.trim();

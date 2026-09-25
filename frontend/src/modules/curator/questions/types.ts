@@ -1,4 +1,5 @@
 export type QuestionVisibility = "private" | "group" | "course";
+export type QuestionFilter = "unanswered" | "all";
 
 export interface StaffQuestion {
   id: number;
