@@ -2,6 +2,7 @@
 
 import uuid
 
+import pytest
 from conftest import requires_db
 
 pytestmark = requires_db
@@ -114,9 +115,9 @@ async def test_auto_grading_attempts_and_answer(client, admin, course, make_user
 
     step = (await client.get(f"/steps/{step_id}", headers=h)).json()
     assert step["attempts_used"] == 2
-    assert step["progress"] == {"state": "solved", "best_score": 2}
+    assert (step["progress"]["state"], step["progress"]["earned"]) == ("passed", 2)
     course_view = (await client.get(f"/courses/{course[0]}", headers=h)).json()
-    assert course_view["modules"][0]["steps"][0]["progress"]["state"] == "solved"
+    assert course_view["modules"][0]["steps"][0]["progress"]["state"] == "passed"
 
 
 async def test_invalid_answer_is_422(client, admin, course, make_user):
@@ -179,11 +180,14 @@ async def test_revisions_history_and_breaking_change(client, admin, course, make
     old = await client.get(f"/admin/steps/{step_id}/revisions/1", headers=admin[1])
     assert old.json()["answer_key"] == {"correct": A}
 
-    # The earlier (correct under rev 1) submission no longer counts.
+    # The earlier result (correct under rev 1) is kept in progress, and the
+    # student gets fresh attempts for the new version.
     subs = (await client.get(f"/steps/{step_id}/submissions", headers=h)).json()
     assert subs[0]["is_outdated"]
     step = (await client.get(f"/steps/{step_id}", headers=h)).json()
-    assert step["progress"]["state"] == "none" and step["attempts_used"] == 0
+    assert step["progress"]["state"] == "passed"
+    assert step["progress"]["from_previous_version"]
+    assert step["attempts_used"] == 0 and step["can_submit"]
 
     wrong_type = {"type": "theory", "content": {"body": DOC}}
     r = await client.post(
@@ -587,3 +591,110 @@ async def test_option_breakdown_follows_show_answer(client, admin, course, make_
     assert marks[A] == (True, True) and marks[B] == (False, True)
     single = (await client.get(f"/submissions/{first['id']}", headers=h)).json()
     assert single["explanation"] == older["explanation"]
+
+
+async def test_manual_review_creates_notification(
+    client, admin, course, groups_setup, make_user
+):
+    step_id = await add_step(client, admin, course[1], free_text())
+    (_, curator, _, student) = groups_setup[0]
+
+    sub_id = (await submit(client, student, step_id, {"text": "essay"})).json()["id"]
+    r = await client.post(
+        f"/review/submissions/{sub_id}",
+        json={"verdict": "accepted", "comment": "ok"},
+        headers=curator,
+    )
+    assert r.status_code == 200, r.text
+
+    listing = (await client.get("/notifications", headers=student)).json()
+    assert len(listing) == 1
+    n = listing[0]
+    assert n["type"] == "submission_reviewed"
+    assert n["severity"] == "success"
+    assert n["read_at"] is None
+    assert n["payload"] == {
+        "submission_id": sub_id,
+        "step_id": step_id,
+        "course_id": course[0],
+        "verdict": "accepted",
+        "score": 5,
+        "max_score": 5,
+    }
+
+    count = (await client.get("/notifications/unread_count", headers=student)).json()
+    assert count == {"count": 1}
+
+    r = await client.post(f"/notifications/{n['id']}/read", headers=student)
+    assert r.status_code == 200 and r.json()["read_at"] is not None
+    count = (await client.get("/notifications/unread_count", headers=student)).json()
+    assert count == {"count": 0}
+
+    _, other = await make_user()
+    assert (await client.get("/notifications", headers=other)).json() == []
+
+
+async def test_manual_review_rejected_severity(client, admin, course, groups_setup):
+    step_id = await add_step(client, admin, course[1], free_text())
+    (_, curator, _, student) = groups_setup[0]
+
+    sub_id = (await submit(client, student, step_id, {"text": "essay"})).json()["id"]
+    r = await client.post(
+        f"/review/submissions/{sub_id}",
+        json={"verdict": "rejected"},
+        headers=curator,
+    )
+    assert r.status_code == 200, r.text
+
+    n = (await client.get("/notifications", headers=student)).json()[0]
+    assert n["severity"] == "warning"
+    assert n["payload"]["verdict"] == "rejected"
+    assert n["payload"]["score"] == 0
+
+
+async def test_mark_all_read(client, admin, course, groups_setup):
+    step_id = await add_step(client, admin, course[1], free_text())
+    (_, curator, _, student) = groups_setup[0]
+    sub_id = (await submit(client, student, step_id, {"text": "essay"})).json()["id"]
+    await client.post(
+        f"/review/submissions/{sub_id}",
+        json={"verdict": "accepted"},
+        headers=curator,
+    )
+    r = await client.post("/notifications/read_all", headers=student)
+    assert r.json() == {"count": 0}
+    unread = await client.get("/notifications?unread_only=true", headers=student)
+    assert unread.json() == []
+
+
+async def test_notification_dedup(client, make_user):
+    from database import async_factory
+    from notifications.models import NotificationType
+    from notifications.payloads import HelloPayload
+    from notifications.service import create_notification
+
+    user_id, headers = await make_user()
+    async with async_factory() as db:
+        for _ in range(3):
+            await create_notification(
+                db,
+                user_id,
+                NotificationType.HELLO,
+                HelloPayload(username="x"),
+                dedup_key="hello:once",
+            )
+            await db.commit()
+
+    r = await client.get("/notifications", headers=headers)
+    assert len(r.json()) == 1
+
+
+async def test_notification_payload_validated(client, make_user):
+    from database import async_factory
+    from notifications.models import NotificationType
+    from notifications.service import create_notification
+
+    user_id, _ = await make_user()
+    async with async_factory() as db:
+        with pytest.raises(ValueError):
+            await create_notification(db, user_id, NotificationType.HELLO)

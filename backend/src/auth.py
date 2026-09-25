@@ -134,8 +134,6 @@ require_curator = require_roles(Role.CURATOR, Role.ADMIN)
 require_admin = require_roles(Role.ADMIN)
 
 
-# move endpoints to separate file
-
 auth = APIRouter(prefix="/auth")
 
 
