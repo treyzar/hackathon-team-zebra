@@ -8,7 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access_docs import access_note
 from auth import require_admin
 from courses import service as svc
-from courses.export_import import import_course, export_as_pdf, export_as_json
+from courses.export_import import import_course, export_as_json
+from courses.pdf_export import export_as_pdf
 from courses.models import Course, Enrollment, Module, Step, StepRevision
 from courses.schemas import (
     AdminCourseTree,
@@ -378,3 +379,42 @@ async def export_course_json(
             "Content-Disposition": f'attachment; filename="{course.slug}.json"'
         },
     )
+
+
+@authoring.get("/courses/{course_id}/export.pdf")
+async def export_course_pdf(
+    course_id: int, db: AsyncSession = Depends(access_db)
+) -> Response:
+    course = await svc.get_course(db, course_id)
+    pdf = await export_as_pdf(db, course, include_answers=True)
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{course.slug}.pdf"'},
+    )
+
+
+@authoring.post("/courses/import", response_model=ImportResult, status_code=201)
+async def import_course(
+    file: UploadFile,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(access_db),
+) -> ImportResult:
+    raw = await file.read()
+    course, warnings = await import_course(db, user, raw)
+    return ImportResult(
+        course_id=course.id,
+        slug=course.slug,
+        title=course.title,
+        warnings=warnings,
+    )
+
+#@authoring.post("/courses/import", response_model=CourseOut, status_code=201)
+#async def import_course(
+#    file: UploadFile,
+#    user: User = Depends(require_admin),
+#    db: AsyncSession = Depends(access_db),
+#) -> CourseOut:
+#    raw = await file.read()
+#    course, _warnings = await import_course(db, user, raw)
+#    return course
