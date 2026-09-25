@@ -113,12 +113,20 @@ def test_tests_required_unless_manual():
     assert payload.validate_python(program([], grading="manual"))
 
 
-async def test_programming_per_group(local_judge):
+@pytest.mark.parametrize(
+    ("scoring", "score", "shown"),
+    [
+        ("per_group", 4, [(4, 4), (0, 6)]),
+        # Group points do not count: the details must not claim they do.
+        ("all_or_nothing", 0, [(None, None), (None, None)]),
+    ],
+)
+async def test_programming_groups(local_judge, scoring, score, shown):
     groups = [
         {"name": "small", "points": 4, "tests": [{"input": "2\n", "output": "4"}]},
         {"name": "big", "points": 6, "tests": [{"input": "-3\n", "output": "9"}]},
     ]
-    p = payload.validate_python(program(groups, scoring="per_group"))
+    p = payload.validate_python(program(groups, scoring=scoring))
     t = get_type("programming")
     # Wrong for negative numbers: only the first group passes.
     code = "n = int(input())\nprint(n * n if n > 0 else 0)"
@@ -126,8 +134,9 @@ async def test_programming_per_group(local_judge):
     result = await t.run_tests(
         local_judge, NoFiles(), p.content, p.answer_key, p.settings, answer, 10
     )
-    assert result.score == 4
+    assert result.score == score
     assert [g["passed"] for g in result.details["groups"]] == [True, False]
+    assert [(g["earned"], g["points"]) for g in result.details["groups"]] == shown
     # Hidden tests expose verdicts only.
     assert set(result.details["groups"][1]["tests"][0]) == {"verdict", "time"}
 
