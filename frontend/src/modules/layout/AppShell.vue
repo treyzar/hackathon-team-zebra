@@ -16,6 +16,7 @@ const collapsed = ref(
   typeof window !== "undefined" && window.localStorage.getItem(COLLAPSED_KEY) === "true",
 );
 const mobileOpen = ref(false);
+const contentBody = ref<HTMLElement | null>(null);
 
 const homeItem = computed(() => navigationForRole(auth.role)[0]);
 const pageTitle = computed(
@@ -30,6 +31,7 @@ watch(
   () => route.fullPath,
   () => {
     mobileOpen.value = false;
+    if (contentBody.value) contentBody.value.scrollTop = 0;
   },
 );
 
@@ -43,7 +45,7 @@ async function logout(): Promise<void> {
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'app-shell--collapsed': collapsed }">
+  <div class="app-shell" :class="{ 'app-shell--collapsed': collapsed, 'app-shell--admin': auth.role === 'admin' }">
     <button
       v-if="mobileOpen"
       class="navigation-backdrop"
@@ -63,7 +65,7 @@ async function logout(): Promise<void> {
     />
 
     <main class="content-island">
-      <header class="content-header">
+      <header v-if="auth.role !== 'admin'" class="content-header">
         <button
           class="mobile-menu-button"
           type="button"
@@ -96,7 +98,30 @@ async function logout(): Promise<void> {
         </div>
       </header>
 
-      <div class="content-body">
+      <header v-if="auth.role === 'admin'" class="admin-shell-header">
+        <button
+          class="mobile-menu-button"
+          type="button"
+          aria-label="Открыть меню"
+          aria-controls="app-navigation"
+          :aria-expanded="mobileOpen"
+          @click="mobileOpen = true"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </button>
+        <div id="admin-page-header" class="admin-shell-header-content" />
+        <h1 class="admin-shell-fallback">{{ pageTitle }}</h1>
+      </header>
+
+      <div
+        ref="contentBody"
+        class="content-body"
+        role="region"
+        aria-label="Содержимое страницы"
+        tabindex="0"
+      >
         <slot />
       </div>
     </main>
@@ -107,8 +132,10 @@ async function logout(): Promise<void> {
 .app-shell {
   display: grid;
   grid-template-columns: 258px minmax(0, 1fr);
-  min-height: 100vh;
-  min-height: 100dvh;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   padding: 16px 16px 16px 0;
   background: #0b1220;
   transition: grid-template-columns 0.22s ease;
@@ -117,9 +144,11 @@ async function logout(): Promise<void> {
   grid-template-columns: 76px minmax(0, 1fr);
 }
 .content-island {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  min-height: calc(100vh - 32px);
-  min-height: calc(100dvh - 32px);
+  min-height: 0;
+  height: 100%;
   overflow: hidden;
   border: 1px solid #e4e9f3;
   border-radius: 26px;
@@ -128,6 +157,7 @@ async function logout(): Promise<void> {
 }
 .content-header {
   display: flex;
+  flex: none;
   align-items: flex-start;
   gap: 24px;
   min-height: 158px;
@@ -189,7 +219,40 @@ async function logout(): Promise<void> {
   box-shadow: 0 0 0 3px #dff6eb;
 }
 .content-body {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 40px 52px 64px;
+}
+.admin-shell-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 16px;
+  min-height: 68px;
+  padding: 12px 32px;
+  border-bottom: 1px solid #e1e6f0;
+  background: #fff;
+}
+.admin-shell-header-content {
+  flex: 1;
+  min-width: 0;
+}
+.admin-shell-header-content:empty,
+.admin-shell-header:has(.admin-shell-header-content:not(:empty)) .admin-shell-fallback {
+  display: none;
+}
+.admin-shell-fallback {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+.app-shell--admin .content-body {
+  padding: 24px 32px 48px;
+  background: #f4f6fb;
 }
 .mobile-menu-button {
   display: none;
@@ -227,8 +290,6 @@ async function logout(): Promise<void> {
     padding: 9px;
   }
   .content-island {
-    min-height: calc(100vh - 18px);
-    min-height: calc(100dvh - 18px);
     border-radius: 20px;
   }
   .content-header {
@@ -252,6 +313,12 @@ async function logout(): Promise<void> {
   }
   .content-body {
     padding: 25px 20px 40px;
+  }
+  .admin-shell-header {
+    padding: 16px 20px;
+  }
+  .app-shell--admin .content-body {
+    padding: 20px 16px 36px;
   }
   .header-account {
     display: none;

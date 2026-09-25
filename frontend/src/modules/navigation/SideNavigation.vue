@@ -185,7 +185,10 @@ const roleLabel = computed(() => {
 }
 .navigation-main {
   flex: 1;
+  min-height: 0;
   margin-top: 54px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 .navigation-caption {
   margin: 0 10px 15px;
