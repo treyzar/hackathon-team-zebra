@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { getApiErrorMessage } from "@/api/errors";
 import { groupApi } from "./api";
 import { courseEnrollmentApi } from "./courseEnrollmentApi";
@@ -25,6 +25,13 @@ const loading = ref(true);
 const coursesLoading = ref(false);
 const busy = ref(false);
 const notifications = useNotifications();
+
+const headerTargetReady = ref(false);
+let headerObserver: MutationObserver | null = null;
+
+function syncHeaderTarget(): void {
+  headerTargetReady.value = Boolean(document.querySelector("#admin-page-header"));
+}
 
 const selected = computed(
   () => groups.value.find((group) => group.id === selectedId.value) ?? null,
@@ -220,12 +227,25 @@ watch(selectedId, async () => {
   }
 });
 
-onMounted(loadBase);
+onMounted(async () => {
+  await nextTick();
+  syncHeaderTarget();
+
+  headerObserver = new MutationObserver(syncHeaderTarget);
+  headerObserver.observe(document.body, { childList: true, subtree: true });
+
+  await loadBase();
+});
+
+onBeforeUnmount(() => {
+  headerObserver?.disconnect();
+  headerObserver = null;
+});
 </script>
 
 <template>
   <div class="groups-page">
-    <Teleport to="#admin-page-header">
+    <Teleport v-if="headerTargetReady" to="#admin-page-header">
       <div class="admin-toolbar">
         <div>
           <h2>Группы</h2>
