@@ -1,5 +1,4 @@
 export const WORKSPACE_SECTION_ROUTES = {
-  studentCourses: { name: "student-courses", path: "/student/courses" },
   studentSkills: { name: "student-skills", path: "/student/skills" },
   studentHistory: { name: "student-history", path: "/student/history" },
   studentProgress: { name: "student-progress", path: "/student/progress" },

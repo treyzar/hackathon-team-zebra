@@ -4,6 +4,7 @@ import { ADMIN_BUILDER_ROUTE } from "@/pages/admin/builder/constants";
 import { ADMIN_COURSES_ROUTE } from "@/pages/admin/courses/constants";
 import { ADMIN_GROUPS_ROUTE } from "@/pages/admin/groups/constants";
 import { ADMIN_USERS_ROUTE } from "@/pages/admin/users/constants";
+import { STUDENT_COURSES_ROUTE } from "@/pages/student/courses/constants";
 import { WORKSPACE_SECTION_ROUTES } from "@/pages/workspace-section/constants";
 
 export type NavigationIconName =
@@ -36,7 +37,7 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
       icon: "home",
     },
     {
-      ...WORKSPACE_SECTION_ROUTES.studentCourses,
+      ...STUDENT_COURSES_ROUTE,
       label: "Курсы",
       description: "Доступные курсы и шаги",
       icon: "courses",

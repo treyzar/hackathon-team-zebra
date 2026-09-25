@@ -5,6 +5,8 @@ import { useRoute, useRouter } from "vue-router";
 import { navigationForRole } from "@/modules/navigation/items";
 import SideNavigation from "@/modules/navigation/SideNavigation.vue";
 import { LOGIN_ROUTE } from "@/pages/login/constants";
+import { STUDENT_COURSE_ROUTE } from "@/pages/student/course/constants";
+import { STUDENT_STEP_ROUTE } from "@/pages/student/step/constants";
 import { useAuthStore } from "@/stores/auth";
 
 const COLLAPSED_KEY = "zebra.navigation.collapsed";
@@ -47,7 +49,13 @@ async function logout(): Promise<void> {
 <template>
   <div
     class="app-shell"
-    :class="{ 'app-shell--collapsed': collapsed, 'app-shell--admin': auth.role === 'admin' }"
+    :class="{
+      'app-shell--collapsed': collapsed,
+      'app-shell--admin': auth.role === 'admin',
+      'app-shell--student-course':
+        auth.role === 'student' &&
+        (route.name === STUDENT_COURSE_ROUTE.name || route.name === STUDENT_STEP_ROUTE.name),
+    }"
   >
     <button
       v-if="mobileOpen"
@@ -266,6 +274,10 @@ async function logout(): Promise<void> {
   padding: 24px 32px 48px;
   background: #f4f6fb;
 }
+.app-shell--student-course .content-body {
+  overflow: hidden;
+  padding: 0;
+}
 .mobile-menu-button {
   display: none;
   width: 42px;
@@ -331,6 +343,9 @@ async function logout(): Promise<void> {
   }
   .app-shell--admin .content-body {
     padding: 20px 16px 36px;
+  }
+  .app-shell--student-course .content-body {
+    padding: 0;
   }
   .header-account {
     display: none;
