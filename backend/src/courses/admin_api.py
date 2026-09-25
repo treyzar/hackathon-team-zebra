@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access_docs import access_note
 from auth import require_admin
 from courses import service as svc
-from courses.export_import import import_course, export_as_json
+from courses.export_import import import_course as import_from_json, export_as_json
 from courses.pdf_export import export_as_pdf
 from courses.models import Course, Enrollment, Module, Step, StepRevision
 from courses.schemas import (
@@ -401,7 +401,7 @@ async def import_course(
     db: AsyncSession = Depends(access_db),
 ) -> ImportResult:
     raw = await file.read()
-    course, warnings = await import_course(db, user, raw)
+    course, warnings = await import_from_json(db, user, raw)
     return ImportResult(
         course_id=course.id,
         slug=course.slug,
