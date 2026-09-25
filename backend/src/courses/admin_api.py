@@ -52,6 +52,7 @@ async def create_course(data: CourseCreate, db: AsyncSession = Depends(access_db
         title=data.title,
         description=data.description.model_dump(mode="json"),
         is_published=False,
+        step_access=data.step_access,
     )
     db.add(course)
     await _flush_slug(db)
@@ -102,7 +103,7 @@ async def update_course(
     course_id: int, data: CourseUpdate, db: AsyncSession = Depends(access_db)
 ):
     course = await svc.get_course(db, course_id)
-    for field in ("slug", "title", "is_published"):
+    for field in ("slug", "title", "is_published", "step_access"):
         value = getattr(data, field)
         if value is not None:
             setattr(course, field, value)

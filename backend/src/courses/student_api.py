@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user
 from courses import service as svc
+from courses.access import ensure_unlocked, locked_steps
 from courses.models import Course, Module, Step, StepRevision
 from courses.schemas import (
     CourseListItem,
@@ -21,6 +22,13 @@ from submissions import service as sub_svc
 from submissions.models import Submission
 
 learning = APIRouter(tags=["learning"])
+
+
+async def _open_step(db: AsyncSession, user: User, step_id: int):
+    """A visible step the user may open: 404 if hidden, 403 if still locked."""
+    step, rev, module = await svc.get_step(db, step_id, for_student=True)
+    await ensure_unlocked(db, user, step, module)
+    return step, rev, module
 
 
 def _progress(stats: sub_svc.StepStats) -> StepProgress:
@@ -68,6 +76,7 @@ async def get_course(
         )
     ).all()
     stats = await sub_svc.stats_for(db, user.id, [step.id for step, _ in rows])
+    locked = await locked_steps(db, user, course)
     steps: dict[int, list[StudentStepSummary]] = {m.id: [] for m in modules}
     for step, max_score in rows:
         steps[step.module_id].append(
@@ -76,6 +85,7 @@ async def get_course(
                 type=step.type,
                 max_score=max_score,
                 progress=_progress(stats[step.id]),
+                locked=step.id in locked,
             )
         )
     return StudentCourse(
@@ -83,6 +93,7 @@ async def get_course(
         slug=course.slug,
         title=course.title,
         description=course.description,
+        step_access=course.step_access,
         modules=[
             StudentModule(id=m.id, title=m.title, steps=steps[m.id]) for m in modules
         ],
@@ -95,7 +106,7 @@ async def get_step(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(access_db),
 ):
-    step, rev, module = await svc.get_step(db, step_id, for_student=True)
+    step, rev, module = await _open_step(db, user, step_id)
     parsed = svc.parse(step, rev)
     stats = (await sub_svc.stats_for(db, user.id, [step.id]))[step.id]
     block = sub_svc.submit_block_reason(parsed, stats)
@@ -125,7 +136,7 @@ async def get_answer(
     db: AsyncSession = Depends(access_db),
 ) -> dict:
     """The correct answer, when the step's show_answer policy allows it."""
-    step, rev, _ = await svc.get_step(db, step_id, for_student=True)
+    step, rev, _ = await _open_step(db, user, step_id)
     parsed = svc.parse(step, rev)
     stats = (await sub_svc.stats_for(db, user.id, [step.id]))[step.id]
     if not sub_svc.answer_available(parsed, stats):
@@ -142,7 +153,7 @@ async def submit(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(access_db),
 ):
-    step, rev, _ = await svc.get_step(db, step_id, for_student=True)
+    step, rev, _ = await _open_step(db, user, step_id)
     return await sub_svc.submit(db, user, step, rev, data.answer)
 
 
@@ -152,7 +163,7 @@ async def my_submissions(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(access_db),
 ):
-    step, _, _ = await svc.get_step(db, step_id, for_student=True)
+    step, _, _ = await _open_step(db, user, step_id)
     query = (
         select(Submission)
         .where(Submission.user_id == user.id, Submission.step_id == step.id)

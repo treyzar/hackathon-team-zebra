@@ -1,9 +1,11 @@
+import enum
 from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Enum,
     ForeignKey,
     Integer,
     String,
@@ -16,6 +18,13 @@ from sqlalchemy.orm import Mapped, mapped_column
 from models import BaseDB, User
 
 
+class StepAccess(enum.StrEnum):
+    ALL = "all"  # every step is open from the start
+    # A step opens once the previous one is passed: some score, attempts used
+    # up, or a submission sent to a curator (see courses/access.py).
+    SEQUENTIAL = "sequential"
+
+
 class Course(BaseDB):
     id: Mapped[int] = mapped_column(primary_key=True)
     slug: Mapped[str] = mapped_column(String(100), unique=True)
@@ -23,6 +32,16 @@ class Course(BaseDB):
     # TipTap/ProseMirror JSON document.
     description: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     is_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    step_access: Mapped[StepAccess] = mapped_column(
+        Enum(
+            StepAccess,
+            native_enum=False,
+            length=16,
+            values_callable=lambda e: [v.value for v in e],
+        ),
+        default=StepAccess.ALL,
+        server_default=StepAccess.ALL.value,
+    )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 

@@ -3,6 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from courses.models import StepAccess
 from steps import StepPayload
 from steps.base import Grading, RichText, ShowAnswer
 from submissions.models import SubmissionStatus
@@ -21,6 +22,7 @@ class CourseCreate(BaseModel):
     slug: str = Field(max_length=100, pattern=SLUG)
     title: str = Field(min_length=1, max_length=200)
     description: RichText = RichText()
+    step_access: StepAccess = StepAccess.ALL
 
 
 class CourseUpdate(BaseModel):
@@ -28,6 +30,7 @@ class CourseUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     description: RichText | None = None
     is_published: bool | None = None
+    step_access: StepAccess | None = None
 
 
 class CourseOut(ORM):
@@ -36,6 +39,7 @@ class CourseOut(ORM):
     title: str
     description: dict[str, Any]
     is_published: bool
+    step_access: StepAccess
 
 
 class ModuleIn(BaseModel):
@@ -131,6 +135,8 @@ class StudentStepSummary(BaseModel):
     type: str
     max_score: int
     progress: StepProgress
+    # Sequential courses: the previous step is not passed yet.
+    locked: bool = False
 
 
 class StudentModule(BaseModel):
@@ -141,6 +147,7 @@ class StudentModule(BaseModel):
 
 class StudentCourse(CourseListItem):
     description: dict[str, Any]
+    step_access: StepAccess
     modules: list[StudentModule]
 
 
