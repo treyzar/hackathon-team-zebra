@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute } from "vue-router";
 
 import type { UserRole } from "@/api/http";
 import { DASHBOARD_ROUTE } from "@/pages/dashboard/constants";
@@ -21,6 +21,7 @@ const emit = defineEmits<{
 }>();
 
 const items = computed(() => navigationForRole(props.role));
+const route = useRoute();
 const roleLabel = computed(() => {
   if (props.role === "student") return "Ученик";
   if (props.role === "curator") return "Куратор";
@@ -58,6 +59,8 @@ const roleLabel = computed(() => {
           :key="item.path"
           :to="item.path"
           class="navigation-link"
+          :class="{ 'navigation-link--active': route.path.startsWith(item.path + '/') }"
+          :aria-current="route.path.startsWith(item.path + '/') ? 'page' : undefined"
           :aria-label="collapsed ? item.label : undefined"
           :title="collapsed ? item.label : undefined"
           @click="emit('navigate')"
@@ -222,7 +225,8 @@ const roleLabel = computed(() => {
   background: #18243c;
   color: #fff;
 }
-.navigation-link.router-link-exact-active {
+.navigation-link.router-link-exact-active,
+.navigation-link--active {
   border-color: #5472fb4f;
   background: #3457f0;
   color: #fff;

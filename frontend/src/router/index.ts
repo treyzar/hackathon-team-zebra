@@ -10,6 +10,7 @@ import { forbiddenRoutes } from "@/pages/forbidden/routes";
 import { LOGIN_ROUTE } from "@/pages/login/constants";
 import { loginRoutes } from "@/pages/login/routes";
 import { signupRoutes } from "@/pages/signup/routes";
+import { studentRoutes } from "@/pages/student/routes";
 import { workspaceSectionRoutes } from "@/pages/workspace-section/routes";
 import { useAuthStore } from "@/stores/auth";
 
@@ -29,6 +30,7 @@ export function createAppRouter(pinia: Pinia) {
     routes: [
       ...dashboardRoutes,
       ...adminRoutes,
+      ...studentRoutes,
       ...workspaceSectionRoutes,
       ...forbiddenRoutes,
       ...loginRoutes,
