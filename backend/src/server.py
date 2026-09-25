@@ -13,6 +13,7 @@ from groups.api import groups
 from health import health
 from schemas import UserResponse
 from submissions.review_api import review
+from notifications.api import notifications
 
 app = FastAPI(
     title="Sasha",
@@ -39,6 +40,7 @@ api.include_router(authoring)
 api.include_router(learning)
 api.include_router(review)
 api.include_router(files)
+api.include_router(notifications)
 app.include_router(health)
 
 
