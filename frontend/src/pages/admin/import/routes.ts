@@ -6,6 +6,6 @@ export const adminImportRoutes: RouteRecordRaw[] = [
   {
     ...ADMIN_IMPORT_ROUTE,
     component: AdminImportPage,
-    meta: { requiresAuth: true, allowedRoles: ["admin"], title: "Импорт методички" },
+    meta: { requiresAuth: true, allowedRoles: ["admin"], title: "Импорт / экспорт курса" },
   },
 ];

@@ -1,6 +1,13 @@
 import { api } from "@/api/http";
 import type { Course, CourseTree, Module, StepAccess } from "../shared/types";
 
+export interface CourseImportResult {
+  course_id: number;
+  slug: string;
+  title: string;
+  warnings: string[];
+}
+
 export const courseApi = {
   async courses(): Promise<Course[]> {
     return (await api.get<Course[]>("/admin/courses")).data;
@@ -24,6 +31,19 @@ export const courseApi = {
   },
   async deleteCourse(id: number): Promise<void> {
     await api.delete(`/admin/courses/${id}`);
+  },
+  async importCourse(file: File): Promise<CourseImportResult> {
+    const data = new FormData();
+    data.append("file", file);
+    return (await api.post<CourseImportResult>("/admin/courses/import", data)).data;
+  },
+  async exportCourseJson(id: number): Promise<Blob> {
+    return (await api.get<Blob>(`/admin/courses/${id}/export`, { responseType: "blob" }))
+      .data;
+  },
+  async exportCoursePdf(id: number): Promise<Blob> {
+    return (await api.get<Blob>(`/admin/courses/${id}/export_pdf`, { responseType: "blob" }))
+      .data;
   },
   async createModule(courseId: number, title: string): Promise<Module> {
     return (await api.post<Module>(`/admin/courses/${courseId}/modules`, { title })).data;
