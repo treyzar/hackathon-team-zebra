@@ -51,6 +51,7 @@ class Severity(enum.StrEnum):
     WARNING = "warning"
     ERROR = "error"
 
+
 def _enum(e: type[enum.Enum], length: int) -> Enum:
     return Enum(
         e,
@@ -59,6 +60,7 @@ def _enum(e: type[enum.Enum], length: int) -> Enum:
         values_callable=lambda x: [v.value for v in x],
     )
 
+
 class Notification(BaseDB):
     __table_args__ = (
         Index(
@@ -66,9 +68,7 @@ class Notification(BaseDB):
             "user_id",
             postgresql_where=text("read_at IS NULL"),
         ),
-        UniqueConstraint(
-            "user_id", "dedup_key", name="uq_notifications_user_dedup"
-        ),
+        UniqueConstraint("user_id", "dedup_key", name="uq_notifications_user_dedup"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -77,9 +77,7 @@ class Notification(BaseDB):
     )
     type: Mapped[NotificationType] = mapped_column(_enum(NotificationType, 32))
     severity: Mapped[Severity] = mapped_column(
-        _enum(Severity, 16),
-        default=Severity.INFO,
-        server_default=Severity.INFO.value
+        _enum(Severity, 16), default=Severity.INFO, server_default=Severity.INFO.value
     )
 
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)

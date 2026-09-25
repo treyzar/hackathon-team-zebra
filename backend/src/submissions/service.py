@@ -11,11 +11,11 @@ from courses.models import Module, Step, StepRevision
 from courses.service import now, parse
 from files.models import File, FilePurpose, FileStatus
 from models import User
-from progress.stats import StepStats, stats_for
 from notifications.models import NotificationType
 from notifications.models import Severity as NotificationSeverity
 from notifications.payloads import SubmissionReviewedPayload
 from notifications.service import create_notification
+from progress.stats import StepStats, stats_for
 from steps.base import FileInfo, GradeResult, Grading, ShowAnswer
 from steps.registry import ParsedRevision
 from submissions.models import Submission, SubmissionStatus
@@ -171,9 +171,9 @@ async def apply_review(
     sub.review_comment = comment
 
     course_id = await db.scalar(
-        select(Module.course_id).
-        join(Step,Step.module_id==Module.id).
-        where(Step.id == sub.step_id)
+        select(Module.course_id)
+        .join(Step, Step.module_id == Module.id)
+        .where(Step.id == sub.step_id)
     )
     await create_notification(
         db,

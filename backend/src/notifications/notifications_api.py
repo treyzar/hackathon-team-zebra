@@ -10,6 +10,7 @@ from notifications.schemas import NotificationOut, UnreadCount
 
 notifications = APIRouter(prefix="/notifications", tags=["notifications"])
 
+
 @notifications.get("", response_model=list[NotificationOut])
 @access_note("Только свои уведомления.")
 async def list_notifications(

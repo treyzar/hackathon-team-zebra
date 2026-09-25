@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     # characters like @ : / % would break the URL.
     db_password: str | None = None
     jwt_algorithm: str = "HS256"
-    jwt_key: str = "bruh"
+    jwt_key: str
     access_token_expire_minutes: int = 10
     refresh_token_expire_minutes: int = 7 * 24 * 60
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]

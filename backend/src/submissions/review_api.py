@@ -178,7 +178,13 @@ async def review_submission(
     row = await _get(db, user, submission_id, lock=True)
     sub, rev = row[0], row[3]
     await sub_svc.apply_review(
-        db, sub, user, data.verdict == "accepted", data.score, data.comment, rev.max_score
+        db,
+        sub,
+        user,
+        data.verdict == "accepted",
+        data.score,
+        data.comment,
+        rev.max_score,
     )
     await db.flush()
     return await _detail(db, row)
