@@ -1,11 +1,39 @@
 from typing import Any
 
+from pydantic import BaseModel
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from courses.service import now
 from notifications.models import Notification, NotificationType, Severity
+from notifications.payloads import PAYLOADS
+
+
+async def create_notification(
+    db: AsyncSession,
+    user_id: int,
+    type: NotificationType,
+    payload: BaseModel | None = None,
+    *,
+    severity: Severity = Severity.INFO,
+    dedup_key: str | None = None,
+) -> None:
+    data: dict[str, Any] = {} if payload is None else payload.model_dump(mode="json")
+    if model := PAYLOADS.get(type):
+        data = model.model_validate(data).model_dump(mode="json")
+    values = {
+        "user_id": user_id,
+        "type": type.value,
+        "severity": severity.value,
+        "payload": data,
+        "dedup_key": dedup_key,
+    }
+    query = pg_insert(Notification).values(**values)
+    if dedup_key is not None:
+        query = query.on_conflict_do_nothing(index_elements=["user_id", "dedup_key"])
+    await db.execute(query)
+
 
 async def mark_read(
     db: AsyncSession, user_id: int, notification_id: int
@@ -20,14 +48,30 @@ async def mark_read(
         notification.read_at = now()
     return notification
 
-async def unread_count(db: AsyncSession, user_id: int) -> int:
-    count = await db.scalar(
-        select(func.count()).where(
+
+async def mark_all_read(db: AsyncSession, user_id: int) -> int:
+    result = await db.execute(
+        update(Notification)
+        .where(
             Notification.user_id == user_id,
             Notification.read_at.is_(None),
         )
+        .values(read_at=now())
     )
-    return count or 0
+    return result.rowcount or 0
+
+
+async def unread_count(db: AsyncSession, user_id: int) -> int:
+    return (
+        await db.scalar(
+            select(func.count()).where(
+                Notification.user_id == user_id,
+                Notification.read_at.is_(None),
+            )
+        )
+        or 0
+    )
+
 
 async def list_for_user(
     db: AsyncSession,

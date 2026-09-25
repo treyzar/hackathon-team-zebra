@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-
+from typing import Any
 from sqlalchemy import (DateTime,ForeignKey,Index,String,UniqueConstraint,Enum,text)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped,mapped_column
@@ -49,6 +49,13 @@ class Severity(enum.StrEnum):
     WARNING = "warning"
     ERROR = "error"
 
+def _enum(e: type[enum.Enum], length: int) -> Enum:
+    return Enum(
+        e,
+        native_enum=False,
+        length=length,
+        values_callable=lambda x: [v.value for v in x],
+    )
 
 class Notification(BaseDB):
     __table_args__ = (
@@ -66,19 +73,9 @@ class Notification(BaseDB):
     user_id: Mapped[int] = mapped_column(
         ForeignKey(User.id, ondelete="CASCADE"), index=True
     )
-    type: Mapped[NotificationType] = mapped_column(Enum(
-            NotificationType,
-            native_enum=False,
-            length=16,
-            values_callable=lambda e: [s.value for s in e],
-        ))
+    type: Mapped[NotificationType] = mapped_column(_enum(NotificationType, 32))
     severity: Mapped[Severity] = mapped_column(
-        Enum(
-            NotificationType,
-            native_enum=False,
-            length=16,
-            values_callable=lambda e: [s.value for s in e],
-        ),
+        _enum(Severity, 16),
         default=Severity.INFO,
         server_default=Severity.INFO.value
     )

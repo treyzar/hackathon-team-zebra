@@ -17,6 +17,9 @@ from steps.base import FileInfo, GradeResult, Grading, ShowAnswer
 from steps.registry import ParsedRevision
 from submissions.models import Submission, SubmissionStatus
 
+from notifications.models import NotificationType, Severity as NotificationSeverity
+from notifications.payloads import SubmissionReviewedPayload
+from notifications.service import create_notification
 
 def unprocessable(detail) -> HTTPException:
     return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail)
@@ -183,7 +186,8 @@ async def submit(
     return sub
 
 
-def apply_review(
+async def apply_review(
+    db: AsyncSession,
     sub: Submission,
     reviewer: User,
     accepted: bool,
@@ -209,3 +213,26 @@ def apply_review(
     sub.reviewer_id = reviewer.id
     sub.reviewed_at = now()
     sub.review_comment = comment
+
+    course_id = await db.scalar(
+        select(Module.course_id).
+        join(Step,Step.module_id==Module.id).
+        where(Step.id == sub.step_id)
+    )
+    await create_notification(
+        db,
+        sub.user_id,
+        NotificationType.SUBMISSION_REVIEWED,
+        SubmissionReviewedPayload(
+            submission_id=sub.id,
+            step_id=sub.step_id,
+            course_id=course_id,
+            verdict=sub.status.value,
+            score=score,
+            max_score=max_score,
+        ),
+        severity=(
+            NotificationSeverity.SUCCESS if accepted else NotificationSeverity.WARNING
+        ),
+        dedup_key=f"{NotificationType.SUBMISSION_REVIEWED}:{sub.id}",
+    )
