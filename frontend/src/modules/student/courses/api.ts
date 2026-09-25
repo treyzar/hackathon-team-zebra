@@ -7,6 +7,7 @@ import type {
   MyRating,
   StudentStep,
   Submission,
+  StudentNotification,
 } from "./types";
 
 export const studentCourseApi = {
@@ -24,6 +25,20 @@ export const studentCourseApi = {
 
   async getRating(courseId: number): Promise<MyRating> {
     return (await api.get<MyRating>(`/courses/${courseId}/rating`)).data;
+  },
+
+  async listNotifications(
+    options: { limit?: number; unreadOnly?: boolean } = {},
+  ): Promise<StudentNotification[]> {
+    return (
+      await api.get<StudentNotification[]>("/notifications", {
+        params: {
+          limit: options.limit ?? 2,
+          unread_only: options.unreadOnly ?? false,
+          offset: 0,
+        },
+      })
+    ).data;
   },
 
   async getStep(id: number): Promise<StudentStep> {

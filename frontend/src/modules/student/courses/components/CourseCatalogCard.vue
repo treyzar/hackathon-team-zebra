@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import type { CourseListItem } from "../types";
-import { progressText } from "../presentation";
+import { pointsText, progressText } from "../presentation";
 import { STUDENT_COURSE_ROUTE } from "@/pages/student/course/constants";
 
-defineProps<{ course: CourseListItem; index: number }>();
+defineProps<{ course: CourseListItem }>();
 </script>
 
 <template>
@@ -12,76 +12,58 @@ defineProps<{ course: CourseListItem; index: number }>();
     class="student-course-card"
     :to="{ name: STUDENT_COURSE_ROUTE.name, params: { courseId: course.id } }"
   >
-    <span
-      class="student-course-mark"
-      :class="`student-course-mark--${index % 3}`"
-      aria-hidden="true"
-      >{{ String(index + 1).padStart(2, "0") }}</span
-    >
     <span class="student-course-kicker">КУРС · {{ course.progress.steps_total }} ШАГОВ</span>
     <strong>{{ course.title }}</strong>
-    <span class="student-progress-track"
-      ><span :style="{ width: `${course.progress.percent}%` }"
-    /></span>
-    <span class="student-course-bottom"
-      >{{ progressText(course.progress.steps_completed, course.progress.steps_total) }}
-      <span aria-hidden="true">↗</span></span
-    >
+
+    <span class="student-progress-track" aria-hidden="true">
+      <span :style="{ width: `${course.progress.percent}%` }" />
+    </span>
+
+    <span class="student-course-bottom">
+      <span v-if="course.progress.steps_completed">
+        {{ progressText(course.progress.steps_completed, course.progress.steps_total) }}
+      </span>
+      <span v-else>○ Не начато</span>
+      <b>{{ pointsText(course.progress.points_earned) }}</b>
+    </span>
   </RouterLink>
 </template>
 
 <style scoped>
 .student-course-card {
-  position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 220px;
-  padding: 24px;
+  gap: 7px;
+  min-height: 142px;
+  padding: 18px 20px;
   border: 1px solid #e1e6f0;
   border-radius: 16px;
   background: #fff;
   color: #0f172a;
   text-decoration: none;
   transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
 }
 .student-course-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   border-color: #c9d5fc;
-  box-shadow: 0 12px 30px #21315a14;
+  box-shadow: 0 10px 28px #15274b10;
 }
-.student-course-mark {
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  margin-bottom: 24px;
-  border-radius: 12px;
-  background: #eaf0fe;
-  color: #3457f0;
-  font-weight: 800;
-}
-.student-course-mark--1 {
-  background: #e4f5ec;
-  color: #17915a;
-}
-.student-course-mark--2 {
-  background: #fff1e6;
-  color: #b8520f;
+.student-course-card:focus-visible {
+  outline: 3px solid #3457f0;
+  outline-offset: 2px;
 }
 .student-course-kicker {
-  margin-bottom: 8px;
-  color: #738097;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  color: #4a546b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 .student-course-card > strong {
-  margin-bottom: 22px;
-  font-size: 20px;
-  line-height: 1.25;
+  font-size: 16px;
+  line-height: 1.35;
 }
 .student-progress-track {
   display: block;
@@ -101,8 +83,11 @@ defineProps<{ course: CourseListItem; index: number }>();
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 12px;
-  color: #65728a;
-  font-size: 13px;
+  color: #4a546b;
+  font-size: 14px;
+}
+.student-course-bottom b {
+  color: #0f172a;
+  white-space: nowrap;
 }
 </style>

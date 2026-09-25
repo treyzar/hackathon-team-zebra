@@ -202,3 +202,31 @@ export interface MyRating {
   first_place: RankTarget;
   opportunities: RatingOpportunity[];
 }
+
+export type StudentNotificationType =
+  | "deadline_approaching"
+  | "deadline_passed"
+  | "deadline_changed"
+  | "submission_reviewed"
+  | "submission_pending_review"
+  | "submission_queue_reminder"
+  | "step_solved"
+  | "step_unlocked"
+  | "step_breaking_change"
+  | "course_completed"
+  | "course_published"
+  | "course_attention_needed"
+  | "added_to_group"
+  | "moved_to_group"
+  | "assigned_group"
+  | "hello"
+  | "role_changed";
+
+export interface StudentNotification {
+  id: number;
+  type: StudentNotificationType;
+  severity: string;
+  payload: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
+}

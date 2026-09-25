@@ -8,6 +8,20 @@ export const stepLabels: Record<StepType, string> = {
   programming: "Задача с кодом",
 };
 
+/** Russian noun agreement: 1 балл, 2 балла, 5 баллов, 11 баллов, 21 балл. */
+export function pointsWord(count: number): string {
+  const tens = Math.abs(count) % 100;
+  const units = tens % 10;
+  if (tens >= 11 && tens <= 14) return "баллов";
+  if (units === 1) return "балл";
+  if (units >= 2 && units <= 4) return "балла";
+  return "баллов";
+}
+
+export function pointsText(count: number): string {
+  return `${count} ${pointsWord(count)}`;
+}
+
 export function progressText(completed: number, total: number): string {
   return total ? `${completed} из ${total} шагов` : "Шагов пока нет";
 }
@@ -78,5 +92,83 @@ export function blockReason(reason: string | null): string {
       return "Попытки закончились.";
     default:
       return reason ?? "";
+  }
+}
+
+export function notificationPresentation(notification: import("./types").StudentNotification): {
+  title: string;
+  description: string;
+  tone: "success" | "warning" | "info" | "neutral";
+} {
+  const payload = notification.payload;
+  const courseTitle = typeof payload.course_title === "string" ? payload.course_title : null;
+  const stepTitle = typeof payload.step_title === "string" ? payload.step_title : null;
+  const objectTitle = stepTitle ?? courseTitle;
+
+  switch (notification.type) {
+    case "submission_reviewed":
+      return {
+        title: "Работа проверена",
+        description: objectTitle
+          ? `«${objectTitle}» — появился результат проверки.`
+          : "Появился результат проверки вашей работы.",
+        tone: notification.severity === "warning" ? "warning" : "success",
+      };
+    case "step_solved":
+      return {
+        title: "Шаг зачтён",
+        description: objectTitle
+          ? `«${objectTitle}» успешно завершён.`
+          : "Один из шагов курса успешно завершён.",
+        tone: "success",
+      };
+    case "step_unlocked":
+      return {
+        title: "Открыт новый шаг",
+        description: objectTitle
+          ? `Теперь доступен «${objectTitle}».`
+          : "В курсе стал доступен следующий шаг.",
+        tone: "info",
+      };
+    case "deadline_approaching":
+      return {
+        title: "Скоро дедлайн",
+        description: objectTitle
+          ? `Проверьте срок для «${objectTitle}».`
+          : "У одного из заданий скоро заканчивается срок.",
+        tone: "warning",
+      };
+    case "deadline_passed":
+      return {
+        title: "Дедлайн прошёл",
+        description: objectTitle
+          ? `Срок для «${objectTitle}» уже прошёл.`
+          : "У одного из заданий истёк срок.",
+        tone: "warning",
+      };
+    case "course_completed":
+      return {
+        title: "Курс завершён",
+        description: courseTitle
+          ? `Курс «${courseTitle}» пройден.`
+          : "Поздравляем — курс завершён.",
+        tone: "success",
+      };
+    case "course_published":
+      return {
+        title: "Доступен курс",
+        description: courseTitle
+          ? `Опубликован курс «${courseTitle}».`
+          : "Для вас появился новый опубликованный курс.",
+        tone: "info",
+      };
+    default:
+      return {
+        title: "Новое событие",
+        description: objectTitle
+          ? `Есть обновление по «${objectTitle}».`
+          : "В вашем обучении появилось обновление.",
+        tone: "neutral",
+      };
   }
 }
