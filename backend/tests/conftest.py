@@ -43,7 +43,16 @@ class LocalJudge:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            out, err = await proc.communicate(stdin.encode())
+            try:
+                out, err = await asyncio.wait_for(
+                    proc.communicate(stdin.encode()), timeout=time_limit_s
+                )
+            except TimeoutError:
+                # Like Judge0: an endless loop is stopped by the time limit.
+                proc.kill()
+                await proc.wait()
+                results.append(RunResult("time_limit", None, None, time_limit_s))
+                continue
             stdout = out.decode().replace("\r\n", "\n")
             if proc.returncode:
                 verdict = "runtime_error"

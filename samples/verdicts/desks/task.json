@@ -1,0 +1,100 @@
+{
+  "type": "programming",
+  "max_score": 10,
+  "content": {
+    "statement": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Парты. В школе открывают три новых класса. За одной партой сидят двое. Известно, сколько учеников в каждом классе. Сколько парт нужно купить, если классы занимаются в разных кабинетах одновременно?"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Входные данные: три строки, в каждой одно целое число — количество учеников в классе (1 ≤ n ≤ 1000)."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Выходные данные: одно число — наименьшее количество парт."
+            }
+          ]
+        }
+      ]
+    },
+    "language": "python3",
+    "time_limit_ms": 1000,
+    "memory_limit_mb": 256,
+    "samples": [
+      {
+        "input": "20\n21\n22\n",
+        "output": "32"
+      },
+      {
+        "input": "1\n1\n1\n",
+        "output": "3"
+      }
+    ]
+  },
+  "answer_key": {
+    "test_groups": [
+      {
+        "name": "чётные классы",
+        "points": 4,
+        "tests": [
+          {
+            "input": "2\n2\n2\n",
+            "output": "3"
+          },
+          {
+            "input": "10\n20\n30\n",
+            "output": "30"
+          },
+          {
+            "input": "1000\n2\n4\n",
+            "output": "503"
+          }
+        ]
+      },
+      {
+        "name": "нечётные классы",
+        "points": 6,
+        "tests": [
+          {
+            "input": "7\n8\n9\n",
+            "output": "13"
+          },
+          {
+            "input": "15\n15\n15\n",
+            "output": "24"
+          },
+          {
+            "input": "1000\n999\n1\n",
+            "output": "1001"
+          },
+          {
+            "input": "1\n1\n1\n",
+            "output": "3"
+          }
+        ]
+      }
+    ],
+    "reference_solution": "a = int(input())\nb = int(input())\nc = int(input())\nprint((a + 1) // 2 + (b + 1) // 2 + (c + 1) // 2)\n"
+  },
+  "settings": {
+    "grading": "tests",
+    "scoring": "per_group"
+  }
+}
