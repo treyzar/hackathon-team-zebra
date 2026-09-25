@@ -2,14 +2,6 @@
 import { computed, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { getStep, listCourses } from "./api";
-import {
-  documentTitle,
-  errorMessage,
-  pointsText,
-  progressText,
-  stepDocument,
-  stepLabels,
-} from "./presentation";
 import { studentCourseApi } from "./api";
 import { documentTitle, errorMessage, stepDocument, stepLabels } from "./presentation";
 import type { CourseListItem } from "./types";
