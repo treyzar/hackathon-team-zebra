@@ -1,15 +1,24 @@
 import { createRouter, createWebHistory } from "vue-router";
 import type { Pinia } from "pinia";
 
-import DashboardPage from "@/pages/DashboardPage.vue";
-import LoginPage from "@/pages/LoginPage.vue";
-import SignupPage from "@/pages/SignupPage.vue";
+import type { UserRole } from "@/api/http";
+import { DASHBOARD_ROUTE } from "@/pages/dashboard/constants";
+import { dashboardRoutes } from "@/pages/dashboard/routes";
+import { FORBIDDEN_ROUTE } from "@/pages/forbidden/constants";
+import { forbiddenRoutes } from "@/pages/forbidden/routes";
+import { LOGIN_ROUTE } from "@/pages/login/constants";
+import { loginRoutes } from "@/pages/login/routes";
+import { signupRoutes } from "@/pages/signup/routes";
+import { workspaceSectionRoutes } from "@/pages/workspace-section/routes";
 import { useAuthStore } from "@/stores/auth";
 
 declare module "vue-router" {
   interface RouteMeta {
     guestOnly?: boolean;
     requiresAuth?: boolean;
+    allowedRoles?: UserRole[];
+    title?: string;
+    description?: string;
   }
 }
 
@@ -17,27 +26,14 @@ export function createAppRouter(pinia: Pinia) {
   const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
-      {
-        path: "/",
-        name: "dashboard",
-        component: DashboardPage,
-        meta: { requiresAuth: true },
-      },
-      {
-        path: "/login",
-        name: "login",
-        component: LoginPage,
-        meta: { guestOnly: true },
-      },
-      {
-        path: "/signup",
-        name: "signup",
-        component: SignupPage,
-        meta: { guestOnly: true },
-      },
+      ...dashboardRoutes,
+      ...workspaceSectionRoutes,
+      ...forbiddenRoutes,
+      ...loginRoutes,
+      ...signupRoutes,
       {
         path: "/:pathMatch(.*)*",
-        redirect: "/",
+        redirect: DASHBOARD_ROUTE.path,
       },
     ],
   });
@@ -50,11 +46,15 @@ export function createAppRouter(pinia: Pinia) {
     }
 
     if (to.meta.requiresAuth && !auth.isAuthenticated) {
-      return { name: "login", query: { redirect: to.fullPath } };
+      return { name: LOGIN_ROUTE.name, query: { redirect: to.fullPath } };
+    }
+
+    if (to.meta.allowedRoles && !auth.hasRole(...to.meta.allowedRoles)) {
+      return { name: FORBIDDEN_ROUTE.name };
     }
 
     if (to.meta.guestOnly && auth.isAuthenticated) {
-      return { name: "dashboard" };
+      return { name: DASHBOARD_ROUTE.name };
     }
 
     return true;

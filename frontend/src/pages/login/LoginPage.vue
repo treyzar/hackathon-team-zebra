@@ -3,6 +3,8 @@ import { reactive, ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 
 import { getApiErrorMessage } from "@/api/errors";
+import { DASHBOARD_ROUTE } from "@/pages/dashboard/constants";
+import { SIGNUP_ROUTE } from "@/pages/signup/constants";
 import { useAuthStore } from "@/stores/auth";
 
 const auth = useAuthStore();
@@ -25,7 +27,8 @@ async function submit(): Promise<void> {
 
   try {
     await auth.login(form);
-    const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "/";
+    const redirect =
+      typeof route.query.redirect === "string" ? route.query.redirect : DASHBOARD_ROUTE.path;
     await router.replace(redirect);
   } catch (error: unknown) {
     errorMessage.value = getApiErrorMessage(error);
@@ -87,7 +90,9 @@ async function submit(): Promise<void> {
 
       <p class="mt-6 text-center text-sm text-slate-600">
         Нет аккаунта?
-        <RouterLink class="font-medium text-indigo-600 hover:text-indigo-700" to="/signup"
+        <RouterLink
+          class="font-medium text-indigo-600 hover:text-indigo-700"
+          :to="SIGNUP_ROUTE.path"
           >Создать аккаунт</RouterLink
         >
       </p>

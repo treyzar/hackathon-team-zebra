@@ -3,6 +3,8 @@ import { computed, reactive, ref } from "vue";
 import { RouterLink, useRouter } from "vue-router";
 
 import { getApiErrorMessage } from "@/api/errors";
+import { DASHBOARD_ROUTE } from "@/pages/dashboard/constants";
+import { LOGIN_ROUTE } from "@/pages/login/constants";
 import { useAuthStore } from "@/stores/auth";
 
 const auth = useAuthStore();
@@ -36,7 +38,7 @@ async function submit(): Promise<void> {
       username: form.username,
       password: form.password,
     });
-    await router.replace({ name: "dashboard" });
+    await router.replace({ name: DASHBOARD_ROUTE.name });
   } catch (error: unknown) {
     errorMessage.value = getApiErrorMessage(error);
   } finally {
@@ -133,7 +135,7 @@ async function submit(): Promise<void> {
 
       <p class="mt-6 text-center text-sm text-slate-600">
         Уже есть аккаунт?
-        <RouterLink class="font-medium text-indigo-600 hover:text-indigo-700" to="/login"
+        <RouterLink class="font-medium text-indigo-600 hover:text-indigo-700" :to="LOGIN_ROUTE.path"
           >Войти</RouterLink
         >
       </p>
