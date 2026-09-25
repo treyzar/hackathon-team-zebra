@@ -2,14 +2,16 @@
 import { computed, onMounted, ref } from "vue";
 import { RouterLink } from "vue-router";
 import { getStep, listCourses } from "./api";
+import { useAuthStore } from "@/stores/auth";
 import { studentCourseApi } from "./api";
 import { documentTitle, errorMessage, stepDocument, stepLabels } from "./presentation";
-import type { CourseListItem } from "./types";
+import type { CourseListItem, StudentNotification } from "./types";
+import CatalogGreeting from "./components/CatalogGreeting.vue";
 import CatalogHero from "./components/CatalogHero.vue";
 import CatalogSnapshot from "./components/CatalogSnapshot.vue";
 import CourseCatalogCard from "./components/CourseCatalogCard.vue";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     /** Home page mode: the next step and points above the course list. */
     overview?: boolean;
@@ -17,7 +19,9 @@ const props = withDefaults(
   { overview: false },
 );
 
+const auth = useAuthStore();
 const courses = ref<CourseListItem[]>([]);
+const notifications = ref<StudentNotification[]>([]);
 const loading = ref(true);
 const error = ref("");
 const nextTitle = ref("");
@@ -49,7 +53,12 @@ async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    courses.value = await studentCourseApi.listCourses();
+    const [courseList, recentNotifications] = await Promise.all([
+      studentCourseApi.listCourses(),
+      studentCourseApi.listNotifications({ limit: 2 }),
+    ]);
+    courses.value = courseList;
+    notifications.value = recentNotifications;
     await loadNextStepTitle(nextCourse.value);
   } catch (cause) {
     error.value = errorMessage(cause);
@@ -67,10 +76,13 @@ onMounted(load);
 
 <template>
   <div class="student-catalog">
+    <CatalogGreeting :username="auth.user?.username ?? ''" />
+
     <div v-if="loading" class="student-empty" role="status">Загружаем курсы…</div>
     <div v-else-if="error" class="student-empty student-empty--error" role="alert">
       {{ error }} <button type="button" @click="load">Повторить</button>
     </div>
+
     <template v-else>
       <div class="student-catalog-top">
         <CatalogHero
@@ -79,22 +91,17 @@ onMounted(load);
           :next-type="nextType"
           :has-courses="Boolean(courses.length)"
         />
-        <CatalogSnapshot :courses="courses.length" :steps="totals.steps" :points="totals.points" />
+        <CatalogSnapshot :courses="courses" :notifications="notifications" />
       </div>
 
       <section aria-labelledby="student-courses-heading">
         <div class="student-section-heading">
           <h2 id="student-courses-heading">Мои курсы</h2>
-          <span>{{ courses.length }}</span>
         </div>
+
         <div v-if="!courses.length" class="student-empty">Опубликованных курсов пока нет.</div>
         <div v-else class="student-course-grid">
-          <CourseCatalogCard
-            v-for="(course, index) in courses"
-            :key="course.id"
-            :course="course"
-            :index="index"
-          />
+          <CourseCatalogCard v-for="course in courses" :key="course.id" :course="course" />
         </div>
       </section>
     </template>
@@ -115,6 +122,13 @@ onMounted(load);
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
   gap: 24px;
+}
+.student-catalog-top > :first-child {
+  min-width: 0;
+  flex: 1;
+}
+.student-section-heading {
+  margin: 2px 0 12px;
 }
 .student-hero {
   display: flex;
@@ -203,8 +217,18 @@ onMounted(load);
   align-items: baseline;
   gap: 10px;
   margin: 0;
-  color: var(--color-muted);
-  font-size: 15px;
+  font-size: 22px;
+}
+.student-section-heading span {
+  display: grid;
+  min-width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  background: #eaf0fe;
+  color: #3457f0;
+  font-size: 12px;
+  font-weight: 800;
 }
 .student-points-value strong {
   color: var(--color-text);
