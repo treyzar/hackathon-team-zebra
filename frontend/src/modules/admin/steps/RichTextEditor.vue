@@ -114,16 +114,32 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.quill-editor {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
 .image-input {
   display: none;
 }
 .quill-editor :deep(.ql-toolbar) {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 100%;
   border-color: #e1e6f0;
   border-radius: 10px 10px 0 0;
   background: #f4f6fb;
 }
+.quill-editor :deep(.ql-toolbar .ql-formats) {
+  flex: none;
+}
 .quill-editor :deep(.ql-container) {
-  min-height: 320px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  min-height: var(--quill-editor-min-height, 320px);
   border-color: #e1e6f0;
   border-radius: 0 0 10px 10px;
   background: #fff;
@@ -131,9 +147,19 @@ onBeforeUnmount(() => {
   font-size: 14px;
 }
 .quill-editor :deep(.ql-editor) {
-  min-height: 320px;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: var(--quill-editor-min-height, 320px);
   padding: 22px 24px;
   line-height: 1.7;
+  overflow-wrap: anywhere;
+  overflow-x: auto;
+}
+.quill-editor :deep(.ql-editor pre),
+.quill-editor :deep(.ql-code-block-container) {
+  max-width: 100%;
+  overflow-x: auto;
 }
 .quill-editor :deep(.ql-editor img) {
   display: block;
@@ -145,5 +171,11 @@ onBeforeUnmount(() => {
 .quill-editor :deep(.ql-editor:focus) {
   outline: 2px solid #3457f0;
   outline-offset: -2px;
+}
+.quill-editor :deep(.ql-tooltip) {
+  box-sizing: border-box;
+  max-width: calc(100% - 16px);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 </style>

@@ -642,6 +642,7 @@ watch(
 .step-head-fields .step-title-field { flex: 1; }
 .step-limit-field { width: 105px; }
 .step-main-field .admin-field { font-size: 13px; }
+.step-editor-layout > .admin-stack, .step-main-field { min-width: 0; }
 .step-answer-section { padding: 0; border: 0; background: transparent; }
 .step-answer-section .admin-panel-head { margin-bottom: 12px; }
 .step-answer-section .admin-panel-head h2 { font-size: 16px; }

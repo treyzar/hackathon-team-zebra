@@ -142,7 +142,7 @@ watch(() => props.stepId, load, { immediate: true });
 .workbench-grading { width: 160px; }
 .workbench-points { width: 82px; }
 .workbench-readonly { display: flex; align-items: center; min-height: 40px; padding: 0 11px; border: 1px solid #e1e6f0; border-radius: 9px; background: #f4f6fb; font-size: 13px; }
-.workbench-body :deep(.ql-container), .workbench-body :deep(.ql-editor) { min-height: 240px; }
+.workbench-body { --quill-editor-min-height: 240px; }
 .workbench-answer-list { display: grid; gap: 8px; font-size: 13px; }
 .workbench-answer-list p { margin: 0; color: #4a546b; }
 .workbench-answer { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border: 1px solid #e1e6f0; border-radius: 9px; background: #fff; }
