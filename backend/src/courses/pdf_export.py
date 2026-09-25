@@ -21,7 +21,9 @@ _STEP_TYPE_LABELS = {
     "single_choice": "Один верный вариант",
     "multiple_choice": "Несколько верных вариантов",
     "free_text": "Свободный ответ",
+    "short_text": "Краткий ответ",
     "programming": "Программирование",
+    "number": "Число",
 }
 
 
