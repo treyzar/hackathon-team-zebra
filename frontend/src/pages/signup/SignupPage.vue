@@ -11,6 +11,9 @@ import { useAuthStore } from "@/stores/auth";
 const auth = useAuthStore();
 const router = useRouter();
 const form = reactive({
+  surname: "",
+  name: "",
+  patronymic: "",
   email: "",
   username: "",
   password: "",
@@ -35,6 +38,9 @@ async function submit(): Promise<void> {
 
   try {
     await auth.signup({
+      surname: form.surname,
+      name: form.name,
+      patronymic: form.patronymic,
       email: form.email,
       username: form.username,
       password: form.password,
@@ -49,8 +55,44 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <AuthLayout title="Создать аккаунт" subtitle="Регистрация занимает меньше минуты.">
+  <AuthLayout
+    class="auth-page--signup"
+    title="Создать аккаунт"
+    subtitle="Регистрация занимает меньше минуты."
+  >
     <form class="auth-form" @submit.prevent="submit">
+      <label class="auth-field">
+        <span>Фамилия</span>
+        <input
+          v-model.trim="form.surname"
+          name="surname"
+          autocomplete="family-name"
+          maxlength="60"
+          required
+        />
+      </label>
+
+      <label class="auth-field">
+        <span>Имя</span>
+        <input
+          v-model.trim="form.name"
+          name="name"
+          autocomplete="given-name"
+          maxlength="60"
+          required
+        />
+      </label>
+
+      <label class="auth-field auth-field--full">
+        <span>Отчество (необязательно)</span>
+        <input
+          v-model.trim="form.patronymic"
+          name="patronymic"
+          autocomplete="additional-name"
+          maxlength="60"
+        />
+      </label>
+
       <label class="auth-field">
         <span>Email</span>
         <input v-model.trim="form.email" type="email" name="email" autocomplete="email" required />

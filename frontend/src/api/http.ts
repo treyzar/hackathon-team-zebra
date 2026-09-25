@@ -14,6 +14,9 @@ export interface UserResponse {
   username: string;
   email: string;
   role: UserRole;
+  name: string;
+  surname: string;
+  patronymic: string;
 }
 
 export const api = axios.create({
