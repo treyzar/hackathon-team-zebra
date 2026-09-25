@@ -24,6 +24,11 @@ class NotificationType(enum.StrEnum):
     # payload: {pending: int}
     SUBMISSION_QUEUE_REMINDER = "submission_queue_reminder"
 
+    # payload: {question_id, step_id, course_id, student_id}
+    QUESTION_ASKED = "question_asked"
+    # payload: {question_id, step_id, course_id}
+    QUESTION_ANSWERED = "question_answered"
+
     # payload: {step_id, course_id, score, max_score}
     STEP_SOLVED = "step_solved"
     # payload: {step_id, course_id, title}

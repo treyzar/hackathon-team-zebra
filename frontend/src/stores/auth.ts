@@ -10,6 +10,9 @@ interface Credentials {
 
 interface SignupData extends Credentials {
   email: string;
+  name: string;
+  surname: string;
+  patronymic: string;
 }
 
 interface StoredTokens {

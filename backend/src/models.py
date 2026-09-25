@@ -31,6 +31,9 @@ class User(BaseDB):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(60), nullable=False)
+    surname: Mapped[str] = mapped_column(String(60), nullable=False)
+    patronymic: Mapped[str] = mapped_column(String(60), nullable=False)
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[Role] = mapped_column(
         Enum(
