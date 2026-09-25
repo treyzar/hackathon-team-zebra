@@ -396,6 +396,9 @@ onBeforeUnmount(() => {
   line-height: 1.4;
   text-transform: uppercase;
 }
+.student-outline-module > div + div {
+  margin-top: 8px;
+}
 .student-outline-step {
   display: flex;
   align-items: center;
