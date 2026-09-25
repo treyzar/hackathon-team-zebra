@@ -12,6 +12,7 @@ from files.api import files
 from groups.api import groups
 from groups.deadlines import deadlines
 from health import health
+from notifications.notifications_api import notifications
 from progress.api import progress_api
 from schemas import UserResponse
 from submissions.review_api import review
@@ -43,6 +44,7 @@ api.include_router(learning)
 api.include_router(progress_api)
 api.include_router(review)
 api.include_router(files)
+api.include_router(notifications)
 app.include_router(health)
 
 
