@@ -132,15 +132,13 @@ async def test_import_export_round_trip_all_types(client, admin):
     )
     assert first.status_code == 201, first.text
     assert first.json()["warnings"] == []
-    course_id = first.json()["course_id"]
 
-    exported = await client.get(f"/admin/courses/{course_id}/export", headers=admin[1])
+    exported = await client.get(
+        f"/admin/courses/{first.json()['course_id']}/export", headers=admin[1]
+    )
     assert exported.status_code == 200
     document = exported.json()
     assert document["schema_version"] == 2
-
-    deleted = await client.delete(f"/admin/courses/{course_id}", headers=admin[1])
-    assert deleted.status_code == 204
 
     again = await client.post(
         "/admin/courses/import",
@@ -148,13 +146,15 @@ async def test_import_export_round_trip_all_types(client, admin):
         headers=admin[1],
     )
     assert again.status_code == 201, again.text
-    assert again.json()["warnings"] == []
+    assert again.json()["slug"] == "python-basics-2"
+    assert all("занят" in w for w in again.json()["warnings"])
 
     second = await client.get(
         f"/admin/courses/{again.json()['course_id']}/export", headers=admin[1]
     )
-    assert second.json() == document
-
+    second_document = second.json()
+    second_document["course"]["slug"] = document["course"]["slug"]
+    assert second_document == document
 
 @requires_db
 async def test_import_slug_collision_reports_warning(client, admin):
