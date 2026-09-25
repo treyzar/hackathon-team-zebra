@@ -19,7 +19,7 @@ from courses.service import now, parse
 from database import async_factory, dbengine
 from files.reader import CachedFileReader
 from files.storage import StorageError
-from judge import JudgeClient, JudgeError
+from judge import JudgeClient, JudgeError, LanguageUnavailableError
 from steps.base import TestFiles
 from submissions.models import Submission, SubmissionStatus
 from submissions.service import apply_auto_result
@@ -106,6 +106,10 @@ async def process(
     except RETRYABLE as e:
         log.warning("submission %s: judge error: %s", sub_id, e)
         await _finish(sub_id, partial(_fail, message=str(e), retry=True))
+        return
+    except LanguageUnavailableError as e:
+        log.warning("submission %s: %s", sub_id, e)
+        await _finish(sub_id, partial(_fail, message=str(e)))
         return
     except Exception as e:
         log.exception("submission %s: grading crashed", sub_id)

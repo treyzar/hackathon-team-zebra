@@ -31,7 +31,8 @@ class LocalJudge:
     def __init__(self):
         self.calls = 0
 
-    async def run(self, code, cases, time_limit_s, memory_limit_kb):
+    async def run(self, code, cases, time_limit_s, memory_limit_kb, language="python3"):
+        assert language == "python3", "LocalJudge runs Python only"
         self.calls += 1
         results = []
         for stdin, expected in cases:

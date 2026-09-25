@@ -1,13 +1,13 @@
 import enum
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from config import settings as app_settings
+from languages import LANGUAGES, Language
 from steps.base import CommonSettings, GradeResult, Grading, RichText, Schema, StepType
 from steps.registry import register
 
-Language = Literal["python3"]
 _MAX_SHOWN_OUTPUT = 4096
 
 
@@ -42,12 +42,22 @@ class TestGroup(Schema):
 
 class ProgrammingContent(Schema):
     statement: RichText
-    language: Language = "python3"
+    # Languages the student may choose from; the first one is the default.
+    languages: list[Language] = Field(
+        default=["python3"], min_length=1, max_length=len(LANGUAGES)
+    )
     time_limit_ms: int = Field(default=2000, ge=100, le=15_000)
     memory_limit_mb: int = Field(default=256, ge=16, le=512)
     template: str = Field(default="", max_length=65_536)
     # Shown to the student; run for feedback but not scored.
     samples: list[Sample] = Field(default=[], max_length=20)
+
+    @field_validator("languages")
+    @classmethod
+    def _unique_languages(cls, v: list[Language]) -> list[Language]:
+        if len(set(v)) != len(v):
+            raise ValueError("Languages must not repeat")
+        return v
 
 
 class ProgrammingKey(Schema):
@@ -69,7 +79,8 @@ class ProgrammingSettings(CommonSettings):
 
 class ProgrammingAnswer(Schema):
     code: str = Field(min_length=1, max_length=65_536)
-    language: Language = "python3"
+    # May be omitted only when the step allows a single language.
+    language: Language | None = None
 
 
 def _cut(s: str | None) -> str | None:
@@ -85,6 +96,21 @@ class Programming(StepType):
     answer_key_model = ProgrammingKey
     settings_model = ProgrammingSettings
     answer_model = ProgrammingAnswer
+    # 2: ``language`` became the list ``languages``.
+    schema_version = 2
+
+    def upgrade(self, data, from_version):
+        if from_version < 2:
+            content = data["content"]
+            content["languages"] = [content.pop("language", "python3")]
+        return data
+
+    def validate_answer(self, content, answer):
+        if answer.language is None:
+            if len(content.languages) > 1:
+                raise ValueError("Choose a language")
+        elif answer.language not in content.languages:
+            raise ValueError(f"Language {answer.language!r} is not allowed here")
 
     def validate(self, content, answer_key, settings, max_score):
         if not settings.grading.uses_tests:
@@ -155,6 +181,7 @@ class Programming(StepType):
             cases,
             time_limit_s=content.time_limit_ms / 1000,
             memory_limit_kb=content.memory_limit_mb * 1024,
+            language=answer.language or content.languages[0],
         )
 
         samples = [

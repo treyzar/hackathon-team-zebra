@@ -2,11 +2,13 @@
 
 import asyncio
 import base64
+import time
 from dataclasses import dataclass
 
 import httpx
 
 from config import settings
+from languages import Language, resolve_ids
 
 # Judge0 status ids -> our verdicts.
 _VERDICTS = {
@@ -22,6 +24,11 @@ BATCH_SIZE = 20  # Judge0 default MAX_SUBMISSION_BATCH_SIZE
 
 class JudgeError(Exception):
     """Judge is unavailable or failed internally; the run should be retried."""
+
+
+class LanguageUnavailableError(Exception):
+    """This Judge0 has no such language (e.g. it was dropped on upgrade).
+    Not retried: a repeat run would fail the same way."""
 
 
 @dataclass
@@ -46,9 +53,9 @@ class JudgeClient:
         self,
         base_url: str = settings.judge0_url,
         auth_token: str | None = settings.judge0_auth_token,
-        language_id: int = settings.judge0_python_language_id,
         max_output_kb: int = settings.judge_max_output_kb,
         batch_max_bytes: int = settings.judge_batch_max_mb * 1024 * 1024,
+        languages_ttl: float = settings.judge0_languages_ttl_seconds,
         poll_interval: float = 0.5,
         timeout: float = 120,
         transport: httpx.AsyncBaseTransport | None = None,
@@ -57,7 +64,9 @@ class JudgeClient:
         self._http = httpx.AsyncClient(
             base_url=base_url, headers=headers, timeout=30, transport=transport
         )
-        self._language_id = language_id
+        self._languages_ttl = languages_ttl
+        self._language_ids: dict[Language, int] | None = None
+        self._language_ids_at = 0.0
         self._max_output_kb = max_output_kb
         self._batch_max_bytes = batch_max_bytes
         self._poll_interval = poll_interval
@@ -66,17 +75,39 @@ class JudgeClient:
     async def aclose(self) -> None:
         await self._http.aclose()
 
+    async def language_ids(self) -> dict[Language, int]:
+        """Judge0 ids of our language keys, from Judge0's own language list."""
+        age = time.monotonic() - self._language_ids_at
+        if self._language_ids is None or age > self._languages_ttl:
+            try:
+                resp = await self._http.get("/languages")
+                resp.raise_for_status()
+                self._language_ids = resolve_ids(resp.json())
+                self._language_ids_at = time.monotonic()
+            except (httpx.HTTPError, KeyError, TypeError, ValueError) as e:
+                # A stale list beats failing every run while the list endpoint
+                # is briefly down; with no list at all the run is retried.
+                if self._language_ids is None:
+                    raise JudgeError(str(e)) from e
+        return self._language_ids
+
     async def run(
         self,
         code: str,
         cases: list[tuple[str, str]],
         time_limit_s: float,
         memory_limit_kb: int,
+        language: Language = "python3",
     ) -> list[RunResult]:
         """Run ``code`` on every (stdin, expected_stdout) case, in order."""
+        language_id = (await self.language_ids()).get(language)
+        if language_id is None:
+            raise LanguageUnavailableError(f"Judge0 has no language {language!r}")
         results: list[RunResult] = []
         for chunk in self._batches(cases):
-            results += await self._run_batch(code, chunk, time_limit_s, memory_limit_kb)
+            results += await self._run_batch(
+                code, chunk, time_limit_s, memory_limit_kb, language_id
+            )
         return results
 
     def _batches(self, cases: list[tuple[str, str]]):
@@ -96,11 +127,11 @@ class JudgeClient:
         if chunk:
             yield chunk
 
-    async def _run_batch(self, code, cases, time_limit_s, memory_limit_kb):
+    async def _run_batch(self, code, cases, time_limit_s, memory_limit_kb, language_id):
         body = {
             "submissions": [
                 {
-                    "language_id": self._language_id,
+                    "language_id": language_id,
                     "source_code": _b64(code),
                     "stdin": _b64(stdin),
                     "expected_output": _b64(expected),
