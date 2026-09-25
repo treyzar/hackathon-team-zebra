@@ -8,6 +8,7 @@ import { LOGIN_ROUTE } from "@/pages/login/constants";
 import { STUDENT_COURSE_ROUTE } from "@/pages/student/course/constants";
 import { STUDENT_STEP_ROUTE } from "@/pages/student/step/constants";
 import { useAuthStore } from "@/stores/auth";
+import NotificationViewport from "../notifications/NotificationViewport.vue";
 
 const COLLAPSED_KEY = "zebra.navigation.collapsed";
 
@@ -144,6 +145,7 @@ async function logout(): Promise<void> {
       >
         <slot />
       </div>
+      <NotificationViewport />
     </main>
   </div>
 </template>
