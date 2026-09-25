@@ -45,6 +45,19 @@ class SubmissionQueueReminderPayload(BaseModel):
     pending: int
 
 
+class QuestionAskedPayload(BaseModel):
+    question_id: int
+    step_id: int
+    course_id: int
+    student_id: int
+
+
+class QuestionAnsweredPayload(BaseModel):
+    question_id: int
+    step_id: int
+    course_id: int
+
+
 class StepSolvedPayload(BaseModel):
     step_id: int
     course_id: int
@@ -89,6 +102,8 @@ PAYLOADS: dict[NotificationType, type[BaseModel]] = {
     NotificationType.SUBMISSION_REVIEWED: SubmissionReviewedPayload,
     NotificationType.SUBMISSION_PENDING_REVIEW: SubmissionPendingReviewPayload,
     NotificationType.SUBMISSION_QUEUE_REMINDER: SubmissionQueueReminderPayload,
+    NotificationType.QUESTION_ASKED: QuestionAskedPayload,
+    NotificationType.QUESTION_ANSWERED: QuestionAnsweredPayload,
     NotificationType.STEP_SOLVED: StepSolvedPayload,
     NotificationType.STEP_UNLOCKED: StepUnlockedPayload,
     NotificationType.STEP_BREAKING_CHANGE: StepBreakingChangePayload,
