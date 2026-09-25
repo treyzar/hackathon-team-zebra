@@ -14,36 +14,36 @@ import { DASHBOARD_ROUTE } from "@/pages/dashboard/constants";
 <style scoped>
 .forbidden-page {
   display: flex;
-  min-height: 320px;
+  min-height: 280px;
   flex-direction: column;
   align-items: flex-start;
-  padding: 42px;
-  border: 1px solid #e0e7f1;
-  border-radius: 18px;
-  background: #fff;
+  padding: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 }
 .forbidden-page > span {
-  color: #3457f0;
+  color: var(--color-primary);
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
 .forbidden-page h2 {
   margin: 20px 0 8px;
-  color: #0f172a;
-  font-size: 27px;
-  letter-spacing: -0.03em;
+  color: var(--color-text);
+  font-size: 24px;
+  font-weight: 700;
 }
 .forbidden-page p {
   margin: 0;
-  color: #65728a;
+  color: var(--color-muted);
   font-size: 14px;
 }
 .forbidden-page a {
   margin-top: 32px;
-  color: #3457f0;
-  font-size: 13px;
-  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 15px;
+  font-weight: 600;
   text-decoration: none;
 }
 .forbidden-page a:hover {

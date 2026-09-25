@@ -55,7 +55,7 @@ onMounted(load);
 
 <template>
   <div class="admin-page admin-page--detail">
-    <Teleport to="#admin-page-header">
+    <Teleport defer to="#admin-page-header">
       <div class="admin-toolbar admin-toolbar--detail">
         <div>
           <RouterLink

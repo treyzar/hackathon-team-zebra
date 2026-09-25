@@ -8,6 +8,20 @@ export const stepLabels: Record<StepType, string> = {
   programming: "Задача с кодом",
 };
 
+/** Russian noun agreement: 1 балл, 2 балла, 5 баллов, 11 баллов, 21 балл. */
+export function pointsWord(count: number): string {
+  const tens = Math.abs(count) % 100;
+  const units = tens % 10;
+  if (tens >= 11 && tens <= 14) return "баллов";
+  if (units === 1) return "балл";
+  if (units >= 2 && units <= 4) return "балла";
+  return "баллов";
+}
+
+export function pointsText(count: number): string {
+  return `${count} ${pointsWord(count)}`;
+}
+
 export function progressText(completed: number, total: number): string {
   return total ? `${completed} из ${total} шагов` : "Шагов пока нет";
 }

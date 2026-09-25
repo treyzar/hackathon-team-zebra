@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/errors";
 import { stepApi } from "./api";
+import { courseApi } from "../courses/api";
 import type { CodeSample } from "./editor-model";
 import { uploadAnswerFile } from "./file-api";
 import RichTextEditor from "./RichTextEditor.vue";
@@ -26,6 +27,8 @@ const backRoute = computed(() =>
     : { name: ADMIN_COURSES_ROUTE.name },
 );
 const step = ref<Step | null>(null);
+const courseTitle = ref("");
+const moduleTitle = computed(() => String(route.query.moduleTitle ?? ""));
 const form = ref(newStepForm());
 const comment = ref("");
 const isBreaking = ref(false);
@@ -54,8 +57,18 @@ function setSubmissionMode(mode: "link" | "file" | "either"): void {
   form.value.maxFiles = mode === "link" ? 0 : 1;
 }
 
+async function loadCourseTitle(): Promise<void> {
+  if (!Number.isInteger(courseId.value) || courseId.value <= 0 || courseTitle.value) return;
+  try {
+    courseTitle.value = (await courseApi.course(courseId.value)).title;
+  } catch {
+    // The breadcrumb falls back to a plain "К курсу" link.
+  }
+}
+
 async function load(): Promise<void> {
   editorValid.value = true;
+  void loadCourseTitle();
   if (isNew.value) {
     step.value = null;
     form.value = newStepForm();
@@ -132,7 +145,11 @@ async function addTestFile(
   }
 }
 
-async function save(): Promise<void> {
+/**
+ * `next` decides where a new step leads: back to the course builder, which highlights it,
+ * or straight to a fresh step in the same module. Existing steps stay open after saving.
+ */
+async function save(next: "builder" | "another" = "builder"): Promise<void> {
   if (uploading.value || imageUploading.value) {
     error.value = "Дождитесь завершения загрузки файла.";
     return;
@@ -155,6 +172,20 @@ async function save(): Promise<void> {
     const saved = isNew.value
       ? await stepApi.createStep(Number(route.params.moduleId), data)
       : await stepApi.saveStep(stepId.value, data);
+    if (isNew.value && next === "another") {
+      hasChosenType.value = false;
+      await load();
+      success.value = "Шаг сохранён. Выберите тип следующего шага.";
+      return;
+    }
+    if (isNew.value && Number.isInteger(courseId.value) && courseId.value > 0) {
+      await router.push({
+        name: ADMIN_COURSE_ROUTE.name,
+        params: { courseId: courseId.value },
+        query: { added: saved.id },
+      });
+      return;
+    }
     if (isNew.value) {
       await router.replace({
         name: ADMIN_STEP_ROUTE.name,
@@ -188,21 +219,52 @@ watch(
 
 <template>
   <div class="admin-page admin-page--detail">
-    <Teleport to="#admin-page-header">
+    <Teleport defer to="#admin-page-header">
       <div class="admin-toolbar admin-toolbar--detail">
         <div>
-          <RouterLink class="admin-link" :to="backRoute">← К курсу</RouterLink>
-          <h2>{{ isNew ? "Новый шаг" : `Шаг #${stepId}` }}</h2>
+          <div class="step-editor-heading">
+            <p v-if="courseTitle" class="admin-breadcrumbs">
+              <RouterLink :to="ADMIN_COURSES_ROUTE.path">Курсы</RouterLink> ›
+              <RouterLink :to="backRoute">{{ courseTitle }}</RouterLink
+              ><template v-if="moduleTitle"> › {{ moduleTitle }}</template>
+            </p>
+            <RouterLink v-else class="admin-link" :to="backRoute">← К курсу</RouterLink>
+            <h2>{{ isNew ? "Новый шаг" : `Шаг #${stepId}` }}</h2>
+          </div>
+          <button
+            v-if="isNew"
+            class="admin-badge step-editor-type"
+            type="button"
+            title="Сменить тип"
+            @click="showTypePicker = true"
+          >
+            {{ stepTypeLabels[form.type] }}
+          </button>
+          <span v-else class="admin-badge">{{ stepTypeLabels[form.type] }}</span>
           <p v-if="step">
             Редакция {{ step.revision.number }} ·
             {{ step.is_hidden ? "Скрыт от учеников" : "Виден ученикам" }}
           </p>
         </div>
-        <div class="admin-actions">
-          <span class="admin-badge">{{ stepTypeLabels[form.type] }}</span>
-          <button v-if="isNew" class="admin-button" type="button" @click="showTypePicker = true">
-            Сменить тип
+        <div v-if="isNew" class="admin-actions">
+          <RouterLink class="admin-button admin-button--ghost" :to="backRoute">Отмена</RouterLink
+          ><button
+            class="admin-button"
+            type="button"
+            :disabled="saving || uploading || imageUploading"
+            @click="save('another')"
+          >
+            Сохранить и добавить ещё</button
+          ><button
+            class="admin-button admin-button--primary"
+            type="button"
+            :disabled="saving || uploading || imageUploading"
+            @click="save('builder')"
+          >
+            {{ saving ? "Сохраняем…" : "Сохранить шаг →" }}
           </button>
+        </div>
+        <div v-else class="admin-actions">
           <RouterLink
             v-if="step"
             class="admin-button"
@@ -212,9 +274,9 @@ watch(
             class="admin-button admin-button--primary"
             type="button"
             :disabled="saving || loading || uploading || imageUploading"
-            @click="save"
+            @click="save()"
           >
-            {{ saving ? "Сохраняем…" : isNew ? "Создать шаг" : "Сохранить редакцию" }}
+            {{ saving ? "Сохраняем…" : "Сохранить редакцию" }}
           </button>
         </div>
       </div>
@@ -711,9 +773,9 @@ watch(
               class="admin-button admin-button--primary"
               type="button"
               :disabled="saving || uploading || imageUploading"
-              @click="save"
+              @click="save()"
             >
-              {{ saving ? "Сохраняем…" : isNew ? "Создать шаг" : "Сохранить редакцию" }}
+              {{ saving ? "Сохраняем…" : isNew ? "Сохранить шаг →" : "Сохранить редакцию" }}
             </button>
           </div>
         </div>
@@ -723,6 +785,21 @@ watch(
 </template>
 
 <style scoped>
+.step-editor-heading {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.step-editor-type {
+  border: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.step-editor-type:hover {
+  background: var(--color-primary-pale);
+}
 .step-title-field {
   font-size: 13px;
 }

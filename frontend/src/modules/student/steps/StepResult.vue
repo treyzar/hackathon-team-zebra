@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { submissionLabel } from "@/modules/student/courses/presentation";
+import { pointsWord, submissionLabel } from "@/modules/student/courses/presentation";
 import type { Submission } from "@/modules/student/courses/types";
 
 const props = defineProps<{
@@ -40,7 +40,9 @@ const testGroups = computed(() => {
   >
     <div class="student-result-head">
       <strong>{{ submissionLabel(submission.status) }}</strong>
-      <span v-if="submission.score !== null"> {{ submission.score }} / {{ maxScore }} баллов </span>
+      <span v-if="submission.score !== null">
+        {{ submission.score }} / {{ maxScore }} {{ pointsWord(maxScore) }}
+      </span>
     </div>
 
     <p v-if="submission.review_comment">{{ submission.review_comment }}</p>
