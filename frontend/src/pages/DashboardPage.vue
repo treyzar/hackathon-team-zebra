@@ -22,7 +22,8 @@ async function logout(): Promise<void> {
     >
       <div>
         <p class="text-sm font-semibold tracking-[0.2em] text-indigo-600 uppercase">Zebra Team</p>
-        <h1 class="mt-2 text-3xl font-semibold tracking-tight">Вы авторизованы</h1>
+        <h1 class="mt-2 text-3xl font-semibold tracking-tight">{{ auth.user?.username }}</h1>
+        <p class="mt-2 text-slate-600">Роль: {{ auth.role }}</p>
       </div>
       <button
         class="rounded-lg border border-slate-300 px-4 py-2 font-medium transition hover:bg-slate-100"

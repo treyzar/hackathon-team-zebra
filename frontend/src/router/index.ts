@@ -42,8 +42,12 @@ export function createAppRouter(pinia: Pinia) {
     ],
   });
 
-  router.beforeEach((to) => {
+  router.beforeEach(async (to) => {
     const auth = useAuthStore(pinia);
+
+    if (to.meta.requiresAuth || to.meta.guestOnly) {
+      await auth.restoreSession();
+    }
 
     if (to.meta.requiresAuth && !auth.isAuthenticated) {
       return { name: "login", query: { redirect: to.fullPath } };

@@ -7,10 +7,13 @@ export interface TokenResponse {
   expires_in: number;
 }
 
+export type UserRole = "student" | "curator" | "admin";
+
 export interface UserResponse {
   id: number;
   username: string;
   email: string;
+  role: UserRole;
 }
 
 export const api = axios.create({
