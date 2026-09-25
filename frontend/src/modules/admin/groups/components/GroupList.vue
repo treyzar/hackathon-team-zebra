@@ -9,17 +9,11 @@ defineProps<{
 
 const emit = defineEmits<{
   select: [id: number];
-  create: [];
 }>();
 </script>
 
 <template>
   <aside class="groups-sidebar">
-    <div class="groups-sidebar__head">
-      <h1>Группы</h1>
-      <button class="groups-sidebar__create" type="button" @click="emit('create')">+ Группа</button>
-    </div>
-
     <div v-if="!groups.length" class="groups-sidebar__empty">Групп пока нет</div>
     <div v-else class="groups-sidebar__list">
       <button
@@ -46,33 +40,12 @@ const emit = defineEmits<{
 .groups-sidebar {
   width: 300px;
   min-width: 300px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.groups-sidebar__head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 2px;
-}
-.groups-sidebar__head h1 {
-  flex: 1;
-  margin: 0;
-  color: #1d2b43;
-  font-size: 28px;
-  line-height: 1.2;
-  font-weight: 700;
-}
-.groups-sidebar__create {
-  height: 40px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 12px;
-  background: #3457f0;
-  color: #fff;
-  font: 600 14px Onest, system-ui, sans-serif;
-  cursor: pointer;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
 }
 .groups-sidebar__list {
   display: grid;
@@ -128,6 +101,9 @@ const emit = defineEmits<{
   .groups-sidebar {
     width: 100%;
     min-width: 0;
+    height: auto;
+    overflow: visible;
+    padding-right: 0;
   }
   .groups-sidebar__list {
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

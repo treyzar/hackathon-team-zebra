@@ -9,6 +9,7 @@ import GroupCreatePanel from "./components/GroupCreatePanel.vue";
 import GroupSettingsPanel from "./components/GroupSettingsPanel.vue";
 import GroupStudentsPanel from "./components/GroupStudentsPanel.vue";
 import GroupCoursesPanel from "./components/GroupCoursesPanel.vue";
+import { useNotifications } from "@/modules/notifications/useNotifications";
 import type { AdminUser, Group } from "../shared/types";
 import type { AdminCourse, GroupCourseCoverage } from "./types";
 
@@ -23,8 +24,7 @@ const showCreate = ref(false);
 const loading = ref(true);
 const coursesLoading = ref(false);
 const busy = ref(false);
-const error = ref("");
-const success = ref("");
+const notifications = useNotifications();
 
 const selected = computed(
   () => groups.value.find((group) => group.id === selectedId.value) ?? null,
@@ -36,14 +36,8 @@ function username(id: number | null): string {
   return users.value.find((user) => user.id === id)?.username ?? "Нет куратора";
 }
 
-function resetMessages(): void {
-  error.value = "";
-  success.value = "";
-}
-
 async function loadBase(): Promise<void> {
   loading.value = true;
-  resetMessages();
   try {
     [groups.value, users.value, courses.value] = await Promise.all([
       groupApi.groups(),
@@ -62,7 +56,7 @@ async function loadBase(): Promise<void> {
 
     await loadSelectedGroupData();
   } catch (cause) {
-    error.value = getApiErrorMessage(cause);
+    notifications.error(getApiErrorMessage(cause));
   } finally {
     loading.value = false;
   }
@@ -100,9 +94,9 @@ async function loadCourseCoverage(): Promise<void> {
     );
 
     courseCoverage.value = courses.value.map((course, index) => {
-      const enrolledStudentIds = enrollmentLists[index]!
-        .filter((student) => student.group_id === groupId && memberIds.has(student.id))
-        .map((student) => student.id);
+      const enrolledStudentIds = enrollmentLists[index]!.filter(
+        (student) => student.group_id === groupId && memberIds.has(student.id),
+      ).map((student) => student.id);
 
       return {
         course,
@@ -118,15 +112,14 @@ async function loadCourseCoverage(): Promise<void> {
 
 async function createGroup(payload: { name: string; curator_id: number | null }): Promise<void> {
   busy.value = true;
-  resetMessages();
   try {
     const group = await groupApi.createGroup(payload);
     selectedId.value = group.id;
     showCreate.value = false;
     await loadBase();
-    success.value = "Группа создана";
+    notifications.success("Группа создана");
   } catch (cause) {
-    error.value = getApiErrorMessage(cause);
+    notifications.error(getApiErrorMessage(cause));
   } finally {
     busy.value = false;
   }
@@ -135,13 +128,12 @@ async function createGroup(payload: { name: string; curator_id: number | null })
 async function saveGroup(payload: { name: string; curator_id: number | null }): Promise<void> {
   if (!selected.value) return;
   busy.value = true;
-  resetMessages();
   try {
     await groupApi.updateGroup(selected.value.id, payload);
     groups.value = await groupApi.groups();
-    success.value = "Группа обновлена";
+    notifications.success("Группа обновлена");
   } catch (cause) {
-    error.value = getApiErrorMessage(cause);
+    notifications.error(getApiErrorMessage(cause));
   } finally {
     busy.value = false;
   }
@@ -150,7 +142,6 @@ async function saveGroup(payload: { name: string; curator_id: number | null }): 
 async function addStudent(userId: number): Promise<void> {
   if (selectedId.value === null) return;
   busy.value = true;
-  resetMessages();
   try {
     await groupApi.addStudent(selectedId.value, userId);
     [groups.value, members.value] = await Promise.all([
@@ -158,9 +149,9 @@ async function addStudent(userId: number): Promise<void> {
       groupApi.groupStudents(selectedId.value),
     ]);
     await loadCourseCoverage();
-    success.value = "Ученик добавлен в группу";
+    notifications.success("Ученик добавлен в группу");
   } catch (cause) {
-    error.value = getApiErrorMessage(cause);
+    notifications.error(getApiErrorMessage(cause));
   } finally {
     busy.value = false;
   }
@@ -169,7 +160,6 @@ async function addStudent(userId: number): Promise<void> {
 async function removeStudent(userId: number): Promise<void> {
   if (selectedId.value === null) return;
   busy.value = true;
-  resetMessages();
   try {
     await groupApi.removeStudent(selectedId.value, userId);
     [groups.value, members.value] = await Promise.all([
@@ -177,9 +167,9 @@ async function removeStudent(userId: number): Promise<void> {
       groupApi.groupStudents(selectedId.value),
     ]);
     await loadCourseCoverage();
-    success.value = "Ученик исключён из группы";
+    notifications.success("Ученик исключён из группы");
   } catch (cause) {
-    error.value = getApiErrorMessage(cause);
+    notifications.error(getApiErrorMessage(cause));
   } finally {
     busy.value = false;
   }
@@ -188,18 +178,19 @@ async function removeStudent(userId: number): Promise<void> {
 async function enrollGroup(courseId: number): Promise<void> {
   if (selectedId.value === null) return;
   busy.value = true;
-  resetMessages();
   try {
     const result = await courseEnrollmentApi.enrollGroup(courseId, selectedId.value);
     await loadCourseCoverage();
 
     const enrolled = result.enrolled.length;
     const existed = result.already_enrolled.length;
-    success.value = enrolled
-      ? `На курс записано: ${enrolled}. Уже были записаны: ${existed}.`
-      : `Все текущие ученики группы уже были записаны на этот курс (${existed}).`;
+    notifications.success(
+      enrolled
+        ? `На курс записано: ${enrolled}. Уже были записаны: ${existed}.`
+        : `Все текущие ученики группы уже были записаны на этот курс (${existed}).`,
+    );
   } catch (cause) {
-    error.value = getApiErrorMessage(cause);
+    notifications.error(getApiErrorMessage(cause));
   } finally {
     busy.value = false;
   }
@@ -208,14 +199,13 @@ async function enrollGroup(courseId: number): Promise<void> {
 async function deleteGroup(): Promise<void> {
   if (!selected.value || !window.confirm(`Удалить группу «${selected.value.name}»?`)) return;
   busy.value = true;
-  resetMessages();
   try {
     await groupApi.deleteGroup(selected.value.id);
     selectedId.value = null;
     await loadBase();
-    success.value = "Группа удалена";
+    notifications.success("Группа удалена");
   } catch (cause) {
-    error.value = getApiErrorMessage(cause);
+    notifications.error(getApiErrorMessage(cause));
   } finally {
     busy.value = false;
   }
@@ -223,11 +213,10 @@ async function deleteGroup(): Promise<void> {
 
 watch(selectedId, async () => {
   if (loading.value) return;
-  resetMessages();
   try {
     await loadSelectedGroupData();
   } catch (cause) {
-    error.value = getApiErrorMessage(cause);
+    notifications.error(getApiErrorMessage(cause));
   }
 });
 
@@ -236,8 +225,20 @@ onMounted(loadBase);
 
 <template>
   <div class="groups-page">
-    <p v-if="error" class="admin-error" role="alert">{{ error }}</p>
-    <p v-if="success" class="admin-success" role="status">{{ success }}</p>
+    <Teleport to="#admin-page-header">
+      <div class="admin-toolbar">
+        <div>
+          <h2>Группы</h2>
+        </div>
+        <button
+          class="admin-button admin-button--primary"
+          type="button"
+          @click="showCreate = !showCreate"
+        >
+          + Группа
+        </button>
+      </div>
+    </Teleport>
 
     <GroupCreatePanel
       v-if="showCreate"
@@ -255,7 +256,6 @@ onMounted(loadBase);
         :selected-id="selectedId"
         :curator-name="username"
         @select="selectedId = $event"
-        @create="showCreate = !showCreate"
       />
 
       <main v-if="selected" class="group-content">
@@ -295,26 +295,50 @@ onMounted(loadBase);
 <style scoped>
 .groups-page {
   min-width: 0;
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 24px 32px;
   background: #f4f6fb;
   color: #1d2b43;
   font-size: 14px;
   line-height: 1.5;
 }
-.groups-layout {
+.groups-page-header {
+  width: 100%;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.groups-page-header h2 {
+  margin: 0;
+}
+.groups-layout {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  align-items: stretch;
   gap: 20px;
+  overflow: hidden;
 }
 .group-content {
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
 }
 .group-summary-card {
+  flex: 0 0 auto;
   padding: 18px;
   border: 1px solid #e1e6f0;
   border-radius: 16px;
@@ -332,23 +356,28 @@ onMounted(loadBase);
 }
 .groups-loading {
   display: flex;
+  flex: 1;
 }
 .groups-create-panel {
+  flex: 0 0 auto;
   margin-bottom: 16px;
-}
-:deep(.admin-error),
-:deep(.admin-success) {
-  margin-top: 0;
 }
 @media (max-width: 900px) {
   .groups-page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
     padding: 20px;
   }
   .groups-layout {
+    overflow: visible;
     flex-direction: column;
   }
   .group-content {
     width: 100%;
+    height: auto;
+    overflow: visible;
+    padding-right: 0;
   }
 }
 @media (max-width: 560px) {
