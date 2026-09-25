@@ -1,3 +1,4 @@
+import type { ProgrammingLanguage } from "../../languages";
 import type { FreeTextContent, StepType } from "@/modules/student/courses/types";
 
 export interface AnswerDraft {
@@ -5,6 +6,7 @@ export interface AnswerDraft {
   text: string;
   files: number[];
   code: string;
+  language: ProgrammingLanguage;
 }
 
 function buildFreeTextAnswer(
@@ -36,6 +38,6 @@ export function buildAnswer(
     case "free_text":
       return buildFreeTextAnswer(content, draft);
     case "programming":
-      return draft.code.trim() ? { code: draft.code, language: "python3" } : null;
+      return draft.code.trim() ? { code: draft.code, language: draft.language } : null;
   }
 }

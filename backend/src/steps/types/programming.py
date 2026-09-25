@@ -197,19 +197,23 @@ class Programming(StepType):
         ]
         pos = len(content.samples)
         groups, score, all_passed = [], 0.0, True
+        per_group = settings.scoring == Scoring.PER_GROUP
         for g in answer_key.test_groups:
             group_runs = runs[pos : pos + len(g.tests)]
             pos += len(g.tests)
             passed = all(r.verdict == "ok" for r in group_runs)
             all_passed &= passed
-            earned = g.points if passed and settings.scoring == Scoring.PER_GROUP else 0
+            earned = g.points if passed and per_group else 0
             score += earned
             groups.append(
                 {
                     "name": g.name,
-                    "points": g.points,
+                    # All or nothing: group points do not count, so they are
+                    # not shown either; a passed group reading "0 / 1" looks
+                    # like a lost point.
+                    "points": g.points if per_group else None,
                     "passed": passed,
-                    "earned": earned,
+                    "earned": earned if per_group else None,
                     # Hidden tests: verdicts only, never input/output.
                     "tests": [
                         {"verdict": r.verdict, "time": r.time} for r in group_runs

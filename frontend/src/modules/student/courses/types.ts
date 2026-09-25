@@ -1,3 +1,5 @@
+import type { ProgrammingLanguage } from "../../languages";
+
 export type StepType = "theory" | "single_choice" | "multiple_choice" | "free_text" | "programming";
 export type StepAccess = "all" | "sequential";
 export type Grading = "none" | "auto" | "tests" | "tests_and_review" | "manual";
@@ -93,8 +95,6 @@ export interface FreeTextContent {
   max_files: number;
   allowed_mime: string[];
 }
-
-export type ProgrammingLanguage = "python3" | "javascript" | "cpp" | "csharp" | "go" | "pascal";
 
 export interface ProgrammingContent {
   statement: RichDocument;

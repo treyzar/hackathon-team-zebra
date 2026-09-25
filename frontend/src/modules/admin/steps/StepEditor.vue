@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/errors";
-import { stepApi } from "./api";
+import { type LanguageOption, stepApi } from "./api";
 import { courseApi } from "../courses/api";
 import type { CodeSample } from "./editor-model";
 import { uploadAnswerFile } from "./file-api";
@@ -11,6 +11,7 @@ import StepTypePicker from "./StepTypePicker.vue";
 import { newStepForm, formFromStep, payloadFromForm, validateStepForm } from "./editor-model";
 import { stepTypeLabels } from "../shared/format";
 import type { Step, StepType } from "../shared/types";
+import { LANGUAGE_KEYS, LANGUAGES, type ProgrammingLanguage } from "@/modules/languages";
 import { ADMIN_COURSE_ROUTE } from "@/pages/admin/course/constants";
 import { ADMIN_COURSES_ROUTE } from "@/pages/admin/courses/constants";
 import { ADMIN_REVISIONS_ROUTE } from "@/pages/admin/revisions/constants";
@@ -55,6 +56,35 @@ function setSubmissionMode(mode: "link" | "file" | "either"): void {
   form.value.requireText = mode === "link";
   form.value.minFiles = mode === "file" ? 1 : 0;
   form.value.maxFiles = mode === "link" ? 0 : 1;
+}
+
+// The backend's list also tells which languages Judge0 can run right now.
+const languageOptions = ref<LanguageOption[]>(
+  LANGUAGE_KEYS.map((key) => ({ key, title: LANGUAGES[key].title, available: null })),
+);
+
+async function loadLanguages(): Promise<void> {
+  try {
+    languageOptions.value = await stepApi.languages();
+  } catch {
+    // Keep the built-in list: availability is only a hint.
+  }
+}
+
+function languageTitle(key: ProgrammingLanguage): string {
+  return languageOptions.value.find((option) => option.key === key)?.title ?? LANGUAGES[key].title;
+}
+
+function toggleLanguage(key: ProgrammingLanguage): void {
+  const languages = form.value.languages;
+  form.value.languages = languages.includes(key)
+    ? languages.filter((item) => item !== key)
+    : [...languages, key];
+}
+
+// The first allowed language is preselected for the student.
+function setDefaultLanguage(key: ProgrammingLanguage): void {
+  form.value.languages = [key, ...form.value.languages.filter((item) => item !== key)];
 }
 
 async function loadCourseTitle(): Promise<void> {
@@ -205,7 +235,10 @@ async function save(next: "builder" | "another" = "builder"): Promise<void> {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  void load();
+  void loadLanguages();
+});
 watch(
   () => route.fullPath,
   (next, previous) => {
@@ -495,10 +528,38 @@ watch(
             <div class="admin-panel-head">
               <div>
                 <h2>Код и ограничения</h2>
-                <p>Поддерживается Python 3.</p>
+                <p>Ученик выбирает язык из разрешённых.</p>
               </div>
             </div>
             <div class="admin-form">
+              <fieldset class="admin-field language-picker">
+                <legend>Разрешённые языки</legend>
+                <label v-for="option in languageOptions" :key="option.key" class="admin-check"
+                  ><input
+                    type="checkbox"
+                    :checked="form.languages.includes(option.key)"
+                    @change="toggleLanguage(option.key)"
+                  />
+                  {{ option.title }}
+                  <span v-if="option.available === false" class="language-unavailable"
+                    >нет в Judge0</span
+                  ></label
+                >
+              </fieldset>
+              <label v-if="form.languages.length > 1" class="admin-field"
+                >Язык по умолчанию<select
+                  :value="form.languages[0]"
+                  @change="
+                    setDefaultLanguage(
+                      ($event.target as HTMLSelectElement).value as ProgrammingLanguage,
+                    )
+                  "
+                >
+                  <option v-for="key in form.languages" :key="key" :value="key">
+                    {{ languageTitle(key) }}
+                  </option>
+                </select></label
+              >
               <label class="admin-field"
                 >Шаблон кода<textarea
                   v-model="form.template"
@@ -908,6 +969,23 @@ watch(
 .choice-row > input:first-child {
   flex: none;
   accent-color: #17915a;
+}
+.language-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.language-unavailable {
+  color: #b45309;
+  font-size: 12px;
+}
+.language-picker legend {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 0;
 }
 .code-textarea {
   font-family: "SFMono-Regular", Consolas, monospace !important;
