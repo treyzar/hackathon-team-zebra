@@ -12,7 +12,7 @@ from files.api import files
 from groups.api import groups
 from groups.deadlines import deadlines
 from health import health
-from notifications.notifications_api import  import notifications
+from notifications.notifications_api import notifications
 from progress.api import progress_api
 from schemas import UserResponse
 from submissions.review_api import review
