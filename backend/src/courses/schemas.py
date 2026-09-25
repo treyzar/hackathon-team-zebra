@@ -200,3 +200,6 @@ class SubmissionOut(ORM):
     # whether the submission came after it. Only a mark: late ones count.
     deadline_due_at: datetime | None = None
     is_late: bool = False
+    # Detailed feedback that reveals the correct answer (e.g. which options
+    # were right); present only when the step's show_answer allows it.
+    explanation: dict[str, Any] | None = None

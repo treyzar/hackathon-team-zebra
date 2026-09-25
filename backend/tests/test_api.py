@@ -545,3 +545,45 @@ async def test_free_text_answer_shows_reference_only(
     )
     r = await client.get(f"/steps/{step_id}/answer", headers=student)
     assert r.json() == {"reference": DOC}
+
+
+async def test_partial_score_is_explained(client, admin, course, make_user):
+    step_id = await add_step(client, admin, course[1], multiple_choice())
+    _, h = await make_user()
+    r = (await submit(client, h, step_id, {"option_ids": [A]})).json()
+    assert r["score"] == 2
+    assert r["result_details"] == {
+        "correct_picked": 1,
+        "wrong_picked": 0,
+        "correct_total": 2,
+    }
+    # show_answer is "never": no per-option breakdown.
+    assert r["explanation"] is None
+
+
+async def test_option_breakdown_follows_show_answer(client, admin, course, make_user):
+    step_id = await add_step(
+        client,
+        admin,
+        course[1],
+        multiple_choice(max_attempts=2, show_answer="after_attempts_exhausted"),
+    )
+    _, h = await make_user()
+    first = (await submit(client, h, step_id, {"option_ids": [A]})).json()
+    assert first["explanation"] is None  # an attempt is left: answer still hidden
+
+    last = (await submit(client, h, step_id, {"option_ids": [A, B]})).json()
+    marks = {
+        o["id"]: (o["picked"], o["correct"]) for o in last["explanation"]["options"]
+    }
+    assert marks[A] == (True, True) and marks[B] == (True, True)
+
+    # Once the answer is open, earlier submissions are explained too.
+    mine = (await client.get(f"/steps/{step_id}/submissions", headers=h)).json()
+    older = next(s for s in mine if s["id"] == first["id"])
+    marks = {
+        o["id"]: (o["picked"], o["correct"]) for o in older["explanation"]["options"]
+    }
+    assert marks[A] == (True, True) and marks[B] == (False, True)
+    single = (await client.get(f"/submissions/{first['id']}", headers=h)).json()
+    assert single["explanation"] == older["explanation"]

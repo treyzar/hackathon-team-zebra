@@ -289,3 +289,38 @@ def test_free_text_reveals_only_reference():
     assert t.reveal(p.answer_key) == {"reference": ref}
     empty = payload.validate_python(free_text_payload())
     assert t.reveal(empty.answer_key) == {"reference": None}
+
+
+@pytest.mark.parametrize("scoring", ["all_or_nothing", "partial"])
+def test_multiple_choice_counts_explain_score(scoring):
+    p = payload.validate_python(
+        choice("multiple_choice", key={"correct": [A, B]}, scoring=scoring)
+    )
+    t = get_type("multiple_choice")
+    answer = t.answer_model.model_validate({"option_ids": [A, C]})
+    result = t.check(p.content, p.answer_key, p.settings, answer, 10)
+    # Counts only: which option is wrong is not told.
+    assert result.details == {
+        "correct_picked": 1,
+        "wrong_picked": 1,
+        "correct_total": 2,
+    }
+
+
+def test_multiple_choice_explain_marks_every_option():
+    p = payload.validate_python(choice("multiple_choice", key={"correct": [A, B]}))
+    t = get_type("multiple_choice")
+    answer = t.answer_model.model_validate({"option_ids": [A, C]})
+    assert t.explain(p.content, p.answer_key, answer) == {
+        "options": [
+            {"id": A, "picked": True, "correct": True},
+            {"id": B, "picked": False, "correct": True},  # missed
+            {"id": C, "picked": True, "correct": False},  # extra
+        ]
+    }
+    # Types without detailed feedback return nothing.
+    single = payload.validate_python(choice())
+    assert (
+        get_type("single_choice").explain(single.content, single.answer_key, None)
+        is None
+    )

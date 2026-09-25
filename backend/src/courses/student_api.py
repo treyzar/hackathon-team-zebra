@@ -39,13 +39,42 @@ async def _open_step(db: AsyncSession, user: User, step_id: int):
     return step, rev, module
 
 
+async def _explanations(
+    db: AsyncSession, user: User, subs: list[Submission]
+) -> dict[int, dict | None]:
+    """Answer-revealing feedback for submissions of steps whose answer the
+    user may see now (show_answer), built against the revision they answered."""
+    open_steps: dict[int, Step] = {}
+    for step_id in {s.step_id for s in subs}:
+        step = await db.get(Step, step_id)
+        current = await db.get(StepRevision, step.current_revision_id)
+        stats = (await sub_svc.stats_for(db, user.id, [step_id]))[step_id]
+        if sub_svc.answer_available(svc.parse(step, current), stats):
+            open_steps[step_id] = step
+    result: dict[int, dict | None] = {}
+    for s in subs:
+        step = open_steps.get(s.step_id)
+        if step is None:
+            result[s.id] = None
+            continue
+        parsed = svc.parse(step, await db.get(StepRevision, s.step_revision_id))
+        answer = parsed.type.answer_model.model_validate(s.answer)
+        result[s.id] = parsed.type.explain(parsed.content, parsed.answer_key, answer)
+    return result
+
+
 async def _submissions_out(
-    db: AsyncSession, subs: list[Submission]
+    db: AsyncSession, user: User, subs: list[Submission]
 ) -> list[SubmissionOut]:
     due = await submission_deadlines(db, subs)
+    explained = await _explanations(db, user, subs)
     return [
         SubmissionOut.model_validate(s).model_copy(
-            update={"deadline_due_at": due[s.id], "is_late": is_late(s, due[s.id])}
+            update={
+                "deadline_due_at": due[s.id],
+                "is_late": is_late(s, due[s.id]),
+                "explanation": explained[s.id],
+            }
         )
         for s in subs
     ]
@@ -204,7 +233,7 @@ async def submit(
 ):
     step, rev, _ = await _open_step(db, user, step_id)
     sub = await sub_svc.submit(db, user, step, rev, data.answer)
-    return (await _submissions_out(db, [sub]))[0]
+    return (await _submissions_out(db, user, [sub]))[0]
 
 
 @learning.get("/steps/{step_id}/submissions", response_model=list[SubmissionOut])
@@ -224,7 +253,7 @@ async def my_submissions(
         .where(Submission.user_id == user.id, Submission.step_id == step.id)
         .order_by(Submission.id.desc())
     )
-    return await _submissions_out(db, list(await db.scalars(query)))
+    return await _submissions_out(db, user, list(await db.scalars(query)))
 
 
 @learning.get("/submissions/{submission_id}", response_model=SubmissionOut)
@@ -237,4 +266,4 @@ async def my_submission(
     sub = await db.get(Submission, submission_id)
     if not sub or sub.user_id != user.id:
         raise svc.not_found("Submission")
-    return (await _submissions_out(db, [sub]))[0]
+    return (await _submissions_out(db, user, [sub]))[0]
