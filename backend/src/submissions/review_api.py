@@ -40,6 +40,21 @@ class ReviewListItem(BaseModel):
     # submission came after it (a mark only).
     deadline_due_at: datetime | None
     is_late: bool
+    # How long it has waited for a curator, counted from the moment it was
+    # sent (for tests + review that includes the short judge run); null once
+    # it is not waiting any more. Computed per request, not stored.
+    waiting_seconds: int | None
+
+
+class CourseQueue(BaseModel):
+    course_id: int
+    course_title: str
+    # Whole queue of the course, even when ``submissions`` is cut.
+    total: int
+    late: int
+    oldest_at: datetime
+    longest_waiting_seconds: int
+    submissions: list[ReviewListItem]
 
 
 class ReviewDetail(ReviewListItem):
@@ -81,6 +96,11 @@ def _item(row, due_at, cls=ReviewListItem, **extra):
     return cls(
         deadline_due_at=due_at,
         is_late=is_late(sub, due_at),
+        waiting_seconds=(
+            int((svc.now() - sub.created_at).total_seconds())
+            if sub.status == SubmissionStatus.PENDING_REVIEW
+            else None
+        ),
         id=sub.id,
         status=sub.status,
         created_at=sub.created_at,
@@ -152,6 +172,47 @@ async def list_submissions(
     rows = (await db.execute(query)).all()
     due = await submission_deadlines(db, [row[0] for row in rows])
     return [_item(row, due[row[0].id]) for row in rows]
+
+
+@review.get("/courses", response_model=list[CourseQueue])
+@access_note("Куратор видит только решения учеников своих групп, администратор — все.")
+async def queue_by_course(
+    student_id: int | None = None,
+    per_course: int = Query(default=50, ge=1, le=200),
+    user: User = Depends(require_curator),
+    db: AsyncSession = Depends(access_db),
+):
+    """Решения, ждущие ручной проверки, по курсам.
+
+    Курсы — начиная с того, где работа ждёт дольше всех; внутри курса —
+    от старых к новым. `total`, `late` и `longest_waiting_seconds` — по всей
+    очереди курса, даже если `submissions` обрезан до `per_course`
+    (остальное — через `GET /review/submissions?course_id=`).
+    `waiting_seconds` у решения — сколько секунд оно ждёт с момента отправки."""
+    query = _visible(user).where(Submission.status == SubmissionStatus.PENDING_REVIEW)
+    if student_id is not None:
+        query = query.where(Submission.user_id == student_id)
+    # The whole queue is loaded: counts and "late" marks are computed, not
+    # stored, and a pending-review queue stays small.
+    rows = (await db.execute(query.order_by(Submission.id))).all()
+    due = await submission_deadlines(db, [row[0] for row in rows])
+
+    # Rows go oldest first, so courses are met in order of their oldest work.
+    by_course: dict[int, list[ReviewListItem]] = {}
+    for row in rows:
+        by_course.setdefault(row[5].id, []).append(_item(row, due[row[0].id]))
+    return [
+        CourseQueue(
+            course_id=items[0].course_id,
+            course_title=items[0].course_title,
+            total=len(items),
+            late=sum(i.is_late for i in items),
+            oldest_at=min(i.created_at for i in items),
+            longest_waiting_seconds=max(i.waiting_seconds or 0 for i in items),
+            submissions=items[:per_course],
+        )
+        for items in by_course.values()
+    ]
 
 
 @review.get("/submissions/{submission_id}", response_model=ReviewDetail)
