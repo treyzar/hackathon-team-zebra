@@ -4,6 +4,8 @@ import { ADMIN_BUILDER_ROUTE } from "@/pages/admin/builder/constants";
 import { ADMIN_COURSES_ROUTE } from "@/pages/admin/courses/constants";
 import { ADMIN_GROUPS_ROUTE } from "@/pages/admin/groups/constants";
 import { ADMIN_USERS_ROUTE } from "@/pages/admin/users/constants";
+import { CURATOR_REVIEWS_ROUTE } from "@/pages/curator/reviews/constants";
+import { CURATOR_QUESTIONS_ROUTE } from "@/pages/curator/questions/constants";
 import { STUDENT_COURSES_ROUTE } from "@/pages/student/courses/constants";
 import { WORKSPACE_SECTION_ROUTES } from "@/pages/workspace-section/constants";
 
@@ -63,10 +65,10 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
   ],
   curator: [
     {
-      ...DASHBOARD_ROUTE,
-      label: "Обзор",
-      description: "Рабочее пространство куратора",
-      icon: "home",
+      ...CURATOR_REVIEWS_ROUTE,
+      label: "Работы на проверку",
+      description: "Работы учеников для проверки",
+      icon: "reviews",
     },
     {
       ...WORKSPACE_SECTION_ROUTES.curatorLearners,
@@ -75,13 +77,7 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
       icon: "learners",
     },
     {
-      ...WORKSPACE_SECTION_ROUTES.curatorReviews,
-      label: "Проверки",
-      description: "Работы на ручную проверку",
-      icon: "reviews",
-    },
-    {
-      ...WORKSPACE_SECTION_ROUTES.curatorQuestions,
+      ...CURATOR_QUESTIONS_ROUTE,
       label: "Вопросы",
       description: "Вопросы по шагам",
       icon: "questions",

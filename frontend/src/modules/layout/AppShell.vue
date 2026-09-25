@@ -7,6 +7,8 @@ import NavigationRail from "@/modules/navigation/NavigationRail.vue";
 import SideNavigation from "@/modules/navigation/SideNavigation.vue";
 import CoursesMenu from "@/modules/student/courses/CoursesMenu.vue";
 import { LOGIN_ROUTE } from "@/pages/login/constants";
+import { CURATOR_REVIEW_ROUTE } from "@/pages/curator/review/constants";
+import { CURATOR_QUESTIONS_ROUTE } from "@/pages/curator/questions/constants";
 import { STUDENT_COURSE_ROUTE } from "@/pages/student/course/constants";
 import { STUDENT_STEP_ROUTE } from "@/pages/student/step/constants";
 import { useAuthStore } from "@/stores/auth";
@@ -18,17 +20,13 @@ const router = useRouter();
 const menuOpen = ref(false);
 const contentBody = ref<HTMLElement | null>(null);
 
-// Each cabinet has its own navigation in the mockups: students and admins get an icon
-// rail that opens the full menu as a drawer (bigger for students), curators a sidebar.
-const layout = computed(() => (auth.role === "curator" ? "side" : "rail"));
 const isStudent = computed(() => auth.role === "student");
+const isReviewDetail = computed(() => route.name === CURATOR_REVIEW_ROUTE.name);
+const isCuratorQuestions = computed(() => route.name === CURATOR_QUESTIONS_ROUTE.name);
 const username = computed(() => auth.user?.username ?? "");
 const homeItem = computed(() => navigationForRole(auth.role)[0]);
 const pageTitle = computed(
   () => (route.meta.title as string | undefined) ?? homeItem.value?.label ?? "Главная",
-);
-const pageDescription = computed(
-  () => (route.meta.description as string | undefined) ?? homeItem.value?.description ?? "",
 );
 const isStudentCourse = computed(
   () =>
@@ -55,27 +53,21 @@ async function logout(): Promise<void> {
 
 <template>
   <div
-    class="app-shell"
-    :class="[
-      `app-shell--${layout}`,
-      { 'app-shell--student': isStudent, 'app-shell--student-course': isStudentCourse },
-    ]"
+    class="app-shell app-shell--rail"
+    :class="{
+      'app-shell--student': isStudent,
+      'app-shell--student-course': isStudentCourse,
+      'app-shell--review-detail': isReviewDetail,
+      'app-shell--curator-questions': isCuratorQuestions,
+    }"
   >
     <NavigationRail
-      v-if="layout === 'rail'"
       class="app-shell-navigation"
       :role="auth.role"
       :username="username"
       :menu-open="menuOpen"
       :large="isStudent"
       @open-menu="menuOpen = true"
-    />
-    <SideNavigation
-      v-else
-      class="app-shell-navigation"
-      :role="auth.role"
-      :username="username"
-      @logout="logout"
     />
     <template v-if="menuOpen">
       <button
@@ -115,10 +107,9 @@ async function logout(): Promise<void> {
           <span class="page-account">{{ username }}</span>
         </template>
         <!-- Admin pages teleport their own title and actions here. -->
-        <div v-else-if="layout === 'rail'" id="admin-page-header" class="page-header-slot" />
+        <div v-else id="admin-page-header" class="page-header-slot" />
         <div v-if="!isStudent" class="page-header-fallback">
           <h1>{{ pageTitle }}</h1>
-          <p v-if="layout === 'side' && pageDescription">{{ pageDescription }}</p>
         </div>
       </header>
 
@@ -228,6 +219,11 @@ async function logout(): Promise<void> {
   overflow: hidden;
   padding: 0;
 }
+.app-shell--review-detail .content-body,
+.app-shell--curator-questions .content-body {
+  overflow: hidden;
+  padding: 0;
+}
 .page-menu-button {
   display: none;
   width: 44px;
@@ -295,6 +291,11 @@ async function logout(): Promise<void> {
     padding: 20px 16px 36px;
   }
   .app-shell--student-course .content-body {
+    padding: 0;
+  }
+  .app-shell--review-detail .content-body,
+  .app-shell--curator-questions .content-body {
+    overflow-y: auto;
     padding: 0;
   }
 }

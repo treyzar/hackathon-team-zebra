@@ -1,5 +1,6 @@
 """Review queue grouped by course: GET /review/courses."""
 
+import pytest
 from conftest import requires_db
 from test_api import add_step, free_text, submit
 from test_deadlines import PAST, put_deadline
@@ -139,3 +140,59 @@ async def test_waiting_time(client, admin, course, groups_setup):
         f"/review/submissions/{old}", json={"verdict": "accepted"}, headers=curator
     )
     assert r.json()["waiting_seconds"] is None
+
+
+def doc(*nodes):
+    return {"type": "doc", "content": list(nodes)}
+
+
+def heading(text, **attrs):
+    return {
+        "type": "heading",
+        "attrs": {"level": 1, **attrs},
+        "content": [{"type": "text", "text": text}],
+    }
+
+
+def para(*texts):
+    return {
+        "type": "paragraph",
+        "content": [{"type": "text", "text": t} for t in texts],
+    }
+
+
+@pytest.mark.parametrize(
+    ("content", "title"),
+    [
+        # The editor's title heading, in any step type's document field.
+        (
+            {"question": doc(heading("Чётность", zebra_title=True), para("x"))},
+            "Чётность",
+        ),
+        ({"statement": doc(para("Условие"), heading("Парты"))}, "Парты"),
+        (
+            {"body": doc(para(""), para("Первая  строка", "текста"))},
+            "Первая строка текста",
+        ),
+        ({"question": doc(para("я" * 150))}, "я" * 100),
+        ({"question": doc()}, ""),
+        ({"options": []}, ""),
+    ],
+)
+def test_step_title(content, title):
+    from submissions.review_api import get_step_title
+
+    assert get_step_title(content) == title
+
+
+async def test_queue_shows_step_title(client, admin, course, groups_setup):
+    (_, curator, _, student), _ = groups_setup
+    step = free_text()
+    step["content"]["question"] = doc(heading("Эссе о циклах", zebra_title=True))
+    step_id = await add_step(client, admin, course[1], step)
+    sub_id = (await submit(client, student, step_id, {"text": "x"})).json()["id"]
+
+    [python] = await queue(client, curator)
+    assert python["submissions"][0]["task_title"] == "Эссе о циклах"
+    detail = await client.get(f"/review/submissions/{sub_id}", headers=curator)
+    assert detail.json()["task_title"] == "Эссе о циклах"

@@ -366,8 +366,8 @@ watch(courseId, load);
     <p v-if="success" class="admin-success" role="status">{{ success }}</p>
     <div v-if="addedStep && tab === 'structure'" class="course-added" role="status">
       <strong
-        >✓ Шаг «{{ stepTitles[addedStep.step.id] || stepTypeLabels[addedStep.step.type] }}»
-        добавлен в модуль {{ addedStep.number }}</strong
+        >✓ Шаг «{{ stepTitles[addedStep.step.id] || stepTypeLabels[addedStep.step.type] }}» добавлен
+        в модуль {{ addedStep.number }}</strong
       >
       <span v-if="course?.is_published && !addedStep.step.is_hidden">и уже виден ученикам</span>
       <span class="course-added-spacer" />
