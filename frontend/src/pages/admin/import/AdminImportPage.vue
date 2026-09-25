@@ -208,7 +208,7 @@ onMounted(loadCourses);
           class="admin-input exchange-course-select"
           :disabled="loadingCourses || !courses.length"
         >
-          <option value="" disabled>
+          <option v-if="loadingCourses || !courses.length" value="" disabled>
             {{ loadingCourses ? "Загружаем курсы…" : "Курсы не найдены" }}
           </option>
           <option v-for="course in courses" :key="course.id" :value="course.id">
