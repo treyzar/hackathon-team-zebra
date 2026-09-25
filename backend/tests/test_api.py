@@ -698,3 +698,66 @@ async def test_notification_payload_validated(client, make_user):
     async with async_factory() as db:
         with pytest.raises(ValueError):
             await create_notification(db, user_id, NotificationType.HELLO)
+
+
+async def test_number_step_end_to_end(client, admin, course, make_user):
+    step = {
+        "type": "number",
+        "max_score": 3,
+        "content": {"question": DOC, "kind": "decimal", "precision": 2},
+        "answer_key": {"value": "3.14159"},
+        "settings": {"max_attempts": 2, "show_answer": "after_wrong"},
+    }
+    step_id = await add_step(client, admin, course[1], step)
+    _, h = await make_user()
+
+    view = (await client.get(f"/steps/{step_id}", headers=h)).json()
+    assert view["content"]["precision"] == 2  # the student knows how to round
+    assert "3.14159" not in str(view)
+
+    # A malformed number costs no attempt.
+    assert (await submit(client, h, step_id, {"value": "три"})).status_code == 422
+    r = await submit(client, h, step_id, {"value": "3.15"})
+    assert (r.json()["status"], r.json()["score"]) == ("wrong", 0)
+    answer = await client.get(f"/steps/{step_id}/answer", headers=h)
+    assert answer.json() == {"value": "3.14159"}
+    r = await submit(client, h, step_id, {"value": "3,14"})
+    assert (r.json()["status"], r.json()["score"]) == ("correct", 3)
+
+
+async def test_short_text_auto_and_manual(client, admin, course, groups_setup):
+    (_, curator, _, student) = groups_setup[0]
+
+    def step(grading, accepted):
+        return {
+            "type": "short_text",
+            "max_score": 2,
+            "content": {"question": DOC},
+            "answer_key": {"accepted": accepted},
+            "settings": {"grading": grading},
+        }
+
+    auto = await add_step(client, admin, course[1], step("auto", ["Москва"]))
+    r = await submit(client, student, auto, {"text": " москва "})
+    assert (r.json()["status"], r.json()["score"]) == ("correct", 2)
+
+    manual = await add_step(client, admin, course[1], step("manual", ["Москва"]))
+    r = await submit(client, student, manual, {"text": "столица России"})
+    assert (r.json()["status"], r.json()["score"]) == ("pending_review", None)
+    detail = (
+        await client.get(f"/review/submissions/{r.json()['id']}", headers=curator)
+    ).json()
+    assert detail["answer_key"]["accepted"] == ["Москва"]
+    r = await client.post(
+        f"/review/submissions/{r.json()['id']}",
+        json={"verdict": "accepted"},
+        headers=curator,
+    )
+    assert (r.json()["status"], r.json()["score"]) == ("accepted", 2)
+
+    r = await client.post(
+        f"/admin/modules/{course[1]}/steps",
+        json={"payload": step("auto", [])},
+        headers=admin[1],
+    )
+    assert r.status_code == 422

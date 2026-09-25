@@ -48,6 +48,8 @@ def test_all_types_registered():
         "multiple_choice",
         "free_text",
         "programming",
+        "number",
+        "short_text",
     }
 
 
@@ -333,3 +335,133 @@ def test_multiple_choice_explain_marks_every_option():
         get_type("single_choice").explain(single.content, single.answer_key, None)
         is None
     )
+
+
+# --- number ----------------------------------------------------------------
+
+
+def number(value, **content):
+    return {
+        "type": "number",
+        "max_score": 3,
+        "content": {"question": DOC, **content},
+        "answer_key": {"value": value},
+    }
+
+
+def grade(data, answer):
+    """Validate the answer like the API does, then grade it; None if rejected."""
+    p = payload.validate_python(data)
+    t = get_type(p.type)
+    parsed = t.answer_model.model_validate(answer)
+    try:
+        t.validate_answer(p.content, parsed)
+    except ValueError:
+        return None
+    return t.check(p.content, p.answer_key, p.settings, parsed, p.max_score).score
+
+
+@pytest.mark.parametrize(
+    ("given", "score"),
+    [("42", 3), (" +42 ", 3), ("41", 0), ("-42", 0), ("42.0", None), ("4 2", 3)],
+)
+def test_number_integer(given, score):
+    assert grade(number(42), {"value": given}) == score
+
+
+@pytest.mark.parametrize(
+    ("given", "score"),
+    [
+        ("3.14", 3),
+        ("3,14", 3),  # comma as the decimal separator
+        ("3.141", 3),  # extra digits round to the same value
+        ("3.1", 0),
+        ("3.15", 0),
+        ("3", 0),
+        ("pi", None),
+        ("1e2", None),
+        ("", None),
+    ],
+)
+def test_number_decimal_precision(given, score):
+    data = number("3.14159", kind="decimal", precision=2)
+    if not given:
+        with pytest.raises(ValidationError):
+            grade(data, {"value": given})
+        return
+    assert grade(data, {"value": given}) == score
+
+
+def test_number_rounds_half_up_and_handles_long_values():
+    assert grade(number("2.5", kind="decimal", precision=0), {"value": "3"}) == 3
+    # 0.1 stays exactly 0.1: the answer is not a float.
+    assert grade(number("0.3", kind="decimal", precision=10), {"value": "0.3"}) == 3
+    big = "9" * 20 + ".0123456789"
+    assert grade(number(big, kind="decimal", precision=10), {"value": big}) == 3
+
+
+def test_number_authoring_rules():
+    with pytest.raises(ValidationError, match="must be an integer"):
+        payload.validate_python(number("2.5"))
+    with pytest.raises(ValidationError):
+        payload.validate_python(number("1.5", kind="decimal", precision=11))
+    for manual in ("manual", "tests"):
+        with pytest.raises(ValidationError):
+            payload.validate_python({**number(1), "settings": {"grading": manual}})
+    p = payload.validate_python(number("3.14", kind="decimal"))
+    assert get_type("number").reveal(p.answer_key) == {"value": "3.14"}
+
+
+# --- short text ------------------------------------------------------------
+
+
+def short_text(accepted, **settings):
+    key = {"accepted": accepted}
+    if "case_sensitive" in settings:
+        key["case_sensitive"] = settings.pop("case_sensitive")
+    return {
+        "type": "short_text",
+        "max_score": 2,
+        "content": {"question": DOC},
+        "answer_key": key,
+        "settings": settings,
+    }
+
+
+@pytest.mark.parametrize(
+    ("given", "score"),
+    [
+        ("Москва", 2),
+        ("  москва ", 2),
+        ("МОСКВА", 2),
+        ("Moscow", 2),
+        ("город  Москва", 0),
+        ("Мск", 0),
+        ("   ", None),
+    ],
+)
+def test_short_text_auto(given, score):
+    data = short_text(["Москва", "moscow"])
+    assert grade(data, {"text": given}) == score
+
+
+def test_short_text_case_sensitive_and_spaces():
+    data = short_text(["NaCl"], case_sensitive=True)
+    assert grade(data, {"text": "NaCl"}) == 2
+    assert grade(data, {"text": "  NaCl\n"}) == 2
+    assert grade(data, {"text": "nacl"}) == 0
+    assert grade(short_text(["x  = 1"]), {"text": "x = 1"}) == 2
+
+
+def test_short_text_authoring_rules():
+    with pytest.raises(ValidationError, match="at least one accepted"):
+        payload.validate_python(short_text([], grading="auto"))
+    with pytest.raises(ValidationError, match="non-empty"):
+        payload.validate_python(short_text(["ok", "  "]))
+    with pytest.raises(ValidationError):
+        payload.validate_python(short_text(["ok"], grading="tests"))
+    # Manual grading: the accepted list is only a hint for the curator.
+    p = payload.validate_python(short_text([], grading="manual"))
+    assert p.settings.grading == "manual"
+    p = payload.validate_python(short_text(["Москва"]))
+    assert get_type("short_text").reveal(p.answer_key) == {"accepted": ["Москва"]}
