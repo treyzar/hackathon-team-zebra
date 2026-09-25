@@ -51,11 +51,7 @@ const items = computed(() => navigationForRole(props.role));
       <NavigationIcon :name="item.icon" />
     </RouterLink>
     <span class="rail-spacer" />
-    <NotificationBell
-      v-if="role !== 'admin'"
-      variant="rail"
-      class="rail-bell"
-    />
+    <NotificationBell variant="rail" class="rail-bell"/>
     <span class="rail-avatar" :title="username">{{ username.slice(0, 1).toUpperCase() }}</span>
   </aside>
 </template>

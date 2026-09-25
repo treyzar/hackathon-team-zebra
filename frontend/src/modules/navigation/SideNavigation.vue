@@ -76,7 +76,7 @@ onMounted(async () => {
       </RouterLink>
       <slot />
     </div>
-    <NotificationBell variant="sidebar" v-if="role !== 'admin'" class="side-bell" />
+    <NotificationBell variant="sidebar" class="side-bell" />
     <div class="side-account">
       <span class="side-avatar" aria-hidden="true">{{ username.slice(0, 1).toUpperCase() }}</span>
       <span class="side-account-copy">
