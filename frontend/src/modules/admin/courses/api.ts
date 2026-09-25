@@ -38,12 +38,10 @@ export const courseApi = {
     return (await api.post<CourseImportResult>("/admin/courses/import", data)).data;
   },
   async exportCourseJson(id: number): Promise<Blob> {
-    return (await api.get<Blob>(`/admin/courses/${id}/export`, { responseType: "blob" }))
-      .data;
+    return (await api.get<Blob>(`/admin/courses/${id}/export`, { responseType: "blob" })).data;
   },
   async exportCoursePdf(id: number): Promise<Blob> {
-    return (await api.get<Blob>(`/admin/courses/${id}/export_pdf`, { responseType: "blob" }))
-      .data;
+    return (await api.get<Blob>(`/admin/courses/${id}/export_pdf`, { responseType: "blob" })).data;
   },
   async createModule(courseId: number, title: string): Promise<Module> {
     return (await api.post<Module>(`/admin/courses/${courseId}/modules`, { title })).data;

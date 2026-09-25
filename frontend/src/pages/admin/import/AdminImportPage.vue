@@ -131,7 +131,10 @@ onMounted(loadCourses);
 
         <div
           class="exchange-dropzone"
-          :class="{ 'exchange-dropzone--active': dragging, 'exchange-dropzone--selected': selectedFile }"
+          :class="{
+            'exchange-dropzone--active': dragging,
+            'exchange-dropzone--selected': selectedFile,
+          }"
           @dragenter.prevent="dragging = true"
           @dragover.prevent="dragging = true"
           @dragleave.prevent="dragging = false"
@@ -205,7 +208,7 @@ onMounted(loadCourses);
           class="admin-input exchange-course-select"
           :disabled="loadingCourses || !courses.length"
         >
-          <option value="" disabled>
+          <option v-if="loadingCourses || !courses.length" value="" disabled>
             {{ loadingCourses ? "Загружаем курсы…" : "Курсы не найдены" }}
           </option>
           <option v-for="course in courses" :key="course.id" :value="course.id">
@@ -276,7 +279,9 @@ onMounted(loadCourses);
   border-radius: var(--radius-control);
   background: var(--color-bg);
   text-align: center;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
 }
 .exchange-dropzone--active,
 .exchange-dropzone--selected {

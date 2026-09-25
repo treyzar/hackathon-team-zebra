@@ -5,6 +5,7 @@ import { navigationByRole } from "@/modules/navigation/items";
 import { DASHBOARD_ROUTE } from "@/pages/dashboard/constants";
 import { STUDENT_COURSES_ROUTE } from "@/pages/student/courses/constants";
 import { CURATOR_REVIEWS_ROUTE } from "@/pages/curator/reviews/constants";
+import { CURATOR_QUESTIONS_ROUTE } from "@/pages/curator/questions/constants";
 import WorkspaceSectionPage from "./WorkspaceSectionPage.vue";
 
 export const workspaceSectionRoutes: RouteRecordRaw[] = (
@@ -15,7 +16,8 @@ export const workspaceSectionRoutes: RouteRecordRaw[] = (
       (item) =>
         item.path !== DASHBOARD_ROUTE.path &&
         item.path !== STUDENT_COURSES_ROUTE.path &&
-        item.path !== CURATOR_REVIEWS_ROUTE.path,
+        item.path !== CURATOR_REVIEWS_ROUTE.path &&
+        item.path !== CURATOR_QUESTIONS_ROUTE.path,
     )
     .map((item) => ({
       name: item.name,

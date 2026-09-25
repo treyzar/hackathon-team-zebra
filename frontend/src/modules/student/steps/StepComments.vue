@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import type {StudentQuestion} from "@/modules/student/courses/types.ts";
-import {askQuestion, getStepQuestions} from "@/modules/student/courses/api.ts";
+import type { StudentQuestion } from "@/modules/student/courses/types.ts";
+import { askQuestion, getStepQuestions } from "@/modules/student/courses/api.ts";
 
 const props = defineProps<{ stepId: number }>();
 

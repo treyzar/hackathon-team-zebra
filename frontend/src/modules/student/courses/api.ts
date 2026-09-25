@@ -82,7 +82,7 @@ export const studentCourseApi = {
   },
 
   async askQuestion(stepId: number, text: string): Promise<StudentQuestion> {
-    return (await api.post<StudentQuestion>(`/steps/${stepId}/questions`, {text})).data;
+    return (await api.post<StudentQuestion>(`/steps/${stepId}/questions`, { text })).data;
   },
 };
 
