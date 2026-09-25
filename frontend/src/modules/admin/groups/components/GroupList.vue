@@ -65,7 +65,9 @@ const emit = defineEmits<{
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 .group-item:hover {
   border-color: #bfc9dc;

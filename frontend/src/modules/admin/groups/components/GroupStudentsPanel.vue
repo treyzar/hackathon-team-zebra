@@ -132,7 +132,10 @@ function add(): void {
   border-radius: 12px;
   background: #fff;
   color: #1d2b43;
-  font: 600 14px Onest, system-ui, sans-serif;
+  font:
+    600 14px Onest,
+    system-ui,
+    sans-serif;
   cursor: pointer;
 }
 .student-add {
@@ -196,7 +199,10 @@ function add(): void {
   border: 0;
   background: transparent;
   color: #9a3c3c;
-  font: 600 13px Onest, system-ui, sans-serif;
+  font:
+    600 13px Onest,
+    system-ui,
+    sans-serif;
   cursor: pointer;
 }
 .students-actions button:disabled,

@@ -40,9 +40,7 @@ const testGroups = computed(() => {
   >
     <div class="student-result-head">
       <strong>{{ submissionLabel(submission.status) }}</strong>
-      <span v-if="submission.score !== null">
-        {{ submission.score }} / {{ maxScore }} баллов
-      </span>
+      <span v-if="submission.score !== null"> {{ submission.score }} / {{ maxScore }} баллов </span>
     </div>
 
     <p v-if="submission.review_comment">{{ submission.review_comment }}</p>

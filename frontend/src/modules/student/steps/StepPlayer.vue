@@ -59,9 +59,7 @@ const {
         {{ step.max_score }} балл{{ step.max_score === 1 ? "" : "ов" }}
       </span>
       <span v-if="remaining !== null">{{ remaining }} попыток осталось</span>
-      <span v-if="step.progress.from_previous_version">
-        Результат предыдущей версии учтён
-      </span>
+      <span v-if="step.progress.from_previous_version"> Результат предыдущей версии учтён </span>
     </div>
 
     <section v-if="bodyDocument?.content?.length" class="student-paper">

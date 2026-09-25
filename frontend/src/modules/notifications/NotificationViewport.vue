@@ -107,7 +107,9 @@ const defaultTitles: Record<NotificationTone, string> = {
   border-radius: 8px;
   background: transparent;
   color: #6e788d;
-  font: 500 22px/1 system-ui, sans-serif;
+  font:
+    500 22px/1 system-ui,
+    sans-serif;
   cursor: pointer;
 }
 .notification-toast__close:hover {
@@ -117,7 +119,9 @@ const defaultTitles: Record<NotificationTone, string> = {
 .notification-list-enter-active,
 .notification-list-leave-active,
 .notification-list-move {
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
 }
 .notification-list-enter-from,
 .notification-list-leave-to {

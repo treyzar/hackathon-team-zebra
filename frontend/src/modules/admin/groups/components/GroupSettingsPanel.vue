@@ -53,9 +53,7 @@ function submit(): void {
     </label>
 
     <div class="group-settings__spacer" />
-    <p class="group-settings__help">
-      Куратор видит очередь работ и вопросы только своих групп
-    </p>
+    <p class="group-settings__help">Куратор видит очередь работ и вопросы только своих групп</p>
 
     <div class="group-settings__actions">
       <button class="group-save" :disabled="busy">Сохранить</button>
@@ -97,7 +95,10 @@ function submit(): void {
   outline: none;
   background: #fff;
   color: #1d2b43;
-  font: 400 14px Onest, system-ui, sans-serif;
+  font:
+    400 14px Onest,
+    system-ui,
+    sans-serif;
 }
 .group-field input:focus,
 .group-field select:focus {
@@ -123,7 +124,10 @@ function submit(): void {
   height: 36px;
   padding: 0 13px;
   border-radius: 10px;
-  font: 600 13px Onest, system-ui, sans-serif;
+  font:
+    600 13px Onest,
+    system-ui,
+    sans-serif;
   cursor: pointer;
 }
 .group-save {

@@ -15,9 +15,7 @@ const emit = defineEmits<{
 const assigning = ref(false);
 const selectedCourseId = ref<number | "">("");
 
-const visibleCourses = computed(() =>
-  props.courses.filter((item) => item.enrolledCount > 0),
-);
+const visibleCourses = computed(() => props.courses.filter((item) => item.enrolledCount > 0));
 
 const selectableCourses = computed(() =>
   props.courses.filter((item) => item.studentsCount > 0 && item.enrolledCount < item.studentsCount),
@@ -53,7 +51,9 @@ function submit(): void {
           {{ item.course.title }}
           <small v-if="item.enrolledCount < item.studentsCount">{{ coverageLabel(item) }}</small>
         </span>
-        <span v-if="!visibleCourses.length" class="group-courses__muted">Пока нет записанных учеников</span>
+        <span v-if="!visibleCourses.length" class="group-courses__muted"
+          >Пока нет записанных учеников</span
+        >
       </template>
 
       <button
@@ -117,7 +117,10 @@ function submit(): void {
   border-radius: 999px;
   background: #fff;
   color: #3457f0;
-  font: 600 14px Onest, system-ui, sans-serif;
+  font:
+    600 14px Onest,
+    system-ui,
+    sans-serif;
   cursor: pointer;
 }
 .course-add:disabled {
@@ -155,7 +158,10 @@ function submit(): void {
   border-radius: 10px;
   background: #3457f0;
   color: #fff;
-  font: 600 13px Onest, system-ui, sans-serif;
+  font:
+    600 13px Onest,
+    system-ui,
+    sans-serif;
 }
 .course-assign span {
   color: #6c768a;
