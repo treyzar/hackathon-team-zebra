@@ -68,6 +68,27 @@ async def get_step(
     return tuple(row)
 
 
+async def visible_steps_in_order(
+    db: AsyncSession, course_id: int
+) -> list[tuple[int, dict]]:
+    """(step id, current settings) of the course's visible steps, in the order
+    students go through them: modules by position, then steps by position.
+    Hidden and deleted steps are left out."""
+    rows = await db.execute(
+        select(Step.id, StepRevision.settings)
+        .join(Module, Module.id == Step.module_id)
+        .join(StepRevision, StepRevision.id == Step.current_revision_id)
+        .where(
+            Module.course_id == course_id,
+            Module.deleted_at.is_(None),
+            Step.deleted_at.is_(None),
+            Step.is_hidden.is_(False),
+        )
+        .order_by(Module.position, Module.id, Step.position, Step.id)
+    )
+    return [(step_id, settings) for step_id, settings in rows]
+
+
 def parse(step: Step, rev: StepRevision) -> ParsedRevision:
     return parse_revision(
         step.type,

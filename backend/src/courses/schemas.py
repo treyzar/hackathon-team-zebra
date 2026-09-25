@@ -130,6 +130,13 @@ class StepProgress(BaseModel):
     best_score: float | None = None
 
 
+class DeadlineView(BaseModel):
+    due_at: datetime
+    # True when taken from a later step (source_step_id) rather than set here.
+    inherited: bool
+    source_step_id: int
+
+
 class StudentStepSummary(BaseModel):
     id: int
     type: str
@@ -137,6 +144,8 @@ class StudentStepSummary(BaseModel):
     progress: StepProgress
     # Sequential courses: the previous step is not passed yet.
     locked: bool = False
+    # For the student's group; None when there is none.
+    deadline: DeadlineView | None = None
 
 
 class StudentModule(BaseModel):
@@ -168,6 +177,7 @@ class StudentStep(BaseModel):
     # score is reached; the reason is in submit_block_reason.
     can_submit: bool
     submit_block_reason: str | None
+    deadline: DeadlineView | None = None
 
 
 class SubmitIn(BaseModel):
@@ -186,3 +196,7 @@ class SubmissionOut(ORM):
     review_comment: str | None
     reviewed_at: datetime | None
     created_at: datetime
+    # Deadline of the step for the student's group, own or inherited, and
+    # whether the submission came after it. Only a mark: late ones count.
+    deadline_due_at: datetime | None = None
+    is_late: bool = False

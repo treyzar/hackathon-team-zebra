@@ -6,7 +6,8 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from courses.models import Course, Module, Step, StepAccess, StepRevision
+from courses.models import Course, Module, Step, StepAccess
+from courses.service import visible_steps_in_order
 from models import Role, User
 from submissions.models import Submission, SubmissionStatus
 
@@ -32,20 +33,11 @@ async def locked_steps(db: AsyncSession, user: User, course: Course) -> set[int]
     if course.step_access == StepAccess.ALL or user.role != Role.STUDENT:
         return set()
 
-    rows = await db.execute(
-        select(Step.id, StepRevision.settings)
-        .join(Module, Module.id == Step.module_id)
-        .join(StepRevision, StepRevision.id == Step.current_revision_id)
-        .where(
-            Module.course_id == course.id,
-            Module.deleted_at.is_(None),
-            Step.deleted_at.is_(None),
-            Step.is_hidden.is_(False),
-        )
-        .order_by(Module.position, Module.id, Step.position, Step.id)
-    )
     # max_attempts is a CommonSettings field, present in every step type.
-    order = [(step_id, settings.get("max_attempts")) for step_id, settings in rows]
+    order = [
+        (step_id, settings.get("max_attempts"))
+        for step_id, settings in await visible_steps_in_order(db, course.id)
+    ]
 
     subs = await db.execute(
         select(Submission.step_id, Submission.status, Submission.score).where(
