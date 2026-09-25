@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { authApi, type TokenResponse } from "@/api/http";
+import { api, authApi, type TokenResponse, type UserResponse, type UserRole } from "@/api/http";
 
 interface Credentials {
   username: string;
@@ -61,7 +61,15 @@ export const useAuthStore = defineStore("auth", () => {
   const initialTokens = loadTokens();
   const accessToken = ref<string | null>(initialTokens?.accessToken ?? null);
   const refreshToken = ref<string | null>(initialTokens?.refreshToken ?? null);
-  const isAuthenticated = computed(() => Boolean(accessToken.value && refreshToken.value));
+  const user = ref<UserResponse | null>(null);
+  const role = computed(() => user.value?.role ?? null);
+  const isAuthenticated = computed(() => Boolean(accessToken.value && user.value));
+  let profilePromise: Promise<UserResponse> | null = null;
+  let sessionVersion = 0;
+
+  function hasRole(...roles: UserRole[]): boolean {
+    return isAuthenticated.value && role.value !== null && roles.includes(role.value);
+  }
 
   function setTokens(tokens: TokenResponse): void {
     accessToken.value = tokens.access_token;
@@ -73,20 +81,75 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   function clearTokens(): void {
+    sessionVersion += 1;
     accessToken.value = null;
     refreshToken.value = null;
+    user.value = null;
+    profilePromise = null;
     persistTokens(null);
+  }
+
+  function loadCurrentUser(): Promise<UserResponse> {
+    if (!accessToken.value) {
+      return Promise.reject(new Error("No access token available"));
+    }
+
+    if (!profilePromise) {
+      const version = sessionVersion;
+      const pending = api.get<UserResponse>("/user/me").then(({ data }) => {
+        if (version === sessionVersion) {
+          user.value = data;
+        }
+        return data;
+      });
+      const currentPromise = pending.finally(() => {
+        if (profilePromise === currentPromise) {
+          profilePromise = null;
+        }
+      });
+      profilePromise = currentPromise;
+    }
+
+    return profilePromise;
+  }
+
+  async function restoreSession(): Promise<void> {
+    if (!accessToken.value || user.value) {
+      return;
+    }
+
+    try {
+      await loadCurrentUser();
+    } catch {
+      // A failed profile request leaves the route unauthenticated; retry on the next navigation.
+    }
   }
 
   async function login(credentials: Credentials): Promise<TokenResponse> {
     const { data } = await authApi.post<TokenResponse>("/auth/login", credentials);
+    sessionVersion += 1;
+    user.value = null;
     setTokens(data);
+    try {
+      await loadCurrentUser();
+    } catch (error) {
+      clearTokens();
+      throw error;
+    }
     return data;
   }
 
   async function signup(data: SignupData): Promise<TokenResponse> {
     const { data: tokens } = await authApi.post<TokenResponse>("/auth/signup", data);
+    sessionVersion += 1;
+    user.value = null;
     setTokens(tokens);
+    try {
+      await loadCurrentUser();
+    } catch (error) {
+      clearTokens();
+      throw error;
+    }
     return tokens;
   }
 
@@ -117,9 +180,14 @@ export const useAuthStore = defineStore("auth", () => {
   return {
     accessToken,
     refreshToken,
+    user,
+    role,
     isAuthenticated,
+    hasRole,
     setTokens,
     clearTokens,
+    loadCurrentUser,
+    restoreSession,
     login,
     signup,
     refreshAccessToken,

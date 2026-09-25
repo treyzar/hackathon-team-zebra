@@ -139,6 +139,14 @@ class StepType:
         """Background grading, required for Grading.TESTS*."""
         raise NotImplementedError
 
+    def explain(
+        self, content: Any, answer_key: Any, answer: Any
+    ) -> dict[str, Any] | None:
+        """Detailed feedback on one answer that gives the correct answer away
+        (e.g. which options were right). Shown to the student only when the
+        step's show_answer policy allows, like ``reveal``."""
+        return None
+
     def reveal(self, answer_key: Any) -> dict[str, Any]:
         """Part of the answer key a student may see when allowed."""
         return answer_key.model_dump(mode="json")

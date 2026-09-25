@@ -13,6 +13,7 @@ from auth import require_curator
 from courses import service as svc
 from courses.models import Course, Module, Step, StepRevision
 from database import access_db
+from groups.deadlines import is_late, submission_deadlines
 from groups.service import students_of_curator
 from models import Role, User
 from submissions import service as sub_svc
@@ -35,6 +36,10 @@ class ReviewListItem(BaseModel):
     course_id: int
     course_title: str
     module_title: str
+    # Deadline of the step for the student's group and whether the
+    # submission came after it (a mark only).
+    deadline_due_at: datetime | None
+    is_late: bool
 
 
 class ReviewDetail(ReviewListItem):
@@ -71,9 +76,11 @@ def _visible(user: User) -> Select:
     return query
 
 
-def _item(row, cls=ReviewListItem, **extra):
+def _item(row, due_at, cls=ReviewListItem, **extra):
     sub, student, step, rev, module, course = row
     return cls(
+        deadline_due_at=due_at,
+        is_late=is_late(sub, due_at),
         id=sub.id,
         status=sub.status,
         created_at=sub.created_at,
@@ -102,11 +109,13 @@ async def _get(db: AsyncSession, user: User, submission_id: int, lock=False):
     return row
 
 
-def _detail(row) -> ReviewDetail:
+async def _detail(db: AsyncSession, row) -> ReviewDetail:
     sub, _, step, rev, _, _ = row
     parsed = svc.parse(step, rev)
+    due = await submission_deadlines(db, [sub])
     return _item(
         row,
+        due[sub.id],
         ReviewDetail,
         answer=sub.answer,
         result_details=sub.result_details,
@@ -140,7 +149,9 @@ async def list_submissions(
     if student_id is not None:
         query = query.where(Submission.user_id == student_id)
     query = query.order_by(Submission.id).limit(limit).offset(offset)
-    return [_item(row) for row in await db.execute(query)]
+    rows = (await db.execute(query)).all()
+    due = await submission_deadlines(db, [row[0] for row in rows])
+    return [_item(row, due[row[0].id]) for row in rows]
 
 
 @review.get("/submissions/{submission_id}", response_model=ReviewDetail)
@@ -150,7 +161,7 @@ async def get_submission(
     user: User = Depends(require_curator),
     db: AsyncSession = Depends(access_db),
 ):
-    return _detail(await _get(db, user, submission_id))
+    return await _detail(db, await _get(db, user, submission_id))
 
 
 @review.post("/submissions/{submission_id}", response_model=ReviewDetail)
@@ -170,4 +181,4 @@ async def review_submission(
         sub, user, data.verdict == "accepted", data.score, data.comment, rev.max_score
     )
     await db.flush()
-    return _detail(row)
+    return await _detail(db, row)

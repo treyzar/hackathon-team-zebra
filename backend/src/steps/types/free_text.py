@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from steps.base import CommonSettings, Grading, RichText, Schema, StepType
 from steps.registry import register
@@ -8,9 +8,18 @@ from steps.registry import register
 
 class FreeTextContent(Schema):
     question: RichText
+    # The answer must contain text / at least this many files, e.g. a photo.
+    require_text: bool = False
+    min_files: int = Field(default=0, ge=0, le=10)
     max_files: int = Field(default=0, ge=0, le=10)
     # Empty list means any type is allowed.
     allowed_mime: list[str] = []
+
+    @model_validator(mode="after")
+    def _files_range(self):
+        if self.min_files > self.max_files:
+            raise ValueError("min_files cannot be greater than max_files")
+        return self
 
 
 class FreeTextKey(Schema):
@@ -41,6 +50,10 @@ class FreeText(StepType):
     def validate_answer(self, content, answer):
         if not answer.text.strip() and not answer.files:
             raise ValueError("Answer is empty")
+        if content.require_text and not answer.text.strip():
+            raise ValueError("The answer must contain text")
+        if len(answer.files) < content.min_files:
+            raise ValueError(f"Attach at least {content.min_files} file(s)")
 
     def answer_files(self, answer):
         return answer.files
@@ -55,6 +68,11 @@ class FreeText(StepType):
                 raise ValueError(
                     f"Reference file {f.id} must be uploaded with purpose answer_key"
                 )
+
+    def reveal(self, answer_key):
+        # Criteria and reference files are for curators only.
+        reference = answer_key.reference
+        return {"reference": reference.model_dump(mode="json") if reference else None}
 
     def check_files(self, content, files):
         if len(files) > content.max_files:

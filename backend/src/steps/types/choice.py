@@ -102,8 +102,25 @@ class MultipleChoice(StepType):
 
     def check(self, content, answer_key, settings, answer, max_score):
         correct, picked = set(answer_key.correct), set(answer.option_ids)
-        if settings.scoring == Scoring.ALL_OR_NOTHING:
-            return GradeResult(score=max_score if picked == correct else 0)
         right, wrong = len(picked & correct), len(picked - correct)
-        fraction = max(0.0, (right - wrong) / len(correct))
-        return GradeResult(score=round(max_score * fraction, 2))
+        # Counts explain the score without telling which options are right.
+        details = {
+            "correct_picked": right,
+            "wrong_picked": wrong,
+            "correct_total": len(correct),
+        }
+        if settings.scoring == Scoring.ALL_OR_NOTHING:
+            score = max_score if picked == correct else 0
+        else:
+            fraction = max(0.0, (right - wrong) / len(correct))
+            score = round(max_score * fraction, 2)
+        return GradeResult(score=score, details=details)
+
+    def explain(self, content, answer_key, answer):
+        correct, picked = set(answer_key.correct), set(answer.option_ids)
+        return {
+            "options": [
+                {"id": str(o.id), "picked": o.id in picked, "correct": o.id in correct}
+                for o in content.options
+            ]
+        }

@@ -177,12 +177,14 @@ def fake_storage(monkeypatch):
 def upload(client, fake_storage):
     """Upload bytes through the API as the given user; returns the file id."""
 
-    async def do(headers, data: bytes, purpose="answer_key", complete=True):
+    async def do(
+        headers, data: bytes, purpose="answer_key", complete=True, mime="text/plain"
+    ):
         r = await client.post(
             "/files",
             json={
                 "filename": "test.txt",
-                "mime": "text/plain",
+                "mime": mime,
                 "size": len(data),
                 "purpose": purpose,
             },
@@ -198,3 +200,24 @@ def upload(client, fake_storage):
         return r.json()["id"]
 
     return do
+
+
+@pytest_asyncio.fixture
+async def groups_setup(client, admin, make_user):
+    """Two groups, each with its own curator and student."""
+    out = []
+    for i in range(2):
+        curator_id, curator_h = await make_user("curator")
+        student_id, student_h = await make_user("student")
+        r = await client.post(
+            "/admin/groups",
+            json={"name": f"G{i}", "curator_id": curator_id},
+            headers=admin[1],
+        )
+        group_id = r.json()["id"]
+        r = await client.put(
+            f"/admin/groups/{group_id}/students/{student_id}", headers=admin[1]
+        )
+        assert r.status_code == 204
+        out.append((group_id, curator_h, student_id, student_h))
+    return out

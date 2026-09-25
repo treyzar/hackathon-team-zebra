@@ -2,7 +2,6 @@
 
 import uuid
 
-import pytest
 from conftest import requires_db
 
 pytestmark = requires_db
@@ -211,27 +210,6 @@ async def test_reorder_steps(client, admin, course):
         headers=admin[1],
     )
     assert r.status_code == 422
-
-
-@pytest.fixture
-async def groups_setup(client, admin, make_user):
-    """Two groups, each with its own curator and student."""
-    out = []
-    for i in range(2):
-        curator_id, curator_h = await make_user("curator")
-        student_id, student_h = await make_user("student")
-        r = await client.post(
-            "/admin/groups",
-            json={"name": f"G{i}", "curator_id": curator_id},
-            headers=admin[1],
-        )
-        group_id = r.json()["id"]
-        r = await client.put(
-            f"/admin/groups/{group_id}/students/{student_id}", headers=admin[1]
-        )
-        assert r.status_code == 204
-        out.append((group_id, curator_h, student_id, student_h))
-    return out
 
 
 async def test_manual_review_scoped_by_group(client, admin, course, groups_setup):
@@ -516,3 +494,96 @@ async def test_theory_is_viewed_once(client, admin, course, make_user):
     assert (await submit(client, h, step_id, {})).status_code == 201
     assert (await step_state(client, h, step_id))[0] is False
     assert (await submit(client, h, step_id, {})).status_code == 409
+
+
+async def test_answer_with_required_text_and_photo(
+    client, admin, course, make_user, upload
+):
+    step_id = await add_step(
+        client,
+        admin,
+        course[1],
+        free_text(
+            require_text=True, min_files=1, max_files=2, allowed_mime=["image/png"]
+        ),
+    )
+    _, h = await make_user()
+    photo = await upload(h, b"\x89PNG...", purpose="submission", mime="image/png")
+
+    r = await submit(client, h, step_id, {"text": "only text"})
+    assert r.status_code == 422 and "at least 1" in r.text
+    r = await submit(client, h, step_id, {"files": [photo]})
+    assert r.status_code == 422 and "must contain text" in r.text
+    r = await submit(client, h, step_id, {"text": "see photo", "files": [photo]})
+    assert r.status_code == 201 and r.json()["status"] == "pending_review"
+
+
+async def test_min_files_above_max_rejected(client, admin, course):
+    r = await client.post(
+        f"/admin/modules/{course[1]}/steps",
+        json={"payload": free_text(min_files=3, max_files=1)},
+        headers=admin[1],
+    )
+    assert r.status_code == 422
+
+
+async def test_free_text_answer_shows_reference_only(
+    client, admin, course, groups_setup
+):
+    step = free_text()
+    step["answer_key"] = {"reference": DOC, "criteria": "for curators"}
+    step["settings"] = {"show_answer": "after_solved"}
+    step_id = await add_step(client, admin, course[1], step)
+    (_, curator, _, student) = groups_setup[0]
+
+    sub_id = (await submit(client, student, step_id, {"text": "answer"})).json()["id"]
+    assert (
+        await client.get(f"/steps/{step_id}/answer", headers=student)
+    ).status_code == 403
+    await client.post(
+        f"/review/submissions/{sub_id}", json={"verdict": "accepted"}, headers=curator
+    )
+    r = await client.get(f"/steps/{step_id}/answer", headers=student)
+    assert r.json() == {"reference": DOC}
+
+
+async def test_partial_score_is_explained(client, admin, course, make_user):
+    step_id = await add_step(client, admin, course[1], multiple_choice())
+    _, h = await make_user()
+    r = (await submit(client, h, step_id, {"option_ids": [A]})).json()
+    assert r["score"] == 2
+    assert r["result_details"] == {
+        "correct_picked": 1,
+        "wrong_picked": 0,
+        "correct_total": 2,
+    }
+    # show_answer is "never": no per-option breakdown.
+    assert r["explanation"] is None
+
+
+async def test_option_breakdown_follows_show_answer(client, admin, course, make_user):
+    step_id = await add_step(
+        client,
+        admin,
+        course[1],
+        multiple_choice(max_attempts=2, show_answer="after_attempts_exhausted"),
+    )
+    _, h = await make_user()
+    first = (await submit(client, h, step_id, {"option_ids": [A]})).json()
+    assert first["explanation"] is None  # an attempt is left: answer still hidden
+
+    last = (await submit(client, h, step_id, {"option_ids": [A, B]})).json()
+    marks = {
+        o["id"]: (o["picked"], o["correct"]) for o in last["explanation"]["options"]
+    }
+    assert marks[A] == (True, True) and marks[B] == (True, True)
+
+    # Once the answer is open, earlier submissions are explained too.
+    mine = (await client.get(f"/steps/{step_id}/submissions", headers=h)).json()
+    older = next(s for s in mine if s["id"] == first["id"])
+    marks = {
+        o["id"]: (o["picked"], o["correct"]) for o in older["explanation"]["options"]
+    }
+    assert marks[A] == (True, True) and marks[B] == (False, True)
+    single = (await client.get(f"/submissions/{first['id']}", headers=h)).json()
+    assert single["explanation"] == older["explanation"]

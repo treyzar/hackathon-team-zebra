@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+:root {
+  font-family: "Onest", "Segoe UI", Arial, sans-serif;
+  color: #0f172a;
+  background: #0b1220;
+  font-synthesis: none;
+}
+
 html,
 body,
 #app {

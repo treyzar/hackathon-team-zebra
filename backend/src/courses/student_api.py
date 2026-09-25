@@ -18,6 +18,13 @@ from courses.schemas import (
     SubmitIn,
 )
 from database import access_db
+from groups.deadlines import (
+    effective_deadlines,
+    is_late,
+    student_group_id,
+    submission_deadlines,
+)
+from groups.deadlines import view as deadline_view
 from models import User
 from submissions import service as sub_svc
 from submissions.models import Submission
@@ -30,6 +37,47 @@ async def _open_step(db: AsyncSession, user: User, step_id: int):
     step, rev, module = await svc.get_step(db, step_id, for_student=True)
     await ensure_unlocked(db, user, step, module)
     return step, rev, module
+
+
+async def _explanations(
+    db: AsyncSession, user: User, subs: list[Submission]
+) -> dict[int, dict | None]:
+    """Answer-revealing feedback for submissions of steps whose answer the
+    user may see now (show_answer), built against the revision they answered."""
+    open_steps: dict[int, Step] = {}
+    for step_id in {s.step_id for s in subs}:
+        step = await db.get(Step, step_id)
+        current = await db.get(StepRevision, step.current_revision_id)
+        stats = (await sub_svc.stats_for(db, user.id, [step_id]))[step_id]
+        if sub_svc.answer_available(svc.parse(step, current), stats):
+            open_steps[step_id] = step
+    result: dict[int, dict | None] = {}
+    for s in subs:
+        step = open_steps.get(s.step_id)
+        if step is None:
+            result[s.id] = None
+            continue
+        parsed = svc.parse(step, await db.get(StepRevision, s.step_revision_id))
+        answer = parsed.type.answer_model.model_validate(s.answer)
+        result[s.id] = parsed.type.explain(parsed.content, parsed.answer_key, answer)
+    return result
+
+
+async def _submissions_out(
+    db: AsyncSession, user: User, subs: list[Submission]
+) -> list[SubmissionOut]:
+    due = await submission_deadlines(db, subs)
+    explained = await _explanations(db, user, subs)
+    return [
+        SubmissionOut.model_validate(s).model_copy(
+            update={
+                "deadline_due_at": due[s.id],
+                "is_late": is_late(s, due[s.id]),
+                "explanation": explained[s.id],
+            }
+        )
+        for s in subs
+    ]
 
 
 def _progress(stats: sub_svc.StepStats) -> StepProgress:
@@ -84,6 +132,8 @@ async def get_course(
     ).all()
     stats = await sub_svc.stats_for(db, user.id, [step.id for step, _ in rows])
     locked = await locked_steps(db, user, course)
+    group_id = await student_group_id(db, user)
+    deadlines = await effective_deadlines(db, group_id, course.id)
     steps: dict[int, list[StudentStepSummary]] = {m.id: [] for m in modules}
     for step, max_score in rows:
         steps[step.module_id].append(
@@ -93,6 +143,7 @@ async def get_course(
                 max_score=max_score,
                 progress=_progress(stats[step.id]),
                 locked=step.id in locked,
+                deadline=deadline_view(step.id, deadlines.get(step.id)),
             )
         )
     return StudentCourse(
@@ -122,6 +173,8 @@ async def get_step(
     parsed = svc.parse(step, rev)
     stats = (await sub_svc.stats_for(db, user.id, [step.id]))[step.id]
     block = sub_svc.submit_block_reason(parsed, stats)
+    group_id = await student_group_id(db, user)
+    deadlines = await effective_deadlines(db, group_id, module.course_id)
     return StudentStep(
         id=step.id,
         course_id=module.course_id,
@@ -138,6 +191,7 @@ async def get_step(
         answer_available=sub_svc.answer_available(parsed, stats),
         can_submit=block is None,
         submit_block_reason=block,
+        deadline=deadline_view(step.id, deadlines.get(step.id)),
     )
 
 
@@ -178,7 +232,8 @@ async def submit(
     db: AsyncSession = Depends(access_db),
 ):
     step, rev, _ = await _open_step(db, user, step_id)
-    return await sub_svc.submit(db, user, step, rev, data.answer)
+    sub = await sub_svc.submit(db, user, step, rev, data.answer)
+    return (await _submissions_out(db, user, [sub]))[0]
 
 
 @learning.get("/steps/{step_id}/submissions", response_model=list[SubmissionOut])
@@ -198,7 +253,7 @@ async def my_submissions(
         .where(Submission.user_id == user.id, Submission.step_id == step.id)
         .order_by(Submission.id.desc())
     )
-    return (await db.scalars(query)).all()
+    return await _submissions_out(db, user, list(await db.scalars(query)))
 
 
 @learning.get("/submissions/{submission_id}", response_model=SubmissionOut)
@@ -211,4 +266,4 @@ async def my_submission(
     sub = await db.get(Submission, submission_id)
     if not sub or sub.user_id != user.id:
         raise svc.not_found("Submission")
-    return sub
+    return (await _submissions_out(db, user, [sub]))[0]
