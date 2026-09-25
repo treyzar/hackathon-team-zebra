@@ -53,6 +53,26 @@ class Order(BaseModel):
     ids: list[int]
 
 
+class EnrollIn(BaseModel):
+    """Students to enroll: listed ones plus the current students of the
+    listed groups (a snapshot: later group members are not enrolled)."""
+
+    user_ids: list[int] = []
+    group_ids: list[int] = []
+
+
+class EnrollResult(BaseModel):
+    enrolled: list[int]
+    # Were enrolled before; enrolling again changes nothing.
+    already_enrolled: list[int]
+
+
+class EnrolledStudent(BaseModel):
+    id: int
+    username: str
+    group_id: int | None
+
+
 class StepSave(BaseModel):
     payload: StepPayload
     comment: str | None = Field(default=None, max_length=1000)

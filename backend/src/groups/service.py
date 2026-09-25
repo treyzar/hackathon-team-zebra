@@ -2,6 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from courses.models import Enrollment
 from groups.models import Group, GroupStudent
 from models import Role, User
 
@@ -51,12 +52,20 @@ async def student_group_id(db: AsyncSession, user: User) -> int | None:
     return membership.group_id if membership else None
 
 
-async def group_students(db: AsyncSession, group_id: int) -> list[User]:
-    """Current students of the group, by username."""
+async def group_students(
+    db: AsyncSession, group_id: int, course_id: int | None = None
+) -> list[User]:
+    """Current students of the group, by username; with course_id, only
+    those enrolled in that course (progress, rating and lag are per course)."""
     query = (
         select(User)
         .join(GroupStudent, GroupStudent.user_id == User.id)
         .where(GroupStudent.group_id == group_id)
         .order_by(User.username)
     )
+    if course_id is not None:
+        query = query.join(
+            Enrollment,
+            (Enrollment.user_id == User.id) & (Enrollment.course_id == course_id),
+        )
     return list(await db.scalars(query))

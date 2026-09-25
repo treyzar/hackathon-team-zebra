@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access_docs import access_note
 from auth import get_current_user, require_curator
 from courses import service as courses_svc
+from courses.access import ensure_enrolled
 from courses.models import Course
 from database import access_db
 from groups.service import group_students, manageable_group, student_group_id
@@ -23,10 +24,12 @@ from progress.service import course_progress
 progress_api = APIRouter(tags=["progress"])
 
 
-async def published_course(db: AsyncSession, course_id: int) -> Course:
+async def student_course(db: AsyncSession, course_id: int, user: User) -> Course:
+    """A published course the user is enrolled in (staff: any published)."""
     course = await courses_svc.get_course(db, course_id)
     if not course.is_published:
         raise courses_svc.not_found("Course")
+    await ensure_enrolled(db, user, course.id)
     return course
 
 
@@ -42,7 +45,7 @@ async def my_progress(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(access_db),
 ):
-    course = await published_course(db, course_id)
+    course = await student_course(db, course_id, user)
     progress = (await course_progress(db, course, [user]))[user.id]
     modules = await courses_svc.live_modules(db, course.id)
     group_id = await student_group_id(db, user)
@@ -80,7 +83,7 @@ async def group_progress(
 ):
     await manageable_group(db, user, group_id)
     course = await courses_svc.get_course(db, course_id)
-    students = await group_students(db, group_id)
+    students = await group_students(db, group_id, course.id)
     progress = await course_progress(db, course, students)
     lag = await group_lag(db, course, group_id, progress)
     return [
@@ -115,7 +118,7 @@ async def lagging_students(
 ):
     await manageable_group(db, user, group_id)
     course = await courses_svc.get_course(db, course_id)
-    students = await group_students(db, group_id)
+    students = await group_students(db, group_id, course.id)
     lag = await group_lag(
         db, course, group_id, await course_progress(db, course, students)
     )
@@ -142,11 +145,13 @@ async def get_my_rating(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(access_db),
 ):
-    course = await published_course(db, course_id)
+    course = await student_course(db, course_id, user)
     group_id = await student_group_id(db, user)
     if group_id is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not in a group")
-    rating = await group_rating(db, course, await group_students(db, group_id))
+    rating = await group_rating(
+        db, course, await group_students(db, group_id, course.id)
+    )
     return await my_rating(db, course, user, rating)
 
 
@@ -165,5 +170,7 @@ async def get_group_rating(
 ):
     await manageable_group(db, user, group_id)
     course = await courses_svc.get_course(db, course_id)
-    rating = await group_rating(db, course, await group_students(db, group_id))
+    rating = await group_rating(
+        db, course, await group_students(db, group_id, course.id)
+    )
     return rating.rows()

@@ -5,7 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access_docs import access_note
 from auth import get_current_user
 from courses import service as svc
-from courses.access import ensure_unlocked, locked_steps
+from courses.access import (
+    enrolled_course_ids,
+    ensure_enrolled,
+    ensure_unlocked,
+    locked_steps,
+)
 from courses.models import Course, Step, StepRevision
 from courses.schemas import (
     StudentCourse,
@@ -24,7 +29,7 @@ from groups.deadlines import (
 )
 from groups.deadlines import view as deadline_view
 from groups.service import student_group_id
-from models import User
+from models import Role, User
 from progress.service import course_progress
 from progress.stats import stats_for
 from submissions import service as sub_svc
@@ -36,6 +41,7 @@ learning = APIRouter(tags=["learning"])
 async def _open_step(db: AsyncSession, user: User, step_id: int):
     """A visible step the user may open: 404 if hidden, 403 if still locked."""
     step, rev, module = await svc.get_step(db, step_id, for_student=True)
+    await ensure_enrolled(db, user, module.course_id)
     await ensure_unlocked(db, user, step, module)
     return step, rev, module
 
@@ -91,6 +97,8 @@ async def list_courses(
         .where(Course.is_published, Course.deleted_at.is_(None))
         .order_by(Course.title)
     )
+    if user.role == Role.STUDENT:
+        query = query.where(Course.id.in_(enrolled_course_ids(user.id)))
     items = []
     for course in await db.scalars(query):
         progress = (await course_progress(db, course, [user]))[user.id]
@@ -119,6 +127,7 @@ async def get_course(
     course = await svc.get_course(db, course_id)
     if not course.is_published:
         raise svc.not_found("Course")
+    await ensure_enrolled(db, user, course.id)
     modules = await svc.live_modules(db, course.id)
     rows = (
         await db.execute(

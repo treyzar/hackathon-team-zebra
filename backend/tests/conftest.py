@@ -104,14 +104,23 @@ async def client(db_clean):
 
 @pytest_asyncio.fixture
 async def make_user(db_clean):
-    """Create a user with a role; returns (user_id, auth headers)."""
+    """Create a user with a role; returns (user_id, auth headers).
+
+    Students are enrolled in every existing course (and the ``course`` fixture
+    enrolls existing students), so tests about something else need not care;
+    pass ``enroll=False`` to test enrollment itself."""
+    from sqlalchemy import select
+
     from auth import create_token, hasher
+    from courses.models import Course, Enrollment
     from database import async_factory
     from models import Role, User
 
     counter = 0
 
-    async def make(role: str = "student", username: str | None = None):
+    async def make(
+        role: str = "student", username: str | None = None, enroll: bool = True
+    ):
         nonlocal counter
         counter += 1
         name = username or f"{role}{counter:03d}"
@@ -123,6 +132,10 @@ async def make_user(db_clean):
                 role=Role(role),
             )
             db.add(user)
+            await db.flush()
+            if role == "student" and enroll:
+                for course_id in await db.scalars(select(Course.id)):
+                    db.add(Enrollment(course_id=course_id, user_id=user.id))
             await db.commit()
             token = create_token(user, "access")
             return user.id, {"Authorization": f"Bearer {token}"}
@@ -152,7 +165,21 @@ async def course(client, admin):
         f"/admin/courses/{course_id}", json={"is_published": True}, headers=h
     )
     assert r.json()["is_published"]
+    await _enroll_all_students(course_id)
     return course_id, module_id
+
+
+async def _enroll_all_students(course_id: int) -> None:
+    from sqlalchemy import select
+
+    from courses.models import Enrollment
+    from database import async_factory
+    from models import Role, User
+
+    async with async_factory() as db:
+        students = await db.scalars(select(User.id).where(User.role == Role.STUDENT))
+        db.add_all(Enrollment(course_id=course_id, user_id=s) for s in students)
+        await db.commit()
 
 
 class FakeStorage:
