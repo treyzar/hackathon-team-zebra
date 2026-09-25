@@ -5,8 +5,9 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import Select, select
+from sqlalchemy import Select, and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from access_docs import access_note
 from auth import require_curator
@@ -37,6 +38,8 @@ class ReviewListItem(BaseModel):
     step_type: str
     max_score: int
     course_id: int
+    task_title: str
+    task_number: str
     course_title: str
     module_title: str
     # Deadline of the step for the student's group and whether the
@@ -47,6 +50,7 @@ class ReviewListItem(BaseModel):
     # sent (for tests + review that includes the short judge run); null once
     # it is not waiting any more. Computed per request, not stored.
     waiting_seconds: int | None
+    attempts_before: int
 
 
 class CourseQueue(BaseModel):
@@ -81,8 +85,33 @@ class Verdict(BaseModel):
 
 
 def _visible(user: User) -> Select:
+    # Алиас для "предыдущих" сабмитов того же пользователя/шага
+    prev = aliased(Submission)
+
+    prev_attempts = (
+        select(func.count(prev.id))
+        .where(
+            and_(
+                prev.user_id == Submission.user_id,
+                prev.step_id == Submission.step_id,
+                prev.id < Submission.id,
+            )
+        )
+        .correlate(Submission)
+        .scalar_subquery()
+        .label("attempts_before")
+    )
+
     query = (
-        select(Submission, User, Step, StepRevision, Module, Course)
+        select(
+            Submission,
+            User,
+            Step,
+            StepRevision,
+            Module,
+            Course,
+            prev_attempts,
+        )
         .join(User, User.id == Submission.user_id)
         .join(Step, Step.id == Submission.step_id)
         .join(StepRevision, StepRevision.id == Submission.step_revision_id)
@@ -95,7 +124,7 @@ def _visible(user: User) -> Select:
 
 
 def _item(row, due_at, cls=ReviewListItem, **extra):
-    sub, student, step, rev, module, course = row
+    sub, student, step, rev, module, course, attempts_before = row
     return cls(
         deadline_due_at=due_at,
         is_late=is_late(sub, due_at),
@@ -104,6 +133,7 @@ def _item(row, due_at, cls=ReviewListItem, **extra):
             if sub.status == SubmissionStatus.PENDING_REVIEW
             else None
         ),
+        attempts_before=attempts_before,
         id=sub.id,
         status=sub.status,
         created_at=sub.created_at,
@@ -118,6 +148,8 @@ def _item(row, due_at, cls=ReviewListItem, **extra):
         step_type=step.type,
         max_score=rev.max_score,
         course_id=course.id,
+        task_title=step.title,
+        task_number=f"{module.position}.{step.position}",
         course_title=course.title,
         module_title=module.title,
         **extra,
@@ -136,7 +168,7 @@ async def _get(db: AsyncSession, user: User, submission_id: int, lock=False):
 
 
 async def _detail(db: AsyncSession, row) -> ReviewDetail:
-    sub, _, step, rev, _, _ = row
+    sub, _, step, rev, _, _, _ = row
     parsed = svc.parse(step, rev)
     due = await submission_deadlines(db, [sub])
     return _item(
