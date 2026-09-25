@@ -107,11 +107,6 @@ def is_late(sub, due_at: datetime | None) -> bool:
     return due_at is not None and sub.created_at > due_at
 
 
-async def student_group_id(db: AsyncSession, user: User) -> int | None:
-    membership = await db.get(GroupStudent, user.id)
-    return membership.group_id if membership else None
-
-
 # --- API ---------------------------------------------------------------------
 
 

@@ -60,3 +60,51 @@ class StudentProgressRow(BaseModel):
     student_id: int
     username: str
     progress: ProgressSummary
+
+
+class Opportunity(BaseModel):
+    """A step where the student can still earn points."""
+
+    step_id: int
+    module_id: int
+    module_title: str
+    # 1-based number of the step within its module, as the student sees it.
+    position: int
+    type: str
+    # complete: not started or no points yet; improve: partial points.
+    action: str
+    # Points the step can still add (up to its maximum).
+    can_gain: float
+
+
+class RankTarget(BaseModel):
+    place: int
+    points: float
+    # To overtake, earn MORE than this; equal points only share the place.
+    # None when the student is already there.
+    gap: float | None
+    # Steps (ids from opportunities, in course order) that are enough to
+    # overtake; reachable is False when all opportunities together are not.
+    plan: list[int]
+    reachable: bool
+
+
+class MyRating(BaseModel):
+    course_id: int
+    group_size: int
+    points: float
+    place: int
+    # How many other students have exactly the same points.
+    tied_with: int
+    # The nearest higher result; None when the student is first.
+    next_place: RankTarget | None
+    first_place: RankTarget
+    opportunities: list[Opportunity]
+
+
+class RatingRow(BaseModel):
+    place: int
+    student_id: int
+    username: str
+    points: float
+    steps_completed: int

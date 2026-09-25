@@ -44,3 +44,19 @@ async def manageable_group(db: AsyncSession, user: User, group_id: int) -> Group
     if user.role != Role.ADMIN and group.curator_id != user.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your group")
     return group
+
+
+async def student_group_id(db: AsyncSession, user: User) -> int | None:
+    membership = await db.get(GroupStudent, user.id)
+    return membership.group_id if membership else None
+
+
+async def group_students(db: AsyncSession, group_id: int) -> list[User]:
+    """Current students of the group, by username."""
+    query = (
+        select(User)
+        .join(GroupStudent, GroupStudent.user_id == User.id)
+        .where(GroupStudent.group_id == group_id)
+        .order_by(User.username)
+    )
+    return list(await db.scalars(query))

@@ -20,10 +20,10 @@ from database import access_db
 from groups.deadlines import (
     effective_deadlines,
     is_late,
-    student_group_id,
     submission_deadlines,
 )
 from groups.deadlines import view as deadline_view
+from groups.service import student_group_id
 from models import User
 from progress.service import course_progress
 from progress.stats import stats_for
