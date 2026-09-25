@@ -72,7 +72,9 @@ async def test_totals_and_breakdown(client, admin, course, student):
     # The same totals in the course list and the course tree.
     listed = (await client.get("/courses", headers=student)).json()[0]["progress"]
     tree = (await client.get(f"/courses/{course[0]}", headers=student)).json()
-    summary = {k: v for k, v in p.items() if k not in ("steps", "modules", "course_id")}
+    summary = {
+        k: v for k, v in p.items() if k not in ("steps", "modules", "course_id", "lag")
+    }
     assert listed == summary == tree["progress"]
 
 

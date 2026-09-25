@@ -33,7 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from courses.access import locked_steps
 from courses.models import Course, StepRevision
-from courses.service import OrderedStep, visible_steps_in_order
+from courses.service import OrderedStep, live_modules, visible_steps_in_order
 from models import User
 from progress.schemas import ProgressSummary, StepProgress, StepProgressDetail, Totals
 from submissions.models import Submission, SubmissionStatus
@@ -123,6 +123,26 @@ def _totals(results: list[StepResult]) -> Totals:
         points_max=sum(r.step.max_score for r in results),
         percent=round(100 * completed / total) if total else 0,
     )
+
+
+@dataclass
+class StepLabel:
+    """How a student finds the step: "module «Loops», step 3"."""
+
+    module_title: str
+    # 1-based number of the step within its module.
+    position: int
+
+
+async def step_labels(
+    db: AsyncSession, course_id: int, steps: list[OrderedStep]
+) -> dict[int, StepLabel]:
+    titles = {m.id: m.title for m in await live_modules(db, course_id)}
+    labels, seen = {}, {}
+    for s in steps:
+        seen[s.module_id] = seen.get(s.module_id, 0) + 1
+        labels[s.id] = StepLabel(titles.get(s.module_id, ""), seen[s.module_id])
+    return labels
 
 
 def _share(score: float, graded_max: int, current_max: int) -> float:

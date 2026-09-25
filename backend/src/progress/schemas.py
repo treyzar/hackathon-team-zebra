@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -50,8 +52,32 @@ class ModuleProgress(Totals):
     title: str
 
 
+class OverdueStep(BaseModel):
+    """A step whose deadline has passed and that is not completed yet."""
+
+    step_id: int
+    module_id: int
+    module_title: str
+    position: int
+    type: str
+    due_at: datetime
+    days_overdue: int
+    # Why it is stuck: not_started, failed (no points yet),
+    # attempts_exhausted (no points and no tries left) or partial.
+    state: str
+
+
+class Lag(BaseModel):
+    # on_track: nothing overdue; slowed: overdue, none by more than a week;
+    # falling_behind: something is overdue by more than a week.
+    status: str
+    # The reason: overdue steps, the most overdue first.
+    overdue: list[OverdueStep]
+
+
 class CourseProgressOut(ProgressSummary):
     course_id: int
+    lag: Lag
     modules: list[ModuleProgress]
     steps: list[StepProgressDetail]
 
@@ -60,6 +86,13 @@ class StudentProgressRow(BaseModel):
     student_id: int
     username: str
     progress: ProgressSummary
+    lag: Lag
+
+
+class StudentLagRow(BaseModel):
+    student_id: int
+    username: str
+    lag: Lag
 
 
 class Opportunity(BaseModel):

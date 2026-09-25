@@ -8,12 +8,14 @@ from courses.models import Course
 from database import access_db
 from groups.service import group_students, manageable_group, student_group_id
 from models import User
+from progress.lag import LagStatus, group_lag
 from progress.rating import group_rating, my_rating
 from progress.schemas import (
     CourseProgressOut,
     ModuleProgress,
     MyRating,
     RatingRow,
+    StudentLagRow,
     StudentProgressRow,
 )
 from progress.service import course_progress
@@ -43,9 +45,12 @@ async def my_progress(
     course = await published_course(db, course_id)
     progress = (await course_progress(db, course, [user]))[user.id]
     modules = await courses_svc.live_modules(db, course.id)
+    group_id = await student_group_id(db, user)
+    lag = (await group_lag(db, course, group_id, {user.id: progress}))[user.id]
     return CourseProgressOut(
         **progress.summary().model_dump(),
         course_id=course.id,
+        lag=lag,
         modules=[
             ModuleProgress(
                 module_id=m.id,
@@ -77,12 +82,52 @@ async def group_progress(
     course = await courses_svc.get_course(db, course_id)
     students = await group_students(db, group_id)
     progress = await course_progress(db, course, students)
+    lag = await group_lag(db, course, group_id, progress)
     return [
         StudentProgressRow(
-            student_id=s.id, username=s.username, progress=progress[s.id].summary()
+            student_id=s.id,
+            username=s.username,
+            progress=progress[s.id].summary(),
+            lag=lag[s.id],
         )
         for s in students
     ]
+
+
+_SEVERITY = {LagStatus.FALLING_BEHIND: 0, LagStatus.SLOWED: 1}
+
+
+@progress_api.get(
+    "/groups/{group_id}/courses/{course_id}/lagging",
+    response_model=list[StudentLagRow],
+)
+@access_note(
+    "Куратор — только для своей группы, администратор — для любой. Только "
+    "отстающие: сначала «выпадает» (просрочка больше недели), затем "
+    "«замедлился»; внутри — по самой давней просрочке. У каждого — причина: "
+    "просроченные шаги и их состояние. Правило — в README, раздел «Отставание»."
+)
+async def lagging_students(
+    group_id: int,
+    course_id: int,
+    user: User = Depends(require_curator),
+    db: AsyncSession = Depends(access_db),
+):
+    await manageable_group(db, user, group_id)
+    course = await courses_svc.get_course(db, course_id)
+    students = await group_students(db, group_id)
+    lag = await group_lag(
+        db, course, group_id, await course_progress(db, course, students)
+    )
+    rows = [
+        StudentLagRow(student_id=s.id, username=s.username, lag=lag[s.id])
+        for s in students
+        if lag[s.id].status != LagStatus.ON_TRACK
+    ]
+    return sorted(
+        rows,
+        key=lambda r: (_SEVERITY[r.lag.status], r.lag.overdue[0].due_at, r.username),
+    )
 
 
 @progress_api.get("/courses/{course_id}/rating", response_model=MyRating)

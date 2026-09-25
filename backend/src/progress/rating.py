@@ -20,10 +20,9 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from courses.models import Course
-from courses.service import live_modules
 from models import User
 from progress.schemas import MyRating, Opportunity, RankTarget, RatingRow
-from progress.service import CourseProgress, StepState, course_progress
+from progress.service import CourseProgress, StepState, course_progress, step_labels
 
 _COMPLETE = (StepState.NOT_STARTED, StepState.FAILED)
 
@@ -63,19 +62,14 @@ async def opportunities(
     db: AsyncSession, course: Course, progress: CourseProgress
 ) -> list[Opportunity]:
     """Where points can still be earned, in the order to go for them."""
-    titles = {m.id: m.title for m in await live_modules(db, course.id)}
-    position: dict[int, int] = {}
-    seen: dict[int, int] = {}
-    for r in progress.steps:
-        seen[r.step.module_id] = seen.get(r.step.module_id, 0) + 1
-        position[r.step.id] = seen[r.step.module_id]
+    labels = await step_labels(db, course.id, [r.step for r in progress.steps])
 
     def opportunity(r, action: str) -> Opportunity:
         return Opportunity(
             step_id=r.step.id,
             module_id=r.step.module_id,
-            module_title=titles.get(r.step.module_id, ""),
-            position=position[r.step.id],
+            module_title=labels[r.step.id].module_title,
+            position=labels[r.step.id].position,
             type=r.step.type,
             action=action,
             can_gain=round(r.step.max_score - r.earned, 2),
