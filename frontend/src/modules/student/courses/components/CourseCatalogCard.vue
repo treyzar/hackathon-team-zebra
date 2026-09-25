@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import type { CourseListItem } from "../types";
-import { progressText } from "../presentation";
+import { pointsText, progressText } from "../presentation";
 import { STUDENT_COURSE_ROUTE } from "@/pages/student/course/constants";
 
 defineProps<{ course: CourseListItem }>();
@@ -24,8 +24,7 @@ defineProps<{ course: CourseListItem }>();
         {{ progressText(course.progress.steps_completed, course.progress.steps_total) }}
       </span>
       <span v-else>○ Не начато</span>
-      <b v-if="course.progress.points_earned">{{ course.progress.points_earned }} баллов</b>
-      <b v-else>0 баллов</b>
+      <b>{{ pointsText(course.progress.points_earned) }}</b>
     </span>
   </RouterLink>
 </template>
