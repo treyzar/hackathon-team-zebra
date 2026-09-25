@@ -1,0 +1,666 @@
+{
+  "schema_version": 2,
+  "course": {
+    "slug": "python-first",
+    "title": "Алгоритмика: первые задачи на Python",
+    "description": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Курс для 5–9 классов. Ученик читает входные данные, пишет решения с условиями и циклами и сдаёт их так, как это делают на соревнованиях по спортивному программированию."
+            }
+          ]
+        }
+      ]
+    },
+    "step_access": "all",
+    "modules": [
+      {
+        "title": "Ввод, вывод, арифметика",
+        "steps": [
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "theory",
+              "max_score": 0,
+              "content": {
+                "body": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Как устроена олимпиадная задача" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "На соревнованиях по спортивному программированию решение не показывают жюри. Его отправляют в проверяющую систему, и она прогоняет программу на наборе тестов. В каждом тесте программа получает входные данные и должна вывести ровно тот ответ, который ожидается." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Из чего состоит условие" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "marks": [{ "type": "bold" }], "text": "Легенда" }, { "type": "text", "text": " — история, в которую упакована задача." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "marks": [{ "type": "bold" }], "text": "Формат входных данных" }, { "type": "text", "text": " — что и в каком виде придёт на вход." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "marks": [{ "type": "bold" }], "text": "Формат выходных данных" }, { "type": "text", "text": " — что и как нужно напечатать." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "marks": [{ "type": "bold" }], "text": "Ограничения" }, { "type": "text", "text": " — насколько большими бывают числа и сколько времени есть у программы." }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "marks": [{ "type": "bold" }], "text": "Примеры" }, { "type": "text", "text": " — несколько тестов, которые видно заранее." }] }] }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Ввод и вывод в Python" }]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "python" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "a = int(input())  # одно число в строке\nb, c = map(int, input().split())  # два числа через пробел\nprint(a + b + c)"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Лишние слова в выводе — ошибка. Если нужно вывести число 5, программа печатает только «5», без «Ответ:»." }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "answer_key": {},
+              "settings": { "grading": "none" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "single_choice",
+              "max_score": 1,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "В задаче нужно вывести сумму двух чисел. Ожидаемый ответ — 7. Какую строку должна напечатать программа?" }
+                      ]
+                    }
+                  ]
+                },
+                "options": [
+                  { "id": "11111111-1111-4111-8111-111111111111", "text": "Ответ: 7" },
+                  { "id": "22222222-2222-4222-8222-222222222222", "text": "7" },
+                  { "id": "33333333-3333-4333-8333-333333333333", "text": "сумма = 7" },
+                  { "id": "44444444-4444-4444-8444-444444444444", "text": "7.0" }
+                ]
+              },
+              "answer_key": { "correct": "22222222-2222-4222-8222-222222222222" },
+              "settings": { "grading": "auto", "show_answer": "after_wrong" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "programming",
+              "max_score": 10,
+              "content": {
+                "statement": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Сумма двух чисел" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [{ "type": "text", "text": "Даны два целых числа. Выведите их сумму." }]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Входные данные" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "В одной строке через пробел два целых числа " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "a" },
+                        { "type": "text", "text": " и " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "b" },
+                        { "type": "text", "text": " (−10⁹ ≤ a, b ≤ 10⁹)." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Выходные данные" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Одно целое число — " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "a + b" },
+                        { "type": "text", "text": "." }
+                      ]
+                    }
+                  ]
+                },
+                "languages": ["python3"],
+                "time_limit_ms": 1000,
+                "memory_limit_mb": 256,
+                "samples": [
+                  { "input": "2 3\n", "output": "5" },
+                  { "input": "-5 7\n", "output": "2" }
+                ]
+              },
+              "answer_key": {
+                "test_groups": [
+                  {
+                    "name": "скрытые",
+                    "points": 10,
+                    "tests": [
+                      { "input": "0 0\n", "output": "0" },
+                      { "input": "1000000000 1000000000\n", "output": "2000000000" },
+                      { "input": "-1000000000 -1\n", "output": "-1000000001" },
+                      { "input": "123 -123\n", "output": "0" }
+                    ]
+                  }
+                ],
+                "reference_solution": "a, b = map(int, input().split())\nprint(a + b)\n"
+              },
+              "settings": { "grading": "tests", "scoring": "all_or_nothing" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "programming",
+              "max_score": 10,
+              "content": {
+                "statement": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Парты" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "В школе открывают три новых класса. За одной партой сидят двое. Известно, сколько учеников в каждом классе. Сколько парт нужно купить, если классы занимаются в разных кабинетах одновременно?" }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Входные данные" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Три строки, в каждой одно целое число — количество учеников в классе (1 ≤ n ≤ 1000)." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Выходные данные" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [{ "type": "text", "text": "Одно число — наименьшее количество парт." }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [{ "type": "text", "text": "Подумайте, что делать, если в классе нечётное число учеников." }]
+                    }
+                  ]
+                },
+                "languages": ["python3"],
+                "time_limit_ms": 1000,
+                "memory_limit_mb": 256,
+                "samples": [
+                  { "input": "20\n21\n22\n", "output": "32" },
+                  { "input": "1\n1\n1\n", "output": "3" }
+                ]
+              },
+              "answer_key": {
+                "test_groups": [
+                  {
+                    "name": "скрытые",
+                    "points": 10,
+                    "tests": [
+                      { "input": "2\n2\n2\n", "output": "3" },
+                      { "input": "1000\n999\n1\n", "output": "1001" },
+                      { "input": "7\n8\n9\n", "output": "13" },
+                      { "input": "15\n15\n15\n", "output": "24" }
+                    ]
+                  }
+                ],
+                "reference_solution": "a = int(input())\nb = int(input())\nc = int(input())\nprint((a + 1) // 2 + (b + 1) // 2 + (c + 1) // 2)\n"
+              },
+              "settings": { "grading": "tests", "scoring": "all_or_nothing" }
+            }
+          }
+        ]
+      },
+      {
+        "title": "Условия",
+        "steps": [
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "theory",
+              "max_score": 0,
+              "content": {
+                "body": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Если, иначе, логические операции" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [{ "type": "text", "text": "Условие позволяет программе выбирать, что делать дальше." }]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "python" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "x = int(input())\nif x > 0:\n    print(\"положительное\")\nelif x == 0:\n    print(\"ноль\")\nelse:\n    print(\"отрицательное\")"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Сравнения" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "==" },
+                        { "type": "text", "text": " равно, " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "!=" },
+                        { "type": "text", "text": " не равно, " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "<" },
+                        { "type": "text", "text": ", " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": ">" },
+                        { "type": "text", "text": ", " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "<=" },
+                        { "type": "text", "text": ", " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": ">=" },
+                        { "type": "text", "text": ". Обратите внимание: одно «=» — это присваивание, два «==» — сравнение." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Логические операции" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "marks": [{ "type": "code" }], "text": "and" }, { "type": "text", "text": " — верно, когда верны оба условия;" }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "marks": [{ "type": "code" }], "text": "or" }, { "type": "text", "text": " — верно, когда верно хотя бы одно;" }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "marks": [{ "type": "code" }], "text": "not" }, { "type": "text", "text": " — меняет верно на неверно и наоборот." }] }] }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Остаток от деления" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Операция " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "%" },
+                        { "type": "text", "text": " даёт остаток: " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "17 % 5" },
+                        { "type": "text", "text": " равно 2. Число делится на " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "k" },
+                        { "type": "text", "text": " без остатка, если " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "x % k == 0" },
+                        { "type": "text", "text": "." }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "answer_key": {},
+              "settings": { "grading": "none" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "number",
+              "max_score": 1,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "Что напечатает программа?" }] },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "python" },
+                      "content": [{ "type": "text", "text": "print(2026 % 4)" }]
+                    }
+                  ]
+                },
+                "kind": "integer"
+              },
+              "answer_key": { "value": 2 },
+              "settings": { "grading": "auto", "show_answer": "after_wrong" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "programming",
+              "max_score": 10,
+              "content": {
+                "statement": {
+                  "type": "doc",
+                  "content": [
+                    { "type": "heading", "attrs": { "level": 2 }, "content": [{ "type": "text", "text": "Наибольшее из трёх" }] },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Даны три целых числа. Выведите наибольшее из них. Попробуйте решить задачу через " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "if" },
+                        { "type": "text", "text": ", не используя встроенную функцию " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "max" },
+                        { "type": "text", "text": "." }
+                      ]
+                    },
+                    { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "Входные данные" }] },
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "В одной строке через пробел три целых числа, по модулю не больше 10⁹." }] },
+                    { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "Выходные данные" }] },
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "Одно число — наибольшее из трёх." }] }
+                  ]
+                },
+                "languages": ["python3"],
+                "time_limit_ms": 1000,
+                "memory_limit_mb": 256,
+                "samples": [
+                  { "input": "1 5 3\n", "output": "5" },
+                  { "input": "-1 -2 -3\n", "output": "-1" }
+                ]
+              },
+              "answer_key": {
+                "test_groups": [
+                  {
+                    "name": "скрытые",
+                    "points": 10,
+                    "tests": [
+                      { "input": "7 7 7\n", "output": "7" },
+                      { "input": "0 -5 0\n", "output": "0" },
+                      { "input": "-1000000000 1000000000 0\n", "output": "1000000000" },
+                      { "input": "3 2 3\n", "output": "3" }
+                    ]
+                  }
+                ],
+                "reference_solution": "a, b, c = map(int, input().split())\nm = a\nif b > m: m = b\nif c > m: m = c\nprint(m)\n"
+              },
+              "settings": { "grading": "tests", "scoring": "all_or_nothing" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "programming",
+              "max_score": 10,
+              "content": {
+                "statement": {
+                  "type": "doc",
+                  "content": [
+                    { "type": "heading", "attrs": { "level": 2 }, "content": [{ "type": "text", "text": "Високосный год" }] },
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "Год високосный, если он делится на 4, но не делится на 100, или если он делится на 400. Определите, високосный ли год." }] },
+                    { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "Входные данные" }] },
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "Одно целое число — номер года (1 ≤ y ≤ 3000)." }] },
+                    { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "Выходные данные" }] },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "YES" },
+                        { "type": "text", "text": ", если год високосный, и " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "NO" },
+                        { "type": "text", "text": " в противном случае." }
+                      ]
+                    }
+                  ]
+                },
+                "languages": ["python3"],
+                "time_limit_ms": 1000,
+                "memory_limit_mb": 256,
+                "samples": [
+                  { "input": "2024\n", "output": "YES" },
+                  { "input": "1900\n", "output": "NO" }
+                ]
+              },
+              "answer_key": {
+                "test_groups": [
+                  {
+                    "name": "скрытые",
+                    "points": 10,
+                    "tests": [
+                      { "input": "2000\n", "output": "YES" },
+                      { "input": "2023\n", "output": "NO" },
+                      { "input": "4\n", "output": "YES" },
+                      { "input": "2100\n", "output": "NO" },
+                      { "input": "2400\n", "output": "YES" },
+                      { "input": "1\n", "output": "NO" }
+                    ]
+                  }
+                ],
+                "reference_solution": "y = int(input())\nif (y % 4 == 0 and y % 100 != 0) or y % 400 == 0:\n    print('YES')\nelse:\n    print('NO')\n"
+              },
+              "settings": { "grading": "tests", "scoring": "all_or_nothing" }
+            }
+          }
+        ]
+      },
+      {
+        "title": "Циклы",
+        "steps": [
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "theory",
+              "max_score": 0,
+              "content": {
+                "body": {
+                  "type": "doc",
+                  "content": [
+                    { "type": "heading", "attrs": { "level": 2 }, "content": [{ "type": "text", "text": "Цикл for и range" }] },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Цикл " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "for" },
+                        { "type": "text", "text": " повторяет блок команд для каждого значения из последовательности. Функция " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "range" },
+                        { "type": "text", "text": " создаёт последовательность чисел." }
+                      ]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "marks": [{ "type": "code" }], "text": "range(5)" }, { "type": "text", "text": " — числа 0, 1, 2, 3, 4;" }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "marks": [{ "type": "code" }], "text": "range(1, 6)" }, { "type": "text", "text": " — числа 1, 2, 3, 4, 5;" }] }] },
+                        { "type": "listItem", "content": [{ "type": "paragraph", "content": [{ "type": "text", "marks": [{ "type": "code" }], "text": "range(0, 10, 2)" }, { "type": "text", "text": " — числа 0, 2, 4, 6, 8." }] }] }
+                      ]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "python" },
+                      "content": [
+                        { "type": "text", "text": "n = int(input())\ntotal = 0\nfor i in range(1, n + 1):\n    total += i\nprint(total)" }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Переменная " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "total" },
+                        { "type": "text", "text": " называется накопителем: перед циклом в ней 0, а на каждом шаге к ней прибавляется очередное число." }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Проверяющая система ограничивает время. Простой цикл на Python успевает примерно 10⁷ повторений в секунду, поэтому перед отправкой всегда смотрите на ограничения." }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "answer_key": {},
+              "settings": { "grading": "none" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "single_choice",
+              "max_score": 1,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Сколько раз выполнится тело цикла " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "for i in range(3, 10)" },
+                        { "type": "text", "text": "?" }
+                      ]
+                    }
+                  ]
+                },
+                "options": [
+                  { "id": "11111111-1111-4111-8111-111111111111", "text": "10" },
+                  { "id": "22222222-2222-4222-8222-222222222222", "text": "7" },
+                  { "id": "33333333-3333-4333-8333-333333333333", "text": "8" },
+                  { "id": "44444444-4444-4444-8444-444444444444", "text": "3" }
+                ]
+              },
+              "answer_key": { "correct": "22222222-2222-4222-8222-222222222222" },
+              "settings": { "grading": "auto", "show_answer": "after_wrong" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "programming",
+              "max_score": 10,
+              "content": {
+                "statement": {
+                  "type": "doc",
+                  "content": [
+                    { "type": "heading", "attrs": { "level": 2 }, "content": [{ "type": "text", "text": "Сумма от 1 до N" }] },
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "Выведите сумму всех целых чисел от 1 до N." }] },
+                    { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "Входные данные" }] },
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "Одно целое число N (1 ≤ N ≤ 10⁶)." }] },
+                    { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "Выходные данные" }] },
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "Одно число — 1 + 2 + ... + N." }] },
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "Дополнительный вопрос для сильных: как решить задачу без цикла, если N ≤ 10¹⁸?" }] }
+                  ]
+                },
+                "languages": ["python3"],
+                "time_limit_ms": 1000,
+                "memory_limit_mb": 256,
+                "samples": [
+                  { "input": "5\n", "output": "15" },
+                  { "input": "1\n", "output": "1" }
+                ]
+              },
+              "answer_key": {
+                "test_groups": [
+                  {
+                    "name": "скрытые",
+                    "points": 10,
+                    "tests": [
+                      { "input": "10\n", "output": "55" },
+                      { "input": "100\n", "output": "5050" },
+                      { "input": "999999\n", "output": "499999500000" }
+                    ]
+                  }
+                ],
+                "reference_solution": "n = int(input())\nprint(n * (n + 1) // 2)\n"
+              },
+              "settings": { "grading": "tests", "scoring": "all_or_nothing" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "programming",
+              "max_score": 10,
+              "content": {
+                "statement": {
+                  "type": "doc",
+                  "content": [
+                    { "type": "heading", "attrs": { "level": 2 }, "content": [{ "type": "text", "text": "Количество делителей" }] },
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "Посчитайте, сколько натуральных делителей у числа N. Например, у числа 6 четыре делителя: 1, 2, 3 и 6." }] },
+                    { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "Входные данные" }] },
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "Одно целое число N (1 ≤ N ≤ 10⁶)." }] },
+                    { "type": "heading", "attrs": { "level": 3 }, "content": [{ "type": "text", "text": "Выходные данные" }] },
+                    { "type": "paragraph", "content": [{ "type": "text", "text": "Одно число — количество делителей N." }] }
+                  ]
+                },
+                "languages": ["python3"],
+                "time_limit_ms": 1000,
+                "memory_limit_mb": 256,
+                "samples": [
+                  { "input": "6\n", "output": "4" },
+                  { "input": "1\n", "output": "1" }
+                ]
+              },
+              "answer_key": {
+                "test_groups": [
+                  {
+                    "name": "скрытые",
+                    "points": 10,
+                    "tests": [
+                      { "input": "72\n", "output": "12" },
+                      { "input": "36\n", "output": "9" },
+                      { "input": "999983\n", "output": "2" },
+                      { "input": "720720\n", "output": "240" },
+                      { "input": "1000000\n", "output": "49" }
+                    ]
+                  }
+                ],
+                "reference_solution": "n = int(input())\ncnt = 0\nfor d in range(1, n + 1):\n    if n % d == 0:\n        cnt += 1\nprint(cnt)\n"
+              },
+              "settings": { "grading": "tests", "scoring": "all_or_nothing" }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

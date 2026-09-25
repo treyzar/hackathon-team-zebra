@@ -1,0 +1,747 @@
+{
+  "schema_version": 2,
+  "course": {
+    "slug": "scratch-first",
+    "title": "Первые программы в Scratch",
+    "description": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Курс для 2–4 классов. Ученик собирает простые программы из блоков, понимает последовательность, цикл, событие и условие, умеет показать результат ссылкой на проект."
+            }
+          ]
+        }
+      ]
+    },
+    "step_access": "all",
+    "modules": [
+      {
+        "title": "Знакомство со Scratch",
+        "steps": [
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "theory",
+              "max_score": 0,
+              "content": {
+                "body": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Сцена, спрайты и блоки" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Scratch — это среда, в которой программы собирают из цветных блоков, как из конструктора. Писать команды словами не нужно: блоки перетаскивают мышкой и защёлкивают друг под другом."
+                        }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Из чего состоит окно Scratch" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "marks": [{ "type": "bold" }], "text": "Сцена" },
+                                { "type": "text", "text": " — прямоугольник справа вверху. На ней происходит всё, что делает программа." }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "marks": [{ "type": "bold" }], "text": "Спрайт" },
+                                { "type": "text", "text": " — персонаж на сцене. В новом проекте это Кот. Спрайтов может быть несколько, и у каждого своя программа." }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "marks": [{ "type": "bold" }], "text": "Палитра блоков" },
+                                { "type": "text", "text": " — слева. Блоки разложены по цветам: синие отвечают за движение, фиолетовые за внешний вид, жёлтые за события, оранжевые за управление." }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "marks": [{ "type": "bold" }], "text": "Область скриптов" },
+                                { "type": "text", "text": " — середина экрана. Сюда перетаскивают блоки и собирают из них программу." }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Координаты" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Место на сцене задаётся двумя числами. " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "x" },
+                        { "type": "text", "text": " показывает, насколько спрайт левее или правее центра, " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "y" },
+                        { "type": "text", "text": " — насколько выше или ниже. Центр сцены — точка " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "x: 0, y: 0" },
+                        { "type": "text", "text": ". Левый край сцены — " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "x: −240" },
+                        { "type": "text", "text": ", правый — " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "x: 240" },
+                        { "type": "text", "text": "." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Как запустить программу" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Почти каждая программа начинается с жёлтого блока «когда щёлкнут по зелёному флажку». Нажали флажок над сценой — программа пошла. Красный восьмиугольник рядом всё останавливает."
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Блоки выполняются сверху вниз, по одному. Порядок блоков — это и есть алгоритм."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "answer_key": {},
+              "settings": { "grading": "none" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "single_choice",
+              "max_score": 1,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Где в Scratch происходит всё, что делает программа?" }
+                      ]
+                    }
+                  ]
+                },
+                "options": [
+                  { "id": "11111111-1111-4111-8111-111111111111", "text": "В палитре блоков" },
+                  { "id": "22222222-2222-4222-8222-222222222222", "text": "На сцене" },
+                  { "id": "33333333-3333-4333-8333-333333333333", "text": "В области скриптов" },
+                  { "id": "44444444-4444-4444-8444-444444444444", "text": "В меню «Файл»" }
+                ]
+              },
+              "answer_key": { "correct": "22222222-2222-4222-8222-222222222222" },
+              "settings": { "grading": "auto", "show_answer": "after_wrong" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "number",
+              "max_score": 1,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Посмотри на программу спрайта Мяч. Собери её у себя и запусти." }
+                      ]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "scratch" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "когда щёлкнут по зелёному флажку\nперейти в х: (-200) у: (0)\nповторить (10) раз\n    идти (20) шагов\n    ждать (0.1) секунд\nконец"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Чему будет равен " },
+                        { "type": "text", "marks": [{ "type": "code" }], "text": "x" },
+                        { "type": "text", "text": " мяча, когда программа закончится? Направление мяча — вправо (90)." }
+                      ]
+                    }
+                  ]
+                },
+                "kind": "integer"
+              },
+              "answer_key": { "value": 0 },
+              "settings": { "grading": "auto", "show_answer": "after_wrong" }
+            }
+          }
+        ]
+      },
+      {
+        "title": "Циклы",
+        "steps": [
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "theory",
+              "max_score": 0,
+              "content": {
+                "body": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Повторить и всегда" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Представь, что Коту нужно сделать 10 шагов по одному. Можно поставить 10 одинаковых блоков «идти 1 шагов» друг под другом. Но программисты так не делают: они используют цикл."
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Цикл — это блок, который повторяет вложенные в него блоки несколько раз. В Scratch есть два главных цикла:"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "text": "«повторить 10 раз» — выполняет блоки внутри ровно столько раз, сколько написано в окошке;" }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "text": "«повторять всегда» — выполняет блоки внутри бесконечно, пока не нажмёшь красную кнопку «Стоп»." }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Пример" }]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "scratch" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "когда щёлкнут по зелёному флажку\nповторить (4) раз\n    идти (50) шагов\n    ждать (0.5) секунд\nконец"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Кот четыре раза пройдёт по 50 шагов с паузой. Всего он пройдёт 200 шагов." }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "После блока «повторять всегда» нельзя поставить другой блок: цикл никогда не закончится, и до следующего блока дело не дойдёт." }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "answer_key": {},
+              "settings": { "grading": "none" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "number",
+              "max_score": 1,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [{ "type": "text", "text": "Сколько всего шагов пройдёт спрайт?" }]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "scratch" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "повторить (3) раз\n    идти (10) шагов\n    идти (5) шагов\nконец"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "kind": "integer"
+              },
+              "answer_key": { "value": 45 },
+              "settings": { "grading": "auto", "show_answer": "after_wrong" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "free_text",
+              "max_score": 5,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "От квадрата к треугольнику" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Для этого задания нужно расширение «Перо». Нажми синюю кнопку внизу слева и добавь его." }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [{ "type": "text", "text": "Эта программа рисует квадрат:" }]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "scratch" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "когда щёлкнут по зелёному флажку\nстереть всё\nопустить перо\nповторить (4) раз\n    идти (100) шагов\n    повернуть вправо на (90) градусов\nконец"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Задание" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        {
+                          "type": "listItem",
+                          "content": [
+                            { "type": "paragraph", "content": [{ "type": "text", "text": "Разберись, почему получается квадрат: сколько сторон и на сколько градусов поворот." }] }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            { "type": "paragraph", "content": [{ "type": "text", "text": "Измени программу так, чтобы она рисовала равносторонний треугольник." }] }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            { "type": "paragraph", "content": [{ "type": "text", "text": "Сохрани проект, нажми «Поделиться» и вставь ссылку в ответ." }] }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "require_text": true,
+                "min_files": 0,
+                "max_files": 0,
+                "allowed_mime": []
+              },
+              "answer_key": {
+                "reference": null,
+                "criteria": "Программа рисует замкнутый треугольник с тремя равными сторонами. Используется цикл «повторить 3 раз», а не три копии блоков. Угол поворота 120 градусов. Если ученик поставил 60, фигура не замкнётся — это повод вернуть работу с подсказкой.",
+                "files": []
+              },
+              "settings": { "grading": "manual" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "free_text",
+              "max_score": 5,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Кот по кругу" }]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "scratch" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "когда щёлкнут по зелёному флажку\nповторять всегда\n    идти (5) шагов\n    повернуть вправо на (3) градусов\nконец"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Кот ходит по кругу бесконечно. Полный круг — это 360 градусов." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Задание" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        {
+                          "type": "listItem",
+                          "content": [
+                            { "type": "paragraph", "content": [{ "type": "text", "text": "Посчитай, сколько раз нужно повернуть на 3 градуса, чтобы получился ровно один круг." }] }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            { "type": "paragraph", "content": [{ "type": "text", "text": "Замени «повторять всегда» на «повторить … раз» с этим числом." }] }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            { "type": "paragraph", "content": [{ "type": "text", "text": "После цикла добавь блок «говорить Круг! 2 секунд»." }] }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            { "type": "paragraph", "content": [{ "type": "text", "text": "Вставь ссылку на проект в ответ." }] }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "require_text": true,
+                "min_files": 0,
+                "max_files": 0,
+                "allowed_mime": []
+              },
+              "answer_key": {
+                "reference": null,
+                "criteria": "Цикл повторяется 120 раз. Кот останавливается в той же точке, где начал. После остановки Кот говорит «Круг!».",
+                "files": []
+              },
+              "settings": { "grading": "manual" }
+            }
+          }
+        ]
+      },
+      {
+        "title": "События и условия",
+        "steps": [
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "theory",
+              "max_score": 0,
+              "content": {
+                "body": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Если коснулся — сделай" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "До сих пор программа делала одно и то же при каждом запуске. Чтобы она реагировала на происходящее, нужны события и условия." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "События" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Жёлтые блоки-события запускают программу: «когда щёлкнут по зелёному флажку», «когда клавиша пробел нажата», «когда спрайт нажат». У одного спрайта может быть несколько таких программ, и каждая ждёт своего события." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Условие" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Оранжевый блок «если ... то» выполняет блоки внутри только тогда, когда условие верно. Условия — это голубые шестиугольные блоки из раздела «Сенсоры», например «касается края?» или «касается Яблоко?»." }
+                      ]
+                    },
+                    {
+                      "type": "codeBlock",
+                      "attrs": { "language": "scratch" },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "когда щёлкнут по зелёному флажку\nповторять всегда\n    идти (5) шагов\n    если <касается края?> то\n        повернуть вправо на (180) градусов\n    конец\nконец"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Кот идёт, а коснувшись края, разворачивается. Условие проверяется на каждом повторе цикла." }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "answer_key": {},
+              "settings": { "grading": "none" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "multiple_choice",
+              "max_score": 2,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Какие из этих блоков могут стоять внутри шестиугольного окошка блока «если ... то»? Выбери все подходящие." }
+                      ]
+                    }
+                  ]
+                },
+                "options": [
+                  { "id": "11111111-1111-4111-8111-111111111111", "text": "касается края?" },
+                  { "id": "22222222-2222-4222-8222-222222222222", "text": "идти 10 шагов" },
+                  { "id": "33333333-3333-4333-8333-333333333333", "text": "клавиша пробел нажата?" },
+                  { "id": "44444444-4444-4444-8444-444444444444", "text": "касается цвета ...?" },
+                  { "id": "55555555-5555-4555-8555-555555555555", "text": "повторить 10 раз" }
+                ]
+              },
+              "answer_key": {
+                "correct": [
+                  "11111111-1111-4111-8111-111111111111",
+                  "33333333-3333-4333-8333-333333333333",
+                  "44444444-4444-4444-8444-444444444444"
+                ]
+              },
+              "settings": { "grading": "auto", "scoring": "partial" }
+            }
+          },
+          {
+            "is_hidden": false,
+            "payload": {
+              "type": "free_text",
+              "max_score": 10,
+              "content": {
+                "question": {
+                  "type": "doc",
+                  "content": [
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 2 },
+                      "content": [{ "type": "text", "text": "Проект: «Поймай яблоко»" }]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "Собери свою первую игру. Никакой готовой программы нет, но всё нужное ты уже знаешь." }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Что должно быть в игре" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "text": "Спрайт " },
+                                { "type": "text", "marks": [{ "type": "bold" }], "text": "Чаша" },
+                                { "type": "text", "text": " двигается влево и вправо стрелками на клавиатуре." }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "text": "Спрайт " },
+                                { "type": "text", "marks": [{ "type": "bold" }], "text": "Яблоко" },
+                                { "type": "text", "text": " появляется вверху сцены в случайном месте по горизонтали и падает вниз." }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "text": "Если Яблоко коснулось Чаши, переменная «Очки» увеличивается на 1, а Яблоко снова появляется наверху." }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            {
+                              "type": "paragraph",
+                              "content": [
+                                { "type": "text", "text": "Если Яблоко упало до низа сцены, оно тоже возвращается наверх, но очки не прибавляются." }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "heading",
+                      "attrs": { "level": 3 },
+                      "content": [{ "type": "text", "text": "Подсказки" }]
+                    },
+                    {
+                      "type": "bulletList",
+                      "content": [
+                        {
+                          "type": "listItem",
+                          "content": [
+                            { "type": "paragraph", "content": [{ "type": "text", "text": "Случайное место: блок «перейти в х: (выдать случайное от –220 до 220) у: 170»." }] }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            { "type": "paragraph", "content": [{ "type": "text", "text": "Падение: в цикле «повторять всегда» блок «изменить у на –5»." }] }
+                          ]
+                        },
+                        {
+                          "type": "listItem",
+                          "content": [
+                            { "type": "paragraph", "content": [{ "type": "text", "text": "Переменную создают в разделе «Переменные» → «Создать переменную»." }] }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        { "type": "text", "text": "В ответ вставь ссылку на проект Scratch." }
+                      ]
+                    }
+                  ]
+                },
+                "require_text": true,
+                "min_files": 0,
+                "max_files": 0,
+                "allowed_mime": []
+              },
+              "answer_key": {
+                "reference": null,
+                "criteria": "Чаша управляется стрелками и не уходит за край сцены. Яблоко падает, при касании Чаши засчитывается очко. Яблоко возвращается наверх в обоих случаях. Проект открывается по ссылке, программа запускается флажком. Дополнительно (не обязательно): скорость падения растёт с очками, звук при поимке, экран «Игра окончена».",
+                "files": []
+              },
+              "settings": { "grading": "manual" }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
