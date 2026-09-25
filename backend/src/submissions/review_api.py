@@ -30,6 +30,9 @@ class ReviewListItem(BaseModel):
     score: float | None
     student_id: int
     student_username: str
+    student_name: str
+    student_surname: str
+    student_patronymic: str
     step_id: int
     step_type: str
     max_score: int
@@ -108,6 +111,9 @@ def _item(row, due_at, cls=ReviewListItem, **extra):
         score=sub.score,
         student_id=student.id,
         student_username=student.username,
+        student_name=student.name,
+        student_surname=student.surname,
+        student_patronymic=student.patronymic,
         step_id=step.id,
         step_type=step.type,
         max_score=rev.max_score,
