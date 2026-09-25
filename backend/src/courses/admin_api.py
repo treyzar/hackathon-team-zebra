@@ -1,6 +1,6 @@
 import json
-from fastapi import APIRouter, Depends, Response, HTTPException, UploadFile, status
-from fastapi import File as UploadBody
+
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,9 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access_docs import access_note
 from auth import require_admin
 from courses import service as svc
-from courses.export_import import import_course as import_from_json, export_as_json
-from courses.pdf_export import export_as_pdf
+from courses.export_import import export_as_json
+from courses.export_import import import_course as import_from_json
 from courses.models import Course, Enrollment, Module, Step, StepRevision
+from courses.pdf_export import export_as_pdf
 from courses.schemas import (
     AdminCourseTree,
     AdminModuleOut,
@@ -22,13 +23,13 @@ from courses.schemas import (
     EnrolledStudent,
     EnrollIn,
     EnrollResult,
+    ImportResult,
     ModuleIn,
     Order,
     RevisionOut,
     RevisionSummary,
     StepFlags,
     StepSave,
-    ImportResult
 )
 from database import access_db
 from groups.models import Group, GroupStudent
@@ -365,6 +366,7 @@ async def unenroll(course_id: int, user_id: int, db: AsyncSession = Depends(acce
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not enrolled")
     await db.delete(enrollment)
 
+
 @authoring.get("/courses/{course_id}/export")
 async def export_course_json(
     course_id: int, db: AsyncSession = Depends(access_db)
@@ -375,9 +377,7 @@ async def export_course_json(
     return Response(
         content=body,
         media_type="application/json; charset=utf-8",
-        headers={
-            "Content-Disposition": f'attachment; filename="{course.slug}.json"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="{course.slug}.json"'},
     )
 
 
@@ -409,12 +409,13 @@ async def import_course(
         warnings=warnings,
     )
 
-#@authoring.post("/courses/import", response_model=CourseOut, status_code=201)
-#async def import_course(
+
+# @authoring.post("/courses/import", response_model=CourseOut, status_code=201)
+# async def import_course(
 #    file: UploadFile,
 #    user: User = Depends(require_admin),
 #    db: AsyncSession = Depends(access_db),
-#) -> CourseOut:
+# ) -> CourseOut:
 #    raw = await file.read()
 #    course, _warnings = await import_course(db, user, raw)
 #    return course

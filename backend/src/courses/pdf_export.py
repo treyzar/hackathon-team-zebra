@@ -1,5 +1,5 @@
 from __future__ import annotations
-from weasyprint import HTML
+
 import asyncio
 import base64 as _b64
 import html as _html
@@ -7,11 +7,11 @@ from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from weasyprint import HTML
 
 from courses import service
 from courses.models import Course, Step, StepRevision
 from files.models import File, FileStatus
-
 
 _PDF_CSS = """
 @page { size: A4; margin: 20mm 18mm 22mm 18mm;
@@ -278,9 +278,7 @@ def _build_pdf_html(
     total_steps = sum(len(v) for v in parsed_by_module.values())
     visibility = "опубликован" if course.is_published else "черновик"
     access = (
-        "по очереди"
-        if course.step_access.value == "sequential"
-        else "все шаги сразу"
+        "по очереди" if course.step_access.value == "sequential" else "все шаги сразу"
     )
     description_html = _render_doc(course.description, images)
 
@@ -333,7 +331,9 @@ def _render_step_pdf(
     content = parsed.content.model_dump(mode="json")
     answer_key = parsed.answer_key.model_dump(mode="json")
 
-    raw_body = content.get("body") or content.get("question") or content.get("statement")
+    raw_body = (
+        content.get("body") or content.get("question") or content.get("statement")
+    )
     title, body = _split_title(raw_body)
     body_html = _render_doc(body, images)
 
@@ -369,7 +369,7 @@ def _render_step_specific(step_type: str, content: dict, answer_key: dict) -> st
         correct = answer_key.get("correct")
         correct_set = {correct} if isinstance(correct, str) else set(correct or [])
         items = [
-            f"<li>{'<span class=\"correct-mark\">✓</span> ' if o.get('id') in correct_set else '<span class=\"wrong-mark\">·</span> '}"
+            f"<li>{'<span class="correct-mark">✓</span> ' if o.get('id') in correct_set else '<span class="wrong-mark">·</span> '}"
             f"{_escape(o.get('text') or '')}</li>"
             for o in options
         ]
@@ -388,14 +388,14 @@ def _render_step_specific(step_type: str, content: dict, answer_key: dict) -> st
                 )
         template = content.get("template")
         if template:
-            rows.append(f"<h4>Шаблон кода</h4><pre><code>{_escape(template)}</code></pre>")
+            rows.append(
+                f"<h4>Шаблон кода</h4><pre><code>{_escape(template)}</code></pre>"
+            )
         return f"<div style='margin-top:8pt'>{''.join(rows)}</div>" if rows else ""
     return ""
 
 
-def _render_answer_key(
-    step_type: str, content: dict, answer_key: dict, images
-) -> str:
+def _render_answer_key(step_type: str, content: dict, answer_key: dict, images) -> str:
     rows: list[str] = []
     if step_type in ("single_choice", "multiple_choice"):
         correct = answer_key.get("correct")
@@ -440,10 +440,14 @@ def _render_answer_key(
                 )
                 for i, test in enumerate(group.get("tests") or [], 1):
                     inp = test.get("input") or (
-                        f"<файл #{test['input_file']}>" if test.get("input_file") else ""
+                        f"<файл #{test['input_file']}>"
+                        if test.get("input_file")
+                        else ""
                     )
                     out = test.get("output") or (
-                        f"<файл #{test['output_file']}>" if test.get("output_file") else ""
+                        f"<файл #{test['output_file']}>"
+                        if test.get("output_file")
+                        else ""
                     )
                     rows.append(
                         f"<div class='test-row'>Тест {i}"

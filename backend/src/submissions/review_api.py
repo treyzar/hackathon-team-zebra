@@ -37,6 +37,8 @@ class ReviewListItem(BaseModel):
     step_type: str
     max_score: int
     course_id: int
+    task_title: str
+    task_number: str
     course_title: str
     module_title: str
     # Deadline of the step for the student's group and whether the
@@ -118,6 +120,8 @@ def _item(row, due_at, cls=ReviewListItem, **extra):
         step_type=step.type,
         max_score=rev.max_score,
         course_id=course.id,
+        task_title=step.title,
+        task_number=f"{module.position}.{step.position}",
         course_title=course.title,
         module_title=module.title,
         **extra,
