@@ -20,6 +20,7 @@ import type {
   StudentStep,
   Submission,
 } from "@/modules/student/courses/types";
+import { type ProgrammingLanguage, stepLanguages } from "../../languages";
 import { buildAnswer } from "./answer";
 
 export interface AttachedFile {
@@ -38,6 +39,7 @@ export function useStepPlayer({ step, onRefresh }: UseStepPlayerOptions) {
   const selected = ref<string[]>([]);
   const answerText = ref("");
   const code = ref("");
+  const language = ref<ProgrammingLanguage>("python3");
   const files = ref<AttachedFile[]>([]);
   const submissions = ref<Submission[]>([]);
   const revealed = ref<Record<string, unknown> | null>(null);
@@ -63,6 +65,7 @@ export function useStepPlayer({ step, onRefresh }: UseStepPlayerOptions) {
   const choice = computed(() => step.value.content as unknown as ChoiceContent);
   const freeText = computed(() => step.value.content as unknown as FreeTextContent);
   const programming = computed(() => step.value.content as unknown as ProgrammingContent);
+  const languages = computed(() => stepLanguages(step.value.content));
 
   const latest = computed(() => submissions.value[0] ?? null);
   const blocked = computed(
@@ -97,6 +100,9 @@ export function useStepPlayer({ step, onRefresh }: UseStepPlayerOptions) {
     if (step.value.type === "programming") {
       code.value =
         typeof answer?.code === "string" ? answer.code : (programming.value.template ?? "");
+      // The last submission's language, unless the step no longer allows it.
+      const previous = languages.value.find((key) => key === answer?.language);
+      language.value = previous ?? languages.value[0]!;
     }
 
     if (step.value.type === "single_choice" && typeof answer?.option_id === "string") {
@@ -208,6 +214,7 @@ export function useStepPlayer({ step, onRefresh }: UseStepPlayerOptions) {
       text: answerText.value,
       files: files.value.map((file) => file.id),
       code: code.value,
+      language: language.value,
     });
 
     if (!answer) {
@@ -254,6 +261,8 @@ export function useStepPlayer({ step, onRefresh }: UseStepPlayerOptions) {
     choice,
     freeText,
     programming,
+    languages,
+    language,
     selected,
     answerText,
     code,

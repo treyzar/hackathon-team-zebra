@@ -1,3 +1,4 @@
+import { type ProgrammingLanguage, stepLanguages } from "../../languages";
 import { docToText, textToDoc } from "../shared/format";
 import { hasDocContent } from "./quill-document";
 import type { RichText, Step, StepPayload, StepType } from "../shared/types";
@@ -37,6 +38,8 @@ export interface StepForm {
   originalReference: RichText | null;
   referenceFiles: number[];
   grading: string;
+  // The first one is the default for the student.
+  languages: ProgrammingLanguage[];
   timeLimitMs: number;
   memoryLimitMb: number;
   template: string;
@@ -67,6 +70,7 @@ export function newStepForm(type: StepType = "theory"): StepForm {
     originalReference: null,
     referenceFiles: [],
     grading: "tests",
+    languages: ["python3"],
     timeLimitMs: 2000,
     memoryLimitMb: 256,
     template: "",
@@ -154,6 +158,7 @@ export function formFromStep(step: Step): StepForm {
   }
   if (step.type === "programming") {
     form.grading = String(settings.grading ?? "tests");
+    form.languages = stepLanguages(content);
     form.timeLimitMs = Number(content.time_limit_ms ?? 2000);
     form.memoryLimitMb = Number(content.memory_limit_mb ?? 256);
     form.template = String(content.template ?? "");
@@ -222,6 +227,8 @@ export function validateStepForm(form: StepForm): string | null {
       form.memoryLimitMb > 512)
   )
     return "Проверьте ограничения времени и памяти.";
+  if (form.type === "programming" && !form.languages.length)
+    return "Выберите хотя бы один язык программирования.";
   if (form.type === "programming" && form.grading !== "manual") {
     if (
       !form.testGroups.length ||
@@ -293,7 +300,7 @@ export function payloadFromForm(form: StepForm): StepPayload {
   if (form.type === "programming") {
     payload.content = {
       statement: body,
-      language: "python3",
+      languages: form.languages,
       time_limit_ms: form.timeLimitMs,
       memory_limit_mb: form.memoryLimitMb,
       template: form.template,

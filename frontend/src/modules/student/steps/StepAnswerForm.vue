@@ -5,6 +5,7 @@ import type {
   ProgrammingContent,
   StudentStep,
 } from "@/modules/student/courses/types";
+import { LANGUAGES, type ProgrammingLanguage } from "../../languages";
 import ProgrammingEditor from "./ProgrammingEditor.vue";
 import type { AttachedFile } from "./useStepPlayer";
 
@@ -16,6 +17,8 @@ defineProps<{
   selected: string[];
   answerText: string;
   code: string;
+  languages: ProgrammingLanguage[];
+  language: ProgrammingLanguage;
   files: AttachedFile[];
   correctChoices: string[];
   blocked: boolean;
@@ -27,6 +30,7 @@ const emit = defineEmits<{
   removeFile: [id: number];
   "update:answerText": [value: string];
   "update:code": [value: string];
+  "update:language": [value: ProgrammingLanguage];
 }>();
 </script>
 
@@ -119,11 +123,27 @@ const emit = defineEmits<{
     </div>
 
     <p class="student-muted">
-      Python 3 · {{ programming.time_limit_ms }} мс · {{ programming.memory_limit_mb }} МБ
+      {{ programming.time_limit_ms }} мс · {{ programming.memory_limit_mb }} МБ
     </p>
+
+    <label v-if="languages.length > 1" class="student-language">
+      Язык
+      <select
+        :value="language"
+        :disabled="blocked"
+        @change="
+          emit('update:language', ($event.target as HTMLSelectElement).value as ProgrammingLanguage)
+        "
+      >
+        <option v-for="key in languages" :key="key" :value="key">
+          {{ LANGUAGES[key].title }}
+        </option>
+      </select>
+    </label>
 
     <ProgrammingEditor
       :model-value="code"
+      :language="language"
       :disabled="blocked"
       @update:model-value="emit('update:code', $event)"
     />

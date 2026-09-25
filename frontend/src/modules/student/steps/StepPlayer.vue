@@ -32,6 +32,8 @@ const {
   selected,
   answerText,
   code,
+  languages,
+  language,
   files,
   revealed,
   loading,
@@ -95,7 +97,10 @@ const earned = computed(() => latest.value?.score ?? props.step.progress.earned)
 
     <h2>{{ title }}</h2>
 
-    <div v-if="remaining !== null || step.progress.from_previous_version" class="student-lesson-details">
+    <div
+      v-if="remaining !== null || step.progress.from_previous_version"
+      class="student-lesson-details"
+    >
       <span v-if="remaining !== null">{{ remaining }} попыток осталось</span>
       <span v-if="step.progress.from_previous_version"> Результат предыдущей версии учтён </span>
     </div>
@@ -119,6 +124,8 @@ const earned = computed(() => latest.value?.score ?? props.step.progress.earned)
         :selected="selected"
         :answer-text="answerText"
         :code="code"
+        :languages="languages"
+        :language="language"
         :files="files"
         :correct-choices="correctChoices"
         :blocked="blocked"
@@ -127,6 +134,7 @@ const earned = computed(() => latest.value?.score ?? props.step.progress.earned)
         @remove-file="removeFile"
         @update:answer-text="answerText = $event"
         @update:code="code = $event"
+        @update:language="language = $event"
       />
 
       <div v-if="error" class="student-alert student-alert--error" role="alert">

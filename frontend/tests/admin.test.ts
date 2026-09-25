@@ -154,6 +154,41 @@ test("editing a programming step keeps file-backed hidden tests", () => {
       tests: [{ input: "", output: "", input_file: 101, output_file: 102 }],
     },
   ]);
+  // An old revision stores a single `language`; it is saved back as a list.
+  assert.deepEqual(payloadFromForm(form).content.languages, ["python3"]);
+});
+
+test("a programming step keeps its allowed languages, the default first", () => {
+  const form = newStepForm("programming");
+  form.body = textToDoc("Напишите программу");
+  assert.deepEqual(payloadFromForm(form).content.languages, ["python3"]);
+  assert.equal("language" in payloadFromForm(form).content, false);
+
+  form.languages = [];
+  assert.match(validateStepForm(form) ?? "", /язык/);
+
+  const step = {
+    id: 5,
+    module_id: 1,
+    type: "programming",
+    position: 0,
+    is_hidden: false,
+    revision: {
+      number: 1,
+      created_at: "2026-09-25T12:00:00Z",
+      author_id: 1,
+      comment: null,
+      is_breaking: false,
+      max_score: 1,
+      schema_version: 2,
+      content: { statement: textToDoc("Задача"), languages: ["cpp", "python3"], samples: [] },
+      answer_key: { test_groups: [], reference_solution: null },
+      settings: { grading: "manual", max_attempts: null, show_answer: "never" },
+    },
+  } satisfies Step;
+  const edited = formFromStep(step);
+  assert.deepEqual(edited.languages, ["cpp", "python3"]);
+  assert.deepEqual(payloadFromForm(edited).content.languages, ["cpp", "python3"]);
 });
 
 test("a step title is saved as a marked heading and restored without duplicating it in the editor", () => {

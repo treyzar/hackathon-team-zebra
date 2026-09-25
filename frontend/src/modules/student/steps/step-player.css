@@ -104,6 +104,25 @@
   color: var(--color-muted);
   font-size: 15px;
 }
+.student-language {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+.student-language select {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 500;
+}
 .student-options {
   display: grid;
   gap: 10px;

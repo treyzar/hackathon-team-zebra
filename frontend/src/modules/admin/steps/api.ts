@@ -1,7 +1,18 @@
 import { api } from "@/api/http";
+import type { ProgrammingLanguage } from "../../languages";
 import type { Revision, RevisionSummary, Step, StepSave } from "../shared/types";
 
+export interface LanguageOption {
+  key: ProgrammingLanguage;
+  title: string;
+  // Whether Judge0 offers the language now; null if Judge0 did not answer.
+  available: boolean | null;
+}
+
 export const stepApi = {
+  async languages(): Promise<LanguageOption[]> {
+    return (await api.get<LanguageOption[]>("/programming/languages")).data;
+  },
   async step(id: number): Promise<Step> {
     return (await api.get<Step>(`/admin/steps/${id}`)).data;
   },

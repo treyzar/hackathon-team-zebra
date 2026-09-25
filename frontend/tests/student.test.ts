@@ -9,7 +9,13 @@ import {
 import { renderRichText, richTextImageIds } from "../src/modules/student/courses/rich-text";
 
 test("student answers use the API shape for each step type", () => {
-  const draft = { selected: ["first", "second"], text: "Ответ", files: [7], code: "print(1)\n" };
+  const draft = {
+    selected: ["first", "second"],
+    text: "Ответ",
+    files: [7],
+    code: "print(1)\n",
+    language: "python3" as const,
+  };
   assert.deepEqual(buildAnswer("theory", {}, draft), {});
   assert.deepEqual(buildAnswer("single_choice", {}, draft), { option_id: "first" });
   assert.deepEqual(buildAnswer("multiple_choice", {}, draft), { option_ids: ["first", "second"] });
@@ -21,6 +27,13 @@ test("student answers use the API shape for each step type", () => {
     code: "print(1)\n",
     language: "python3",
   });
+  assert.deepEqual(
+    buildAnswer("programming", {}, { ...draft, code: "int main() {}", language: "cpp" }),
+    {
+      code: "int main() {}",
+      language: "cpp",
+    },
+  );
   assert.equal(buildAnswer("programming", {}, { ...draft, code: "  " }), null);
   assert.equal(
     buildAnswer("free_text", { require_text: true, min_files: 1 }, { ...draft, files: [] }),
