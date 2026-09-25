@@ -235,3 +235,57 @@ def test_free_text_reference_files_must_be_private():
         t.check_authored_files(
             p.content, p.answer_key, {4: FileInfo(4, "image/png", 1, "content")}
         )
+
+
+def free_text_payload(**content):
+    return {
+        "type": "free_text",
+        "content": {"question": DOC, **content},
+        "answer_key": {},
+    }
+
+
+def test_free_text_min_files_not_above_max():
+    with pytest.raises(ValidationError, match="min_files cannot be greater"):
+        payload.validate_python(free_text_payload(min_files=2, max_files=1))
+    assert payload.validate_python(free_text_payload(min_files=1, max_files=1))
+
+
+@pytest.mark.parametrize(
+    ("content", "answer", "error"),
+    [
+        ({}, {"text": "", "files": []}, "empty"),
+        ({"max_files": 1}, {"text": "", "files": [1]}, None),
+        ({"require_text": True, "max_files": 1}, {"text": " ", "files": [1]}, "text"),
+        ({"min_files": 1, "max_files": 2}, {"text": "hi"}, "at least 1"),
+        (
+            {"require_text": True, "min_files": 1, "max_files": 1},
+            {"text": "hi", "files": [1]},
+            None,
+        ),
+    ],
+)
+def test_free_text_answer_requirements(content, answer, error):
+    t = get_type("free_text")
+    p = payload.validate_python(free_text_payload(**content))
+    a = t.answer_model.model_validate(answer)
+    if error is None:
+        t.validate_answer(p.content, a)
+    else:
+        with pytest.raises(ValueError, match=error):
+            t.validate_answer(p.content, a)
+
+
+def test_free_text_reveals_only_reference():
+    ref = {"type": "doc", "content": [{"type": "text", "text": "42"}]}
+    p = payload.validate_python(
+        {
+            "type": "free_text",
+            "content": {"question": DOC},
+            "answer_key": {"reference": ref, "criteria": "secret", "files": [7]},
+        }
+    )
+    t = get_type("free_text")
+    assert t.reveal(p.answer_key) == {"reference": ref}
+    empty = payload.validate_python(free_text_payload())
+    assert t.reveal(empty.answer_key) == {"reference": None}

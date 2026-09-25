@@ -177,12 +177,14 @@ def fake_storage(monkeypatch):
 def upload(client, fake_storage):
     """Upload bytes through the API as the given user; returns the file id."""
 
-    async def do(headers, data: bytes, purpose="answer_key", complete=True):
+    async def do(
+        headers, data: bytes, purpose="answer_key", complete=True, mime="text/plain"
+    ):
         r = await client.post(
             "/files",
             json={
                 "filename": "test.txt",
-                "mime": "text/plain",
+                "mime": mime,
                 "size": len(data),
                 "purpose": purpose,
             },

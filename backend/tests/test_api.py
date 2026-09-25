@@ -494,3 +494,54 @@ async def test_theory_is_viewed_once(client, admin, course, make_user):
     assert (await submit(client, h, step_id, {})).status_code == 201
     assert (await step_state(client, h, step_id))[0] is False
     assert (await submit(client, h, step_id, {})).status_code == 409
+
+
+async def test_answer_with_required_text_and_photo(
+    client, admin, course, make_user, upload
+):
+    step_id = await add_step(
+        client,
+        admin,
+        course[1],
+        free_text(
+            require_text=True, min_files=1, max_files=2, allowed_mime=["image/png"]
+        ),
+    )
+    _, h = await make_user()
+    photo = await upload(h, b"\x89PNG...", purpose="submission", mime="image/png")
+
+    r = await submit(client, h, step_id, {"text": "only text"})
+    assert r.status_code == 422 and "at least 1" in r.text
+    r = await submit(client, h, step_id, {"files": [photo]})
+    assert r.status_code == 422 and "must contain text" in r.text
+    r = await submit(client, h, step_id, {"text": "see photo", "files": [photo]})
+    assert r.status_code == 201 and r.json()["status"] == "pending_review"
+
+
+async def test_min_files_above_max_rejected(client, admin, course):
+    r = await client.post(
+        f"/admin/modules/{course[1]}/steps",
+        json={"payload": free_text(min_files=3, max_files=1)},
+        headers=admin[1],
+    )
+    assert r.status_code == 422
+
+
+async def test_free_text_answer_shows_reference_only(
+    client, admin, course, groups_setup
+):
+    step = free_text()
+    step["answer_key"] = {"reference": DOC, "criteria": "for curators"}
+    step["settings"] = {"show_answer": "after_solved"}
+    step_id = await add_step(client, admin, course[1], step)
+    (_, curator, _, student) = groups_setup[0]
+
+    sub_id = (await submit(client, student, step_id, {"text": "answer"})).json()["id"]
+    assert (
+        await client.get(f"/steps/{step_id}/answer", headers=student)
+    ).status_code == 403
+    await client.post(
+        f"/review/submissions/{sub_id}", json={"verdict": "accepted"}, headers=curator
+    )
+    r = await client.get(f"/steps/{step_id}/answer", headers=student)
+    assert r.json() == {"reference": DOC}
