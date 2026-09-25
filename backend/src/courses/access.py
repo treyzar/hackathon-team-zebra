@@ -35,8 +35,8 @@ async def locked_steps(db: AsyncSession, user: User, course: Course) -> set[int]
 
     # max_attempts is a CommonSettings field, present in every step type.
     order = [
-        (step_id, settings.get("max_attempts"))
-        for step_id, settings in await visible_steps_in_order(db, course.id)
+        (s.id, s.settings.get("max_attempts"))
+        for s in await visible_steps_in_order(db, course.id)
     ]
 
     subs = await db.execute(

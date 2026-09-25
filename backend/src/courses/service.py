@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
@@ -68,14 +69,39 @@ async def get_step(
     return tuple(row)
 
 
-async def visible_steps_in_order(
-    db: AsyncSession, course_id: int
-) -> list[tuple[int, dict]]:
-    """(step id, current settings) of the course's visible steps, in the order
-    students go through them: modules by position, then steps by position.
-    Hidden and deleted steps are left out."""
+async def live_modules(db: AsyncSession, course_id: int) -> list[Module]:
+    """The course's modules (not deleted) in course order."""
+    query = (
+        select(Module)
+        .where(Module.course_id == course_id, Module.deleted_at.is_(None))
+        .order_by(Module.position, Module.id)
+    )
+    return list(await db.scalars(query))
+
+
+@dataclass
+class OrderedStep:
+    id: int
+    module_id: int
+    type: str
+    # From the current revision.
+    max_score: int
+    settings: dict
+
+
+async def visible_steps_in_order(db: AsyncSession, course_id: int) -> list[OrderedStep]:
+    """The course's visible steps in the order students go through them:
+    modules by position, then steps by position. Hidden and deleted steps are
+    left out. The one place that defines course order (access, deadlines,
+    progress)."""
     rows = await db.execute(
-        select(Step.id, StepRevision.settings)
+        select(
+            Step.id,
+            Step.module_id,
+            Step.type,
+            StepRevision.max_score,
+            StepRevision.settings,
+        )
         .join(Module, Module.id == Step.module_id)
         .join(StepRevision, StepRevision.id == Step.current_revision_id)
         .where(
@@ -86,7 +112,7 @@ async def visible_steps_in_order(
         )
         .order_by(Module.position, Module.id, Step.position, Step.id)
     )
-    return [(step_id, settings) for step_id, settings in rows]
+    return [OrderedStep(*row) for row in rows]
 
 
 def parse(step: Step, rev: StepRevision) -> ParsedRevision:

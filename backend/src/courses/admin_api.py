@@ -62,13 +62,7 @@ async def create_course(data: CourseCreate, db: AsyncSession = Depends(access_db
 @authoring.get("/courses/{course_id}", response_model=AdminCourseTree)
 async def get_course_tree(course_id: int, db: AsyncSession = Depends(access_db)):
     course = await svc.get_course(db, course_id)
-    modules = (
-        await db.scalars(
-            select(Module)
-            .where(Module.course_id == course.id, Module.deleted_at.is_(None))
-            .order_by(Module.position)
-        )
-    ).all()
+    modules = await svc.live_modules(db, course.id)
     rows = await db.execute(
         select(Step, StepRevision.max_score, StepRevision.number)
         .join(StepRevision, StepRevision.id == Step.current_revision_id)

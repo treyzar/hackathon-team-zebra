@@ -1,8 +1,6 @@
 """Submission pipeline shared by all step types:
 validate answer -> check attempts -> grade (sync / queue for the judge / curator)."""
 
-from dataclasses import dataclass
-
 from fastapi import HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import ValidationError
@@ -13,6 +11,7 @@ from courses.models import Module, Step, StepRevision
 from courses.service import now, parse
 from files.models import File, FilePurpose, FileStatus
 from models import User
+from progress.stats import StepStats, stats_for
 from notifications.models import NotificationType
 from notifications.models import Severity as NotificationSeverity
 from notifications.payloads import SubmissionReviewedPayload
@@ -24,50 +23,6 @@ from submissions.models import Submission, SubmissionStatus
 
 def unprocessable(detail) -> HTTPException:
     return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail)
-
-
-@dataclass
-class StepStats:
-    """A student's standing on a step, from non-outdated submissions."""
-
-    attempts_used: int = 0
-    best_score: float | None = None
-    solved: bool = False
-    failed: bool = False
-    in_progress: bool = False
-
-    @property
-    def state(self) -> str:
-        if self.solved:
-            return "solved"
-        if self.in_progress:
-            return "in_progress"
-        if self.failed:
-            return "failed"
-        return "none"
-
-
-async def stats_for(
-    db: AsyncSession, user_id: int, step_ids: list[int]
-) -> dict[int, StepStats]:
-    rows = await db.execute(
-        select(Submission.step_id, Submission.status, Submission.score).where(
-            Submission.user_id == user_id,
-            Submission.step_id.in_(step_ids),
-            Submission.is_outdated.is_(False),
-        )
-    )
-    result = {step_id: StepStats() for step_id in step_ids}
-    for step_id, st, score in rows:
-        s = result[step_id]
-        if st != SubmissionStatus.ERROR:  # judge failures are not attempts
-            s.attempts_used += 1
-        if score is not None and (s.best_score is None or score > s.best_score):
-            s.best_score = score
-        s.solved |= st.solved
-        s.failed |= st.failed
-        s.in_progress |= st.in_progress
-    return result
 
 
 def answer_available(parsed: ParsedRevision, stats: StepStats) -> bool:
