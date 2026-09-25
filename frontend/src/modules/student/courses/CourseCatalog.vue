@@ -10,9 +10,12 @@ import {
   stepDocument,
   stepLabels,
 } from "./presentation";
+import { studentCourseApi } from "./api";
+import { documentTitle, errorMessage, stepDocument, stepLabels } from "./presentation";
 import type { CourseListItem } from "./types";
-import { STUDENT_COURSE_ROUTE } from "@/pages/student/course/constants";
-import { STUDENT_STEP_ROUTE } from "@/pages/student/step/constants";
+import CatalogHero from "./components/CatalogHero.vue";
+import CatalogSnapshot from "./components/CatalogSnapshot.vue";
+import CourseCatalogCard from "./components/CourseCatalogCard.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -37,24 +40,25 @@ const totals = computed(() => ({
   pointsMax: courses.value.reduce((sum, course) => sum + course.progress.points_max, 0),
 }));
 
+async function loadNextStepTitle(course: CourseListItem | undefined): Promise<void> {
+  nextTitle.value = "";
+  nextType.value = "";
+  if (course?.progress.next_step_id == null) return;
+  try {
+    const step = await studentCourseApi.getStep(course.progress.next_step_id);
+    nextTitle.value = documentTitle(stepDocument(step.type, step.content), stepLabels[step.type]);
+    nextType.value = stepLabels[step.type];
+  } catch {
+    nextTitle.value = "Следующий шаг";
+  }
+}
+
 async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    courses.value = await listCourses();
-    const course = courses.value.find((item) => item.progress.next_step_id != null);
-    if (props.overview && course?.progress.next_step_id != null) {
-      try {
-        const step = await getStep(course.progress.next_step_id);
-        nextTitle.value = documentTitle(
-          stepDocument(step.type, step.content),
-          stepLabels[step.type],
-        );
-        nextType.value = stepLabels[step.type];
-      } catch {
-        nextTitle.value = "Следующий шаг";
-      }
-    }
+    courses.value = await studentCourseApi.listCourses();
+    await loadNextStepTitle(nextCourse.value);
   } catch (cause) {
     error.value = errorMessage(cause);
   } finally {
@@ -76,85 +80,29 @@ onMounted(load);
       {{ error }} <button type="button" @click="load">Повторить</button>
     </div>
     <template v-else>
-      <div v-if="overview" class="student-catalog-top">
-        <section class="student-hero">
-          <template v-if="nextCourse?.progress.next_step_id != null">
-            <p class="student-hero-kicker">
-              СЛЕДУЮЩИЙ ШАГ · {{ nextCourse.progress.steps_completed + 1 }} ИЗ
-              {{ nextCourse.progress.steps_total }}
-            </p>
-            <h2>{{ nextTitle || "Следующий шаг" }}</h2>
-            <p>{{ nextType || "Задание" }} · курс «{{ nextCourse.title }}»</p>
-            <div class="student-progress-track student-progress-track--dark">
-              <span :style="{ width: `${nextCourse.progress.percent}%` }" />
-            </div>
-            <RouterLink
-              class="student-primary-button"
-              :to="{
-                name: STUDENT_STEP_ROUTE.name,
-                params: { courseId: nextCourse.id, stepId: nextCourse.progress.next_step_id },
-              }"
-              >Продолжить <span aria-hidden="true">→</span></RouterLink
-            >
-          </template>
-          <template v-else>
-            <p class="student-hero-kicker">МОИ КУРСЫ</p>
-            <h2>{{ courses.length ? "Отличная работа!" : "Пора начать обучение" }}</h2>
-            <p>
-              {{
-                courses.length
-                  ? "Все доступные шаги пройдены. Загляните в свои курсы."
-                  : "Здесь появятся курсы, на которые вас записали."
-              }}
-            </p>
-          </template>
-        </section>
-        <section class="student-points" aria-labelledby="student-points-heading">
-          <h2 id="student-points-heading">Мои баллы</h2>
-          <p class="student-points-value">
-            <strong>{{ totals.points }}</strong>
-            <span v-if="totals.pointsMax">из {{ totals.pointsMax }}</span>
-          </p>
-          <span class="student-progress-track"
-            ><span :style="{ width: `${percentOf(totals.points, totals.pointsMax)}%` }"
-          /></span>
-          <dl class="student-points-facts">
-            <div>
-              <dt>Курсов</dt>
-              <dd>{{ courses.length }}</dd>
-            </div>
-            <div>
-              <dt>Шагов пройдено</dt>
-              <dd>{{ totals.steps }} из {{ totals.stepsTotal }}</dd>
-            </div>
-          </dl>
-        </section>
+      <div class="student-catalog-top">
+        <CatalogHero
+          :course="nextCourse"
+          :next-title="nextTitle"
+          :next-type="nextType"
+          :has-courses="Boolean(courses.length)"
+        />
+        <CatalogSnapshot :courses="courses.length" :steps="totals.steps" :points="totals.points" />
       </div>
+
       <section aria-labelledby="student-courses-heading">
-        <h2 id="student-courses-heading" class="student-section-heading">Мои курсы</h2>
-        <div v-if="!courses.length" class="student-empty">
-          Вас пока не записали ни на один курс.
+        <div class="student-section-heading">
+          <h2 id="student-courses-heading">Мои курсы</h2>
+          <span>{{ courses.length }}</span>
         </div>
+        <div v-if="!courses.length" class="student-empty">Опубликованных курсов пока нет.</div>
         <div v-else class="student-course-grid">
-          <RouterLink
-            v-for="course in courses"
+          <CourseCatalogCard
+            v-for="(course, index) in courses"
             :key="course.id"
-            class="student-course-card"
-            :to="{ name: STUDENT_COURSE_ROUTE.name, params: { courseId: course.id } }"
-          >
-            <span class="student-course-meta">Курс · {{ course.progress.steps_total }} шагов</span>
-            <strong>{{ course.title }}</strong>
-            <span class="student-progress-track"
-              ><span :style="{ width: `${course.progress.percent}%` }"
-            /></span>
-            <span v-if="course.progress.steps_completed" class="student-course-bottom">
-              <span>{{
-                progressText(course.progress.steps_completed, course.progress.steps_total)
-              }}</span>
-              <b>{{ pointsText(course.progress.points_earned) }}</b>
-            </span>
-            <span v-else class="student-course-bottom">○ Не начато</span>
-          </RouterLink>
+            :course="course"
+            :index="index"
+          />
         </div>
       </section>
     </template>

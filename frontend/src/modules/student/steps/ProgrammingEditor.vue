@@ -37,12 +37,7 @@ function updateFromTextarea(event: Event): void {
       @input="updateFromTextarea"
     />
 
-    <div
-      v-else
-      ref="host"
-      class="programming-editor-host"
-      aria-label="Код решения на Python"
-    />
+    <div v-else ref="host" class="programming-editor-host" aria-label="Код решения на Python" />
   </div>
 </template>
 
@@ -96,6 +91,10 @@ function updateFromTextarea(event: Event): void {
   outline: 0;
   background: #fff;
   color: #0f172a;
-  font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font:
+    14px/1.6 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
 }
 </style>

@@ -97,9 +97,7 @@ const earned = computed(() => latest.value?.score ?? props.step.progress.earned)
 
     <div v-if="remaining !== null || step.progress.from_previous_version" class="student-lesson-details">
       <span v-if="remaining !== null">{{ remaining }} попыток осталось</span>
-      <span v-if="step.progress.from_previous_version">
-        Результат предыдущей версии учтён
-      </span>
+      <span v-if="step.progress.from_previous_version"> Результат предыдущей версии учтён </span>
     </div>
 
     <section v-if="bodyDocument?.content?.length" class="student-paper">

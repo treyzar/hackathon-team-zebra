@@ -81,9 +81,7 @@ export function useStepPlayer({ step, onRefresh }: UseStepPlayerOptions) {
   });
 
   const referenceSolution = computed(() =>
-    typeof revealed.value?.reference_solution === "string"
-      ? revealed.value.reference_solution
-      : "",
+    typeof revealed.value?.reference_solution === "string" ? revealed.value.reference_solution : "",
   );
 
   const referenceDocument = computed(() => {
