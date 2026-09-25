@@ -91,3 +91,17 @@ class StepRevision(BaseDB):
     comment: Mapped[str | None] = mapped_column(Text)
     # Correct answer changed: earlier submissions are marked outdated.
     is_breaking: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class Enrollment(BaseDB):
+    """A student enrolled in a course: students see only their courses."""
+
+    course_id: Mapped[int] = mapped_column(
+        ForeignKey(Course.id, ondelete="CASCADE"), primary_key=True
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey(User.id, ondelete="CASCADE"), primary_key=True, index=True
+    )
+    enrolled_by: Mapped[int | None] = mapped_column(
+        ForeignKey(User.id, ondelete="SET NULL")
+    )

@@ -2,8 +2,9 @@
 that automatic grading gives exactly those verdicts.
 
 It checks the whole chain for real: API -> queue -> worker -> Judge0 -> verdict.
-A temporary course with the task is created (and deleted at the end) and a
-temporary student is signed up; an admin account is required.
+A temporary course with the task is created (and deleted at the end), and a
+temporary student is signed up and enrolled in it; an admin account is
+required.
 
     cd backend
     ADMIN_PASSWORD=... uv run python scripts/check_verdicts.py \\
@@ -132,6 +133,15 @@ async def run(
         r.raise_for_status()
 
         student_h = await signup_student(client)
+        me = await client.get("/user/me", headers=student_h)
+        me.raise_for_status()
+        # Students see only the courses they are enrolled in.
+        r = await client.post(
+            f"/admin/courses/{course_id}/enrollments",
+            json={"user_ids": [me.json()["id"]]},
+            headers=admin_h,
+        )
+        r.raise_for_status()
         checks = []
         # One at a time: a new submission is refused while one is being checked.
         for exp in expected:

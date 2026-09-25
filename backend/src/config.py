@@ -28,8 +28,9 @@ class Settings(BaseSettings):
 
     judge0_url: str = "http://localhost:2358"
     judge0_auth_token: str | None = None
-    # Language id of Python 3 in the deployed Judge0 (71 in Judge0 CE 1.13).
-    judge0_python_language_id: int = 71
+    # How long the language list of Judge0 is cached: it changes only when
+    # Judge0 is upgraded.
+    judge0_languages_ttl_seconds: int = 300
     judge_max_retries: int = 3
     # A submission stuck in "running" longer than this is requeued (worker crash).
     judge_stale_after_seconds: int = 600

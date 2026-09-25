@@ -34,7 +34,7 @@
         }
       ]
     },
-    "language": "python3",
+    "languages": ["python3"],
     "time_limit_ms": 1000,
     "memory_limit_mb": 256,
     "samples": [

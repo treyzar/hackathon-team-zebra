@@ -3,9 +3,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access_docs import access_note
 from auth import require_admin
 from courses import service as svc
-from courses.models import Course, Module, Step, StepRevision
+from courses.models import Course, Enrollment, Module, Step, StepRevision
 from courses.schemas import (
     AdminCourseTree,
     AdminModuleOut,
@@ -14,6 +15,9 @@ from courses.schemas import (
     CourseCreate,
     CourseOut,
     CourseUpdate,
+    EnrolledStudent,
+    EnrollIn,
+    EnrollResult,
     ModuleIn,
     Order,
     RevisionOut,
@@ -22,7 +26,8 @@ from courses.schemas import (
     StepSave,
 )
 from database import access_db
-from models import User
+from groups.models import Group, GroupStudent
+from models import Role, User
 
 authoring = APIRouter(
     prefix="/admin", tags=["authoring"], dependencies=[Depends(require_admin)]
@@ -268,3 +273,89 @@ async def set_step_flags(
 async def delete_step(step_id: int, db: AsyncSession = Depends(access_db)):
     step, _, _ = await svc.get_step(db, step_id)
     svc.soft_delete(step)
+
+
+# --- enrollment --------------------------------------------------------------
+
+
+@authoring.post("/courses/{course_id}/enrollments", response_model=EnrollResult)
+@access_note(
+    "Записывает на курс учеников из `user_ids` и текущих учеников групп из "
+    "`group_ids` (снимок: кто придёт в группу позже, записывается отдельно). "
+    "Ученик видит только курсы, на которые записан. Можно передать только "
+    "учеников; повторная запись ничего не меняет."
+)
+async def enroll(
+    course_id: int,
+    data: EnrollIn,
+    user: User = Depends(require_admin),
+    db: AsyncSession = Depends(access_db),
+):
+    course = await svc.get_course(db, course_id)
+    ids = set(data.user_ids)
+    if data.group_ids:
+        found = set(
+            await db.scalars(select(Group.id).where(Group.id.in_(data.group_ids)))
+        )
+        if missing := set(data.group_ids) - found:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                f"Unknown groups: {sorted(missing)}",
+            )
+        ids |= set(
+            await db.scalars(
+                select(GroupStudent.user_id).where(
+                    GroupStudent.group_id.in_(data.group_ids)
+                )
+            )
+        )
+    if data.user_ids:
+        students = set(
+            await db.scalars(
+                select(User.id).where(
+                    User.id.in_(data.user_ids), User.role == Role.STUDENT
+                )
+            )
+        )
+        if bad := set(data.user_ids) - students:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                f"Not students or unknown users: {sorted(bad)}",
+            )
+    already = set(
+        await db.scalars(
+            select(Enrollment.user_id).where(
+                Enrollment.course_id == course.id, Enrollment.user_id.in_(ids)
+            )
+        )
+    )
+    new = sorted(ids - already)
+    db.add_all(
+        Enrollment(course_id=course.id, user_id=uid, enrolled_by=user.id) for uid in new
+    )
+    return EnrollResult(enrolled=new, already_enrolled=sorted(already))
+
+
+@authoring.get("/courses/{course_id}/enrollments", response_model=list[EnrolledStudent])
+async def list_enrollments(course_id: int, db: AsyncSession = Depends(access_db)):
+    course = await svc.get_course(db, course_id)
+    rows = await db.execute(
+        select(User.id, User.username, GroupStudent.group_id)
+        .join(Enrollment, Enrollment.user_id == User.id)
+        .outerjoin(GroupStudent, GroupStudent.user_id == User.id)
+        .where(Enrollment.course_id == course.id)
+        .order_by(User.username)
+    )
+    return [EnrolledStudent(id=i, username=n, group_id=g) for i, n, g in rows]
+
+
+@authoring.delete("/courses/{course_id}/enrollments/{user_id}", status_code=204)
+@access_note(
+    "Ученик теряет доступ к курсу; его решения и результаты сохраняются и "
+    "вернутся при повторной записи."
+)
+async def unenroll(course_id: int, user_id: int, db: AsyncSession = Depends(access_db)):
+    enrollment = await db.get(Enrollment, (course_id, user_id))
+    if enrollment is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not enrolled")
+    await db.delete(enrollment)

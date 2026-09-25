@@ -137,6 +137,20 @@ async def test_judge_error_until_retries_run_out(queued):
     assert sub.judge_error == "judge restarting"
 
 
+async def test_language_missing_in_judge0_is_final(queued):
+    from judge import LanguageUnavailableError
+
+    class NoLanguage:
+        async def run(self, *args, **kwargs):
+            raise LanguageUnavailableError("Judge0 has no language 'python3'")
+
+    await drain(NoLanguage())
+    sub = await get_sub(queued)
+    # A repeat run would fail the same way: no retries.
+    assert (sub.status, sub.judge_attempts) == ("error", 1)
+    assert "no language" in sub.judge_error
+
+
 async def test_unexpected_error_is_final(queued):
     class Broken:
         async def run(self, *args, **kwargs):

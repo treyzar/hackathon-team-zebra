@@ -3,10 +3,10 @@
 from collections import defaultdict
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from courses.models import Course, Module, Step, StepAccess
+from courses.models import Course, Enrollment, Module, Step, StepAccess
 from courses.service import visible_steps_in_order
 from models import Role, User
 from submissions.models import Submission, SubmissionStatus
@@ -77,3 +77,16 @@ async def ensure_unlocked(
             status.HTTP_403_FORBIDDEN,
             "The step is locked until the previous step is passed",
         )
+
+
+def enrolled_course_ids(user_id: int) -> Select[tuple[int]]:
+    return select(Enrollment.course_id).where(Enrollment.user_id == user_id)
+
+
+async def ensure_enrolled(db: AsyncSession, user: User, course_id: int) -> None:
+    """Students see only the courses they are enrolled in; for others the
+    course does not exist (404). Admins and curators see every course."""
+    if user.role != Role.STUDENT:
+        return
+    if await db.get(Enrollment, (course_id, user.id)) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Course not found")
