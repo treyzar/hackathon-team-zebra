@@ -1,0 +1,49 @@
+[
+  {
+    "file": "wrong_answer.py",
+    "status": "wrong",
+    "score": 0,
+    "verdict": "wrong_answer",
+    "failed_at": {
+      "group": "чётные классы",
+      "test": 1
+    }
+  },
+  {
+    "file": "runtime_error.py",
+    "status": "wrong",
+    "score": 0,
+    "verdict": "runtime_error",
+    "failed_at": {
+      "group": "чётные классы",
+      "test": 1
+    }
+  },
+  {
+    "file": "time_limit.py",
+    "status": "wrong",
+    "score": 0,
+    "verdict": "time_limit",
+    "failed_at": {
+      "group": "чётные классы",
+      "test": 1
+    }
+  },
+  {
+    "file": "partial.py",
+    "status": "partial",
+    "score": 4,
+    "verdict": "wrong_answer",
+    "failed_at": {
+      "group": "нечётные классы",
+      "test": 1
+    }
+  },
+  {
+    "file": "correct.py",
+    "status": "correct",
+    "score": 10,
+    "verdict": "ok",
+    "failed_at": null
+  }
+]
