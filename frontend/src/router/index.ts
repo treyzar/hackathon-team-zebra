@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import type { Pinia } from "pinia";
 
 import type { UserRole } from "@/api/http";
+import { adminRoutes } from "@/pages/admin/routes";
 import { DASHBOARD_ROUTE } from "@/pages/dashboard/constants";
 import { dashboardRoutes } from "@/pages/dashboard/routes";
 import { FORBIDDEN_ROUTE } from "@/pages/forbidden/constants";
@@ -27,6 +28,7 @@ export function createAppRouter(pinia: Pinia) {
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
       ...dashboardRoutes,
+      ...adminRoutes,
       ...workspaceSectionRoutes,
       ...forbiddenRoutes,
       ...loginRoutes,

@@ -8,7 +8,7 @@ import WorkspaceSectionPage from "./WorkspaceSectionPage.vue";
 export const workspaceSectionRoutes: RouteRecordRaw[] = (
   Object.entries(navigationByRole) as [UserRole, (typeof navigationByRole)[UserRole]][]
 ).flatMap(([role, items]) =>
-  items
+  (role === "admin" ? [] : items)
     .filter((item) => item.path !== DASHBOARD_ROUTE.path)
     .map((item) => ({
       name: item.name,
