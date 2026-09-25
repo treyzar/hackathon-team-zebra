@@ -4,26 +4,26 @@ import json
 from typing import Any
 
 from fastapi import HTTPException, status
-from pydantic import TypeAdapter, ValidationError
+from pydantic import ValidationError, TypeAdapter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from courses import service
 from courses.models import Course, Module, Step, StepRevision
-from courses.schemas import CourseCreate, ModuleIn
+from courses.schemas import CourseCreate, ModuleIn, ExportedCourse, ExportedModule, ExportedStep, CourseDocument
 from files.models import File, FileStatus
 from models import User
 from steps import StepPayload
-
-
-EXPORT_SCHEMA_VERSION = 1
+from steps.registry import _payload_model
 
 _payload_adapter = TypeAdapter(StepPayload)
+EXPORT_SCHEMA_VERSION = 2
 
+def payload_type(type:StepType):
+    return _payload_model(type)
 
 def unprocessable(msg: str = "Unprocessable") -> HTTPException:
     return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=msg)
-
 
 def _first_error(error: ValidationError, where: str = "") -> str:
     errors = error.errors(include_url=False)
@@ -32,57 +32,6 @@ def _first_error(error: ValidationError, where: str = "") -> str:
     msg = first.get("msg", "некорректное значение")
     prefix = f"{where}: " if where else ""
     return f"{prefix}{loc}: {msg}"
-
-
-async def export_as_json(db: AsyncSession, course: Course) -> dict[str, Any]:
-    modules = await service.live_modules(db, course.id)
-    steps = list(
-        await db.scalars(
-            select(Step)
-            .where(
-                Step.module_id.in_([m.id for m in modules]),
-                Step.deleted_at.is_(None),
-            )
-            .order_by(Step.position, Step.id)
-        )
-    )
-    revision_ids = [s.current_revision_id for s in steps if s.current_revision_id]
-    revisions: dict[int, StepRevision] = {
-        r.id: r
-        for r in await db.scalars(
-            select(StepRevision).where(StepRevision.id.in_(revision_ids))
-        )
-    }
-
-    by_module: dict[int, list[dict[str, Any]]] = {m.id: [] for m in modules}
-    for step in steps:
-        rev = revisions.get(step.current_revision_id or -1)
-        if rev is None:
-            continue
-        by_module[step.module_id].append(
-            {
-                "type": step.type,
-                "is_hidden": step.is_hidden,
-                "max_score": rev.max_score,
-                "content": rev.content,
-                "answer_key": rev.answer_key,
-                "settings": rev.settings,
-            }
-        )
-
-    return {
-        "schema_version": EXPORT_SCHEMA_VERSION,
-        "course": {
-            "slug": course.slug,
-            "title": course.title,
-            "description": course.description,
-            "step_access": course.step_access.value,
-            "is_published": course.is_published,
-            "modules": [
-                {"title": m.title, "steps": by_module[m.id]} for m in modules
-            ],
-        },
-    }
 
 
 def _unique_slug(base: str, taken: set[str]) -> str:
@@ -178,23 +127,12 @@ async def import_course(
     db: AsyncSession, user: User, raw: bytes
 ) -> tuple[Course, list[str]]:
     try:
-        document = json.loads(raw)
-    except json.JSONDecodeError as e:
-        raise unprocessable(f"Файл не является JSON: {e}") from e
-
-    document = _require_mapping(document, "файл")
-    if document.get("schema_version") != EXPORT_SCHEMA_VERSION:
-        raise unprocessable(
-            f"Неизвестная версия схемы: {document.get('schema_version')!r}"
-        )
-    payload = _require_mapping(document.get("course"), "поле `course`")
-
-    warnings: list[str] = []
-
-    try:
-        data = CourseCreate.model_validate(payload)
+        document = CourseDocument.model_validate_json(raw)
     except ValidationError as e:
-        raise unprocessable(_first_error(e, "поле `course`")) from e
+        raise unprocessable(_first_error(e, "файл")) from e
+
+    data = document.course
+    warnings: list[str] = []
 
     taken = set(await db.scalars(select(Course.slug)))
     slug = _unique_slug(data.slug, taken)
@@ -211,63 +149,36 @@ async def import_course(
     db.add(course)
     await db.flush()
 
-    modules_raw = payload.get("modules")
-    if not isinstance(modules_raw, list):
-        raise unprocessable("`modules` должен быть списком")
-
-    for module_index, module_raw in enumerate(modules_raw):
-        where = f"модуль #{module_index + 1}"
-        module_raw = _require_mapping(module_raw, where)
-
-        try:
-            module_data = ModuleIn.model_validate(module_raw)
-        except ValidationError as e:
-            raise unprocessable(_first_error(e, where)) from e
-
-        module = Module(
-            course_id=course.id,
-            title=module_data.title,
-            position=module_index,
+    for module_index, module in enumerate(data.modules):
+        db_module = Module(
+            course_id=course.id, title=module.title, position=module_index
         )
-        db.add(module)
+        db.add(db_module)
         await db.flush()
 
-        steps_raw = module_raw.get("steps") or []
-        if not isinstance(steps_raw, list):
-            raise unprocessable(
-                f"`steps` модуля #{module_index + 1} должен быть списком"
-            )
-
-        for step_index, step_raw in enumerate(steps_raw):
-            step_where = f"шаг {module_index + 1}.{step_index + 1}"
-            step_raw = _require_mapping(step_raw, step_where)
-
-            try:
-                parsed = _payload_adapter.validate_python(step_raw)
-            except ValidationError as e:
-                raise unprocessable(_first_error(e, step_where)) from e
-
-            dumped = json.loads(parsed.model_dump_json())
-            wanted = _collect_referenced_file_ids(dumped)
+        for step_index, exported in enumerate(module.steps):
+            where = f"шаг {module_index + 1}.{step_index + 1}"
+            payload = exported.payload.model_dump(mode="json")
+            wanted = _collect_referenced_file_ids(payload)
             available = await _live_file_ids(db, wanted)
-            dropped = _prune_missing_files(dumped, available)
+            dropped = _prune_missing_files(payload, available)
             if dropped:
                 warnings.append(
-                    f"{step_where}: {dropped} ссылок на файлы не найдены и отброшены"
+                    f"{where}: {dropped} ссылок на файлы не найдены и отброшены"
                 )
             try:
-                parsed = _payload_adapter.validate_python(dumped)
+                parsed = _payload_adapter.validate_python(payload)
             except ValidationError as e:
                 raise unprocessable(
-                    f"{step_where}: после очистки файловых ссылок payload "
+                    f"{where}: после очистки файловых ссылок payload "
                     f"некорректен: {_first_error(e)}"
                 ) from e
 
             step = Step(
-                module_id=module.id,
+                module_id=db_module.id,
                 type=parsed.type,
                 position=step_index,
-                is_hidden=bool(step_raw.get("is_hidden", False)),
+                is_hidden=exported.is_hidden,
             )
             db.add(step)
             await db.flush()
@@ -277,3 +188,54 @@ async def import_course(
             )
 
     return course, warnings
+
+
+async def export_as_json(db: AsyncSession, course: Course) -> dict[str, Any]:
+    modules = await service.live_modules(db, course.id)
+    steps = list(
+        await db.scalars(
+            select(Step)
+            .where(
+                Step.module_id.in_([m.id for m in modules]),
+                Step.deleted_at.is_(None),
+            )
+            .order_by(Step.position, Step.id)
+        )
+    )
+    revision_ids = [s.current_revision_id for s in steps if s.current_revision_id]
+    revisions: dict[int, StepRevision] = {
+        r.id: r
+        for r in await db.scalars(
+            select(StepRevision).where(StepRevision.id.in_(revision_ids))
+        )
+    }
+
+    by_module: dict[int, list[ExportedStep]] = {m.id: [] for m in modules}
+    for step in steps:
+        rev = revisions.get(step.current_revision_id or -1)
+        if rev is None:
+            continue
+        parsed = service.parse(step, rev)
+        by_module[step.module_id].append(
+            ExportedStep(is_hidden=step.is_hidden, payload=payload_type(parsed.type)(
+    type=parsed.type.key,
+    max_score=parsed.max_score,
+    content=parsed.content,
+    answer_key=parsed.answer_key,
+    settings=parsed.settings,
+))
+        )
+
+    document = CourseDocument(
+        schema_version=EXPORT_SCHEMA_VERSION,
+        course=ExportedCourse(
+            slug=course.slug,
+            title=course.title,
+            description=course.description,
+            step_access=course.step_access,
+            modules=[
+                ExportedModule(title=m.title, steps=by_module[m.id]) for m in modules
+            ],
+        ),
+    )
+    return document.model_dump(mode="json")
