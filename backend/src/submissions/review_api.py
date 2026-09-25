@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access_docs import access_note
 from auth import require_curator
 from courses import service as svc
 from courses.models import Course, Module, Step, StepRevision
@@ -120,6 +121,7 @@ def _detail(row) -> ReviewDetail:
 
 
 @review.get("/submissions", response_model=list[ReviewListItem])
+@access_note("Куратор видит только решения учеников своих групп, администратор — все.")
 async def list_submissions(
     status: SubmissionStatus | None = SubmissionStatus.PENDING_REVIEW,
     course_id: int | None = None,
@@ -142,6 +144,7 @@ async def list_submissions(
 
 
 @review.get("/submissions/{submission_id}", response_model=ReviewDetail)
+@access_note("Куратор видит только решения учеников своих групп, администратор — все.")
 async def get_submission(
     submission_id: int,
     user: User = Depends(require_curator),
@@ -151,6 +154,10 @@ async def get_submission(
 
 
 @review.post("/submissions/{submission_id}", response_model=ReviewDetail)
+@access_note(
+    "Куратор видит только решения учеников своих групп, администратор — все. "
+    "Вердикт выносится только для решения в статусе `pending_review`."
+)
 async def review_submission(
     submission_id: int,
     data: Verdict,

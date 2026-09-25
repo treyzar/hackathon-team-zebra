@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access_docs import access_note
 from auth import require_admin
 from database import access_db
 from groups.models import Group, GroupStudent
@@ -84,6 +85,7 @@ async def list_groups(db: AsyncSession = Depends(access_db)):
 
 
 @groups.post("", response_model=GroupOut, status_code=status.HTTP_201_CREATED)
+@access_note("Куратором группы может быть только пользователь с ролью «куратор».")
 async def create_group(data: GroupCreate, db: AsyncSession = Depends(access_db)):
     if data.curator_id is not None:
         await _check_user_role(db, data.curator_id, Role.CURATOR)
@@ -94,6 +96,7 @@ async def create_group(data: GroupCreate, db: AsyncSession = Depends(access_db))
 
 
 @groups.patch("/{group_id}", response_model=GroupOut)
+@access_note("Куратором группы может быть только пользователь с ролью «куратор».")
 async def update_group(
     group_id: int, data: GroupUpdate, db: AsyncSession = Depends(access_db)
 ):
@@ -126,6 +129,10 @@ async def list_students(group_id: int, db: AsyncSession = Depends(access_db)):
 
 
 @groups.put("/{group_id}/students/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@access_note(
+    "Добавить можно только пользователя с ролью «ученик». Ученик состоит не больше "
+    "чем в одной группе: из прежней группы он переносится."
+)
 async def add_student(
     group_id: int, user_id: int, db: AsyncSession = Depends(access_db)
 ):

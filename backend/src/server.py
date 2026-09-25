@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import all_models  # noqa: F401  # register every mapper
+from access_docs import document_access
 from admin import admin
 from auth import auth, get_current_user, require_auth
 from config import settings
@@ -13,7 +14,15 @@ from health import health
 from schemas import UserResponse
 from submissions.review_api import review
 
-app = FastAPI(title="Sasha")
+app = FastAPI(
+    title="Sasha",
+    description=(
+        "Роли: **ученик** (по умолчанию после регистрации), **куратор**, "
+        "**администратор**. У каждого эндпоинта указано, кому он доступен.\n\n"
+        "Авторизация: кнопка **Authorize** — войти логином и паролем, токен "
+        "подставится во все запросы."
+    ),
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -44,3 +53,5 @@ async def me(user=Depends(get_current_user)) -> UserResponse:
 
 
 app.include_router(api)
+# Who may call each endpoint, shown in /docs.
+document_access(app)

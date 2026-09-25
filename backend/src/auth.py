@@ -10,6 +10,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access_docs import access_note
 from config import settings
 from database import access_db
 from models import RevokedToken, Role, User
@@ -124,6 +125,8 @@ def require_roles(*roles: Role):
             )
         return user
 
+    # Read by access_docs to state the allowed roles in the API docs.
+    checker.roles = frozenset(allowed)
     return checker
 
 
@@ -161,6 +164,7 @@ async def login_oauth(
 
 
 @auth.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@access_note("Новый пользователь получает роль «ученик».")
 async def signup(
     data: UserSignup, db: AsyncSession = Depends(access_db)
 ) -> TokenResponse:
@@ -196,6 +200,9 @@ async def signup(
 
 
 @auth.post("/refresh", response_model=TokenResponse)
+@access_note(
+    "Нужен действующий refresh-токен в теле запроса; после обмена он отзывается."
+)
 async def refresh(
     data: RefreshRequest, db: AsyncSession = Depends(access_db)
 ) -> TokenResponse:
@@ -210,6 +217,7 @@ async def refresh(
 
 
 @auth.post("/logout")
+@access_note("Нужен refresh-токен в теле запроса; он отзывается.")
 async def logout(data: RefreshRequest, db: AsyncSession = Depends(access_db)):
     payload = extract_token(data.refresh_token, "refresh")
     await revoke_token(payload, db)

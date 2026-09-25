@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access_docs import access_note
 from auth import get_current_user
 from config import settings
 from database import access_db
@@ -66,6 +67,10 @@ async def _get(db: AsyncSession, file_id: int) -> File:
 
 
 @files.post("", response_model=UploadTicket, status_code=status.HTTP_201_CREATED)
+@access_note(
+    "Файлы с `purpose` `content` и `answer_key` загружает только администратор, "
+    "`submission` — любой вошедший пользователь."
+)
 async def request_upload(
     data: UploadRequest,
     user: User = Depends(get_current_user),
@@ -97,6 +102,7 @@ async def request_upload(
 
 
 @files.post("/{file_id}/complete", response_model=FileOut)
+@access_note("Только владелец файла — тот, кто запросил загрузку.")
 async def complete_upload(
     file_id: int,
     user: User = Depends(get_current_user),
@@ -117,6 +123,10 @@ async def complete_upload(
 
 
 @files.get("/{file_id}", response_model=DownloadOut)
+@access_note(
+    "`content` — любой вошедший пользователь; `answer_key` — кураторы и "
+    "администраторы; `submission` — владелец, куратор его группы и администраторы."
+)
 async def get_file(
     file_id: int,
     user: User = Depends(get_current_user),

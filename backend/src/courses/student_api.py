@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access_docs import access_note
 from auth import get_current_user
 from courses import service as svc
 from courses.access import ensure_unlocked, locked_steps
@@ -36,6 +37,7 @@ def _progress(stats: sub_svc.StepStats) -> StepProgress:
 
 
 @learning.get("/courses", response_model=list[CourseListItem])
+@access_note("Только опубликованные курсы.")
 async def list_courses(
     _: User = Depends(get_current_user), db: AsyncSession = Depends(access_db)
 ):
@@ -48,6 +50,11 @@ async def list_courses(
 
 
 @learning.get("/courses/{course_id}", response_model=StudentCourse)
+@access_note(
+    "Только опубликованный курс, скрытые шаги не показываются. В курсе с "
+    "последовательным доступом закрытые для ученика шаги помечены `locked`; "
+    "администраторы и кураторы видят все шаги открытыми."
+)
 async def get_course(
     course_id: int,
     user: User = Depends(get_current_user),
@@ -101,6 +108,11 @@ async def get_course(
 
 
 @learning.get("/steps/{step_id}", response_model=StudentStep)
+@access_note(
+    "Только шаги опубликованного курса, кроме скрытых. В курсе с последовательным "
+    "доступом ученику закрытый шаг недоступен (403); администраторы и кураторы "
+    "видят все шаги."
+)
 async def get_step(
     step_id: int,
     user: User = Depends(get_current_user),
@@ -130,6 +142,12 @@ async def get_step(
 
 
 @learning.get("/steps/{step_id}/answer")
+@access_note(
+    "Только шаги опубликованного курса, кроме скрытых. В курсе с последовательным "
+    "доступом ученику закрытый шаг недоступен (403); администраторы и кураторы "
+    "видят все шаги. Ответ отдаётся, только если это разрешает настройка задания "
+    "`show_answer`."
+)
 async def get_answer(
     step_id: int,
     user: User = Depends(get_current_user),
@@ -147,6 +165,12 @@ async def get_answer(
 @learning.post(
     "/steps/{step_id}/submissions", response_model=SubmissionOut, status_code=201
 )
+@access_note(
+    "Только шаги опубликованного курса, кроме скрытых. В курсе с последовательным "
+    "доступом ученику закрытый шаг недоступен (403); администраторы и кураторы "
+    "видят все шаги. Новое решение можно отправить, пока предыдущее не на проверке, "
+    "остались попытки и не набран максимальный балл."
+)
 async def submit(
     step_id: int,
     data: SubmitIn,
@@ -158,6 +182,11 @@ async def submit(
 
 
 @learning.get("/steps/{step_id}/submissions", response_model=list[SubmissionOut])
+@access_note(
+    "Только шаги опубликованного курса, кроме скрытых. В курсе с последовательным "
+    "доступом ученику закрытый шаг недоступен (403); администраторы и кураторы "
+    "видят все шаги. Только свои решения."
+)
 async def my_submissions(
     step_id: int,
     user: User = Depends(get_current_user),
@@ -173,6 +202,7 @@ async def my_submissions(
 
 
 @learning.get("/submissions/{submission_id}", response_model=SubmissionOut)
+@access_note("Только своё решение.")
 async def my_submission(
     submission_id: int,
     user: User = Depends(get_current_user),

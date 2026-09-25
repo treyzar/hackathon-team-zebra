@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from access_docs import access_note
 from auth import require_admin
 from database import access_db
 from groups.service import detach_on_role_change
@@ -24,6 +25,10 @@ async def list_users(
 
 
 @admin.patch("/users/{user_id}/role", response_model=UserResponse)
+@access_note(
+    "Свою роль изменить нельзя. При смене роли пользователь отвязывается от групп, "
+    "где новая роль не подходит (куратор группы, ученик в группе)."
+)
 async def set_role(
     user_id: int,
     data: RoleUpdate,
