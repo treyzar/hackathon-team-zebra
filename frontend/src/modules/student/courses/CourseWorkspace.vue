@@ -15,6 +15,7 @@ import type { Course, StudentStep } from "./types";
 import StepPlayer from "@/modules/student/steps/StepPlayer.vue";
 import { STUDENT_COURSES_ROUTE } from "@/pages/student/courses/constants";
 import { STUDENT_STEP_ROUTE } from "@/pages/student/step/constants";
+import StepComments from "@/modules/student/steps/StepComments.vue";
 
 const props = defineProps<{ courseId: number; stepId?: number }>();
 const course = ref<Course | null>(null);
@@ -260,14 +261,16 @@ onBeforeUnmount(() => {
           <div v-else-if="stepLoading" class="student-workspace-loading" role="status">
             Загружаем шаг…
           </div>
-          <StepPlayer
-            v-else-if="step"
-            :key="step.id"
-            :step="step"
-            :number="stepNumber"
-            :next="nextStep"
-            @refresh="refresh"
-          />
+          <template v-else-if="step">
+            <StepPlayer
+              :key="step.id"
+              :step="step"
+              :number="stepNumber"
+              :next="nextStep"
+              @refresh="refresh"
+            />
+            <StepComments :key="`comments-${step.id}`" :step-id="step.id"/>
+          </template>
           <div v-else class="student-step-unavailable">
             <h2>Шаг не найден</h2>
             <p>Вернитесь к оглавлению курса.</p>
