@@ -6,7 +6,6 @@ import { useAuthStore } from "@/stores/auth";
 import { studentCourseApi } from "./api";
 import { documentTitle, errorMessage, stepDocument, stepLabels } from "./presentation";
 import type { CourseListItem, StudentNotification } from "./types";
-import CatalogGreeting from "./components/CatalogGreeting.vue";
 import CatalogHero from "./components/CatalogHero.vue";
 import CatalogSnapshot from "./components/CatalogSnapshot.vue";
 import CourseCatalogCard from "./components/CourseCatalogCard.vue";
@@ -76,8 +75,6 @@ onMounted(load);
 
 <template>
   <div class="student-catalog">
-    <CatalogGreeting :username="auth.user?.username ?? ''" />
-
     <div v-if="loading" class="student-empty" role="status">Загружаем курсы…</div>
     <div v-else-if="error" class="student-empty student-empty--error" role="alert">
       {{ error }} <button type="button" @click="load">Повторить</button>
