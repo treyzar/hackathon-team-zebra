@@ -198,9 +198,7 @@ onBeforeUnmount(() => {
                     >До {{ new Date(item.deadline.due_at).toLocaleDateString("ru-RU") }}</small
                   ></span
                 >
-                <small v-if="item.max_score" class="student-step-score">{{
-                  item.progress.earned > 0 ? `+${item.progress.earned}` : item.max_score
-                }}</small>
+                <small class="student-step-score">{{ item.max_score }}</small>
               </span>
               <RouterLink
                 v-else
