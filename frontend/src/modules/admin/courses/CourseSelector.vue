@@ -24,15 +24,15 @@ onMounted(async () => {
 <template>
   <div class="admin-page">
     <Teleport to="#admin-page-header">
-    <div class="admin-toolbar">
-      <div>
-        <h2>Конструктор курсов</h2>
-        <p>Откройте курс, чтобы изменить структуру и задания.</p>
+      <div class="admin-toolbar">
+        <div>
+          <h2>Конструктор курсов</h2>
+          <p>Откройте курс, чтобы изменить структуру и задания.</p>
+        </div>
+        <RouterLink class="admin-button admin-button--primary" :to="ADMIN_COURSES_ROUTE.path"
+          >+ Новый курс</RouterLink
+        >
       </div>
-      <RouterLink class="admin-button admin-button--primary" :to="ADMIN_COURSES_ROUTE.path"
-        >+ Новый курс</RouterLink
-      >
-    </div>
     </Teleport>
     <p v-if="error" class="admin-error" role="alert">{{ error }}</p>
     <div v-if="loading" class="admin-panel admin-empty">Загружаем курсы…</div>
@@ -42,12 +42,31 @@ onMounted(async () => {
     <div v-else class="admin-workspace-grid">
       <div class="admin-table-wrap">
         <table class="admin-table">
-          <thead><tr><th>Курс</th><th>Статус</th><th></th></tr></thead>
+          <thead>
+            <tr>
+              <th>Курс</th>
+              <th>Статус</th>
+              <th></th>
+            </tr>
+          </thead>
           <tbody>
             <tr v-for="course in courses" :key="course.id">
-              <td><strong>{{ course.title }}</strong><small>{{ course.slug }}</small></td>
-              <td><span class="admin-badge" :class="course.is_published ? 'admin-badge--green' : 'admin-badge--gray'">{{ course.is_published ? '✓ Опубликован' : '○ Черновик' }}</span></td>
-              <td><RouterLink :to="{ name: ADMIN_COURSE_ROUTE.name, params: { courseId: course.id } }">Открыть →</RouterLink></td>
+              <td>
+                <strong>{{ course.title }}</strong
+                ><small>{{ course.slug }}</small>
+              </td>
+              <td>
+                <span
+                  class="admin-badge"
+                  :class="course.is_published ? 'admin-badge--green' : 'admin-badge--gray'"
+                  >{{ course.is_published ? "✓ Опубликован" : "○ Черновик" }}</span
+                >
+              </td>
+              <td>
+                <RouterLink :to="{ name: ADMIN_COURSE_ROUTE.name, params: { courseId: course.id } }"
+                  >Открыть →</RouterLink
+                >
+              </td>
             </tr>
           </tbody>
         </table>
@@ -61,5 +80,7 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.admin-table { min-width: 550px; }
+.admin-table {
+  min-width: 550px;
+}
 </style>

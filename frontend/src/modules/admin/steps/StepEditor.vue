@@ -7,12 +7,7 @@ import type { CodeSample } from "./editor-model";
 import { uploadAnswerFile } from "./file-api";
 import RichTextEditor from "./RichTextEditor.vue";
 import StepTypePicker from "./StepTypePicker.vue";
-import {
-  newStepForm,
-  formFromStep,
-  payloadFromForm,
-  validateStepForm,
-} from "./editor-model";
+import { newStepForm, formFromStep, payloadFromForm, validateStepForm } from "./editor-model";
 import { stepTypeLabels } from "../shared/format";
 import type { Step, StepType } from "../shared/types";
 import { ADMIN_COURSE_ROUTE } from "@/pages/admin/course/constants";
@@ -46,8 +41,10 @@ const hasChosenType = ref(false);
 const submissionMode = computed(() => {
   if (form.value.type !== "free_text") return "custom";
   if (form.value.requireText && form.value.maxFiles === 0) return "link";
-  if (!form.value.requireText && form.value.minFiles === 1 && form.value.maxFiles === 1) return "file";
-  if (!form.value.requireText && form.value.minFiles === 0 && form.value.maxFiles === 1) return "either";
+  if (!form.value.requireText && form.value.minFiles === 1 && form.value.maxFiles === 1)
+    return "file";
+  if (!form.value.requireText && form.value.minFiles === 0 && form.value.maxFiles === 1)
+    return "either";
   return "custom";
 });
 
@@ -192,54 +189,82 @@ watch(
 <template>
   <div class="admin-page admin-page--detail">
     <Teleport to="#admin-page-header">
-    <div class="admin-toolbar admin-toolbar--detail">
-      <div>
-        <RouterLink class="admin-link" :to="backRoute">← К курсу</RouterLink>
-        <h2>{{ isNew ? "Новый шаг" : `Шаг #${stepId}` }}</h2>
-        <p v-if="step">
-          Редакция {{ step.revision.number }} ·
-          {{ step.is_hidden ? "Скрыт от учеников" : "Виден ученикам" }}
-        </p>
+      <div class="admin-toolbar admin-toolbar--detail">
+        <div>
+          <RouterLink class="admin-link" :to="backRoute">← К курсу</RouterLink>
+          <h2>{{ isNew ? "Новый шаг" : `Шаг #${stepId}` }}</h2>
+          <p v-if="step">
+            Редакция {{ step.revision.number }} ·
+            {{ step.is_hidden ? "Скрыт от учеников" : "Виден ученикам" }}
+          </p>
+        </div>
+        <div class="admin-actions">
+          <span class="admin-badge">{{ stepTypeLabels[form.type] }}</span>
+          <button v-if="isNew" class="admin-button" type="button" @click="showTypePicker = true">
+            Сменить тип
+          </button>
+          <RouterLink
+            v-if="step"
+            class="admin-button"
+            :to="{ name: ADMIN_REVISIONS_ROUTE.name, params: { stepId }, query: route.query }"
+            >История редакций</RouterLink
+          ><button
+            class="admin-button admin-button--primary"
+            type="button"
+            :disabled="saving || loading || uploading || imageUploading"
+            @click="save"
+          >
+            {{ saving ? "Сохраняем…" : isNew ? "Создать шаг" : "Сохранить редакцию" }}
+          </button>
+        </div>
       </div>
-      <div class="admin-actions">
-        <span class="admin-badge">{{ stepTypeLabels[form.type] }}</span>
-        <button v-if="isNew" class="admin-button" type="button" @click="showTypePicker = true">Сменить тип</button>
-        <RouterLink
-          v-if="step"
-          class="admin-button"
-          :to="{ name: ADMIN_REVISIONS_ROUTE.name, params: { stepId }, query: route.query }"
-          >История редакций</RouterLink
-        ><button
-          class="admin-button admin-button--primary"
-          type="button"
-          :disabled="saving || loading || uploading || imageUploading"
-          @click="save"
-        >
-          {{ saving ? "Сохраняем…" : isNew ? "Создать шаг" : "Сохранить редакцию" }}
-        </button>
-      </div>
-    </div>
     </Teleport>
     <p v-if="error" class="admin-error" role="alert">{{ error }}</p>
     <p v-if="success" class="admin-success" role="status">{{ success }}</p>
     <p v-if="uploading" class="admin-note" role="status">Загружаем файл…</p>
     <div v-if="loading" class="admin-panel admin-empty">Загружаем шаг…</div>
-    <StepTypePicker v-if="showTypePicker && isNew" :module-label="String(route.query.moduleTitle ?? '')" @choose="setType" @cancel="cancelTypePicker" />
+    <StepTypePicker
+      v-if="showTypePicker && isNew"
+      :module-label="String(route.query.moduleTitle ?? '')"
+      @choose="setType"
+      @cancel="cancelTypePicker"
+    />
     <template v-else>
       <div class="admin-grid admin-grid--wide step-editor-layout">
         <div class="admin-stack">
           <div class="step-head-fields">
-          <label class="admin-field step-title-field">Название
-            <input v-model="form.title" maxlength="200" placeholder="Название шага" />
-          </label>
-          <template v-if="form.type === 'programming'">
-            <label class="admin-field step-limit-field">Время, мс<input v-model.number="form.timeLimitMs" type="number" min="100" max="15000" /></label>
-            <label class="admin-field step-limit-field">Память, МБ<input v-model.number="form.memoryLimitMb" type="number" min="16" max="512" /></label>
-          </template>
+            <label class="admin-field step-title-field"
+              >Название
+              <input v-model="form.title" maxlength="200" placeholder="Название шага" />
+            </label>
+            <template v-if="form.type === 'programming'">
+              <label class="admin-field step-limit-field"
+                >Время, мс<input
+                  v-model.number="form.timeLimitMs"
+                  type="number"
+                  min="100"
+                  max="15000"
+              /></label>
+              <label class="admin-field step-limit-field"
+                >Память, МБ<input
+                  v-model.number="form.memoryLimitMb"
+                  type="number"
+                  min="16"
+                  max="512"
+              /></label>
+            </template>
           </div>
           <section class="step-main-field">
             <div class="admin-field">
-              <span>{{ form.type === "theory" ? "Текст" : form.type === "programming" ? "Условие" : form.type === "single_choice" || form.type === "multiple_choice" ? "Вопрос" : "Задание" }}</span
+              <span>{{
+                form.type === "theory"
+                  ? "Текст"
+                  : form.type === "programming"
+                    ? "Условие"
+                    : form.type === "single_choice" || form.type === "multiple_choice"
+                      ? "Вопрос"
+                      : "Задание"
+              }}</span
               ><RichTextEditor
                 :key="`${step?.id ?? 'new'}-${step?.revision.number ?? form.type}`"
                 v-model="form.body"
@@ -268,8 +293,25 @@ watch(
             <div class="answer-format">
               <span class="admin-section-label">Формат ответа</span>
               <div class="answer-format-tabs" role="group" aria-label="Формат ответа">
-                <button type="button" :class="{ active: form.type === 'single_choice' }" :disabled="!isNew && form.type !== 'single_choice'" @click="form.type = 'single_choice'; form.options.forEach((option, index) => option.correct = index === 0)">Один верный</button>
-                <button type="button" :class="{ active: form.type === 'multiple_choice' }" :disabled="!isNew && form.type !== 'multiple_choice'" @click="form.type = 'multiple_choice'">Несколько верных</button>
+                <button
+                  type="button"
+                  :class="{ active: form.type === 'single_choice' }"
+                  :disabled="!isNew && form.type !== 'single_choice'"
+                  @click="
+                    form.type = 'single_choice';
+                    form.options.forEach((option, index) => (option.correct = index === 0));
+                  "
+                >
+                  Один верный
+                </button>
+                <button
+                  type="button"
+                  :class="{ active: form.type === 'multiple_choice' }"
+                  :disabled="!isNew && form.type !== 'multiple_choice'"
+                  @click="form.type = 'multiple_choice'"
+                >
+                  Несколько верных
+                </button>
               </div>
             </div>
             <div class="admin-stack choice-list">
@@ -314,9 +356,27 @@ watch(
               </div>
             </div>
             <div class="answer-format-tabs" role="group" aria-label="Что сдаёт ученик">
-              <button type="button" :class="{ active: submissionMode === 'link' }" @click="setSubmissionMode('link')">Ссылка</button>
-              <button type="button" :class="{ active: submissionMode === 'file' }" @click="setSubmissionMode('file')">Файл</button>
-              <button type="button" :class="{ active: submissionMode === 'either' }" @click="setSubmissionMode('either')">Ссылка или файл</button>
+              <button
+                type="button"
+                :class="{ active: submissionMode === 'link' }"
+                @click="setSubmissionMode('link')"
+              >
+                Ссылка
+              </button>
+              <button
+                type="button"
+                :class="{ active: submissionMode === 'file' }"
+                @click="setSubmissionMode('file')"
+              >
+                Файл
+              </button>
+              <button
+                type="button"
+                :class="{ active: submissionMode === 'either' }"
+                @click="setSubmissionMode('either')"
+              >
+                Ссылка или файл
+              </button>
             </div>
             <div class="admin-form">
               <label class="admin-check"
@@ -544,7 +604,17 @@ watch(
               </div>
             </div>
             <div class="admin-form">
-              <div class="step-grading-mode">{{ form.type === 'theory' ? 'При прочтении' : form.type === 'free_text' ? 'Куратор' : form.type === 'programming' && form.grading === 'manual' ? 'Куратор' : 'Авто' }}</div>
+              <div class="step-grading-mode">
+                {{
+                  form.type === "theory"
+                    ? "При прочтении"
+                    : form.type === "free_text"
+                      ? "Куратор"
+                      : form.type === "programming" && form.grading === "manual"
+                        ? "Куратор"
+                        : "Авто"
+                }}
+              </div>
               <label v-if="form.type !== 'theory'" class="admin-field"
                 >Максимальный балл<input
                   v-model.number="form.maxScore"
@@ -584,18 +654,34 @@ watch(
                     <option value="all_or_nothing">Всё или ничего</option>
                     <option value="per_group">За группы тестов</option>
                   </select></label
-              ></template
+                ></template
               >
-              <label class="admin-check"><input type="checkbox" checked disabled /> Обязательный</label>
+              <label class="admin-check"
+                ><input type="checkbox" checked disabled /> Обязательный</label
+              >
             </div>
           </section>
           <section class="admin-panel">
-            <div class="admin-panel-head"><div><h2>Навыки на карте</h2></div></div>
-            <p class="admin-muted">Привязка навыков к шагу появится после добавления этого поля в API.</p>
+            <div class="admin-panel-head">
+              <div><h2>Навыки на карте</h2></div>
+            </div>
+            <p class="admin-muted">
+              Привязка навыков к шагу появится после добавления этого поля в API.
+            </p>
           </section>
           <section class="admin-panel">
-            <div class="admin-panel-head"><div><h2>Место в курсе</h2></div></div>
-            <div class="admin-field"><span>Модуль</span><div class="step-module-name">{{ route.query.moduleTitle || `Модуль #${route.params.moduleId || step?.module_id || '—'}` }}</div></div>
+            <div class="admin-panel-head">
+              <div><h2>Место в курсе</h2></div>
+            </div>
+            <div class="admin-field">
+              <span>Модуль</span>
+              <div class="step-module-name">
+                {{
+                  route.query.moduleTitle ||
+                  `Модуль #${route.params.moduleId || step?.module_id || "—"}`
+                }}
+              </div>
+            </div>
             <p class="admin-muted">Порядок шага можно изменить в конструкторе курса.</p>
           </section>
           <section v-if="!isNew" class="admin-panel">
@@ -637,19 +723,62 @@ watch(
 </template>
 
 <style scoped>
-.step-title-field { font-size: 13px; }
-.step-head-fields { display: flex; align-items: end; gap: 12px; }
-.step-head-fields .step-title-field { flex: 1; }
-.step-limit-field { width: 105px; }
-.step-main-field .admin-field { font-size: 13px; }
-.step-editor-layout > .admin-stack, .step-main-field { min-width: 0; }
-.step-answer-section { padding: 0; border: 0; background: transparent; }
-.step-answer-section .admin-panel-head { margin-bottom: 12px; }
-.step-answer-section .admin-panel-head h2 { font-size: 16px; }
-.step-grading-mode { justify-self: start; padding: 6px 10px; border-radius: 8px; background: #f0f2f6; color: #0f172a; font-size: 12px; font-weight: 650; }
-.step-module-name { padding: 10px 12px; border: 1px solid #e1e6f0; border-radius: 8px; background: #f4f6fb; color: #4a546b; font-size: 13px; }
-.step-editor-layout { gap: 20px; }
-.step-settings-rail { position: sticky; top: 0; }
+.step-title-field {
+  font-size: 13px;
+}
+.step-head-fields {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+}
+.step-head-fields .step-title-field {
+  flex: 1;
+}
+.step-limit-field {
+  width: 105px;
+}
+.step-main-field .admin-field {
+  font-size: 13px;
+}
+.step-editor-layout > .admin-stack,
+.step-main-field {
+  min-width: 0;
+}
+.step-answer-section {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.step-answer-section .admin-panel-head {
+  margin-bottom: 12px;
+}
+.step-answer-section .admin-panel-head h2 {
+  font-size: 16px;
+}
+.step-grading-mode {
+  justify-self: start;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #f0f2f6;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 650;
+}
+.step-module-name {
+  padding: 10px 12px;
+  border: 1px solid #e1e6f0;
+  border-radius: 8px;
+  background: #f4f6fb;
+  color: #4a546b;
+  font-size: 13px;
+}
+.step-editor-layout {
+  gap: 20px;
+}
+.step-settings-rail {
+  position: sticky;
+  top: 0;
+}
 .choice-row {
   display: flex;
   align-items: center;
@@ -659,12 +788,46 @@ watch(
   border-radius: 11px;
   background: #fafbfe;
 }
-.answer-format { display: grid; gap: 8px; margin-bottom: 16px; }
-.answer-format-tabs { display: inline-flex; flex-wrap: wrap; gap: 2px; width: max-content; max-width: 100%; padding: 3px; border-radius: 10px; background: #f0f2f6; }
-.answer-format-tabs button { min-height: 32px; padding: 0 11px; border: 0; border-radius: 8px; background: transparent; color: #4a546b; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
-.answer-format-tabs button.active { background: #fff; color: #0f172a; box-shadow: 0 1px 2px #0f172a14; }
-.answer-format-tabs button:disabled:not(.active) { opacity: .45; cursor: not-allowed; }
-.choice-row:has(input:checked) { border-color: #b8ddca; background: #f1faf5; }
+.answer-format {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.answer-format-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  width: max-content;
+  max-width: 100%;
+  padding: 3px;
+  border-radius: 10px;
+  background: #f0f2f6;
+}
+.answer-format-tabs button {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #4a546b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.answer-format-tabs button.active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px #0f172a14;
+}
+.answer-format-tabs button:disabled:not(.active) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.choice-row:has(input:checked) {
+  border-color: #b8ddca;
+  background: #f1faf5;
+}
 .choice-row > input:first-child {
   flex: none;
   accent-color: #17915a;
@@ -692,5 +855,9 @@ watch(
     grid-template-columns: 1fr;
   }
 }
-@media (max-width: 900px) { .step-settings-rail { position: static; } }
+@media (max-width: 900px) {
+  .step-settings-rail {
+    position: static;
+  }
+}
 </style>

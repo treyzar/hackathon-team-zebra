@@ -34,8 +34,12 @@ const filtered = computed(() =>
   }),
 );
 const publishedCount = computed(() => courses.value.filter((course) => course.is_published).length);
-const totalModules = computed(() => Object.values(structures.value).reduce((sum, item) => sum + item.modules, 0));
-const totalSteps = computed(() => Object.values(structures.value).reduce((sum, item) => sum + item.steps, 0));
+const totalModules = computed(() =>
+  Object.values(structures.value).reduce((sum, item) => sum + item.modules, 0),
+);
+const totalSteps = computed(() =>
+  Object.values(structures.value).reduce((sum, item) => sum + item.steps, 0),
+);
 
 async function load(): Promise<void> {
   loading.value = true;
@@ -48,12 +52,22 @@ async function load(): Promise<void> {
     } catch {
       groupsLoaded.value = false;
     }
-    const trees = await Promise.allSettled(courses.value.map((course) => courseApi.course(course.id)));
+    const trees = await Promise.allSettled(
+      courses.value.map((course) => courseApi.course(course.id)),
+    );
     structures.value = Object.fromEntries(
       trees.flatMap((result) => {
         if (result.status !== "fulfilled") return [];
         const tree: CourseTree = result.value;
-        return [[tree.id, { modules: tree.modules.length, steps: tree.modules.reduce((sum, module) => sum + module.steps.length, 0) }]];
+        return [
+          [
+            tree.id,
+            {
+              modules: tree.modules.length,
+              steps: tree.modules.reduce((sum, module) => sum + module.steps.length, 0),
+            },
+          ],
+        ];
       }),
     );
   } catch (cause) {
@@ -88,21 +102,23 @@ onMounted(load);
 <template>
   <div class="admin-page">
     <Teleport to="#admin-page-header">
-    <div class="admin-toolbar">
-      <div>
-        <h2>Курсы</h2>
+      <div class="admin-toolbar">
+        <div>
+          <h2>Курсы</h2>
+        </div>
+        <div class="admin-actions">
+          <RouterLink class="admin-button" :to="ADMIN_IMPORT_ROUTE.path"
+            >Импорт методички</RouterLink
+          >
+          <button
+            class="admin-button admin-button--primary"
+            type="button"
+            @click="showCreate = !showCreate"
+          >
+            + Новый курс
+          </button>
+        </div>
       </div>
-      <div class="admin-actions">
-      <RouterLink class="admin-button" :to="ADMIN_IMPORT_ROUTE.path">Импорт методички</RouterLink>
-      <button
-        class="admin-button admin-button--primary"
-        type="button"
-        @click="showCreate = !showCreate"
-      >
-        + Новый курс
-      </button>
-      </div>
-    </div>
     </Teleport>
 
     <p v-if="error" class="admin-error" role="alert">{{ error }}</p>
@@ -155,70 +171,100 @@ onMounted(load);
 
     <div class="admin-workspace-grid">
       <div class="admin-workspace-main">
-      <div class="admin-toolbar">
-        <div class="admin-tabs" role="tablist" aria-label="Статус курса">
-          <button
-            v-for="tab in [
-              { key: 'all', label: 'Все' },
-              { key: 'published', label: 'Опубликованные' },
-              { key: 'draft', label: 'Черновики' },
-            ]"
-            :key="tab.key"
-            type="button"
-            role="tab"
-            :aria-selected="filter === tab.key"
-            @click="filter = tab.key as typeof filter"
-          >
-            {{ tab.label }} · {{ tab.key === 'all' ? courses.length : tab.key === 'published' ? publishedCount : courses.length - publishedCount }}
-          </button>
+        <div class="admin-toolbar">
+          <div class="admin-tabs" role="tablist" aria-label="Статус курса">
+            <button
+              v-for="tab in [
+                { key: 'all', label: 'Все' },
+                { key: 'published', label: 'Опубликованные' },
+                { key: 'draft', label: 'Черновики' },
+              ]"
+              :key="tab.key"
+              type="button"
+              role="tab"
+              :aria-selected="filter === tab.key"
+              @click="filter = tab.key as typeof filter"
+            >
+              {{ tab.label }} ·
+              {{
+                tab.key === "all"
+                  ? courses.length
+                  : tab.key === "published"
+                    ? publishedCount
+                    : courses.length - publishedCount
+              }}
+            </button>
+          </div>
         </div>
-      </div>
-      <div v-if="loading" class="admin-table-wrap admin-empty">Загружаем курсы…</div>
-      <div v-else-if="!filtered.length" class="admin-table-wrap admin-empty">Курсов в этом разделе нет</div>
-      <div v-else class="admin-table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Курс</th>
-              <th>Состав</th>
-              <th>Статус</th>
-              <th>Ученики</th>
-              <th>Обновлён</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="course in filtered" :key="course.id">
-              <td>
-                <RouterLink class="course-title" :to="{ name: ADMIN_COURSE_ROUTE.name, params: { courseId: course.id } }">{{ course.title }}</RouterLink>
-                <small>{{ docToText(course.description).trim() || course.slug }}</small>
-              </td>
-              <td>
-                <span v-if="structures[course.id]">{{ structures[course.id]?.modules }} мод. · {{ structures[course.id]?.steps }} шаг.</span>
-                <span v-else class="admin-muted">—</span>
-              </td>
-              <td>
-                <span
-                  class="admin-badge"
-                  :class="course.is_published ? 'admin-badge--green' : 'admin-badge--gray'"
-                  >{{ course.is_published ? "✓ Опубликован" : "○ Черновик" }}</span
-                >
-              </td>
-              <td class="admin-muted">—</td>
-              <td class="admin-muted">—</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <div v-if="loading" class="admin-table-wrap admin-empty">Загружаем курсы…</div>
+        <div v-else-if="!filtered.length" class="admin-table-wrap admin-empty">
+          Курсов в этом разделе нет
+        </div>
+        <div v-else class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Курс</th>
+                <th>Состав</th>
+                <th>Статус</th>
+                <th>Ученики</th>
+                <th>Обновлён</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="course in filtered" :key="course.id">
+                <td>
+                  <RouterLink
+                    class="course-title"
+                    :to="{ name: ADMIN_COURSE_ROUTE.name, params: { courseId: course.id } }"
+                    >{{ course.title }}</RouterLink
+                  >
+                  <small>{{ docToText(course.description).trim() || course.slug }}</small>
+                </td>
+                <td>
+                  <span v-if="structures[course.id]"
+                    >{{ structures[course.id]?.modules }} мод. ·
+                    {{ structures[course.id]?.steps }} шаг.</span
+                  >
+                  <span v-else class="admin-muted">—</span>
+                </td>
+                <td>
+                  <span
+                    class="admin-badge"
+                    :class="course.is_published ? 'admin-badge--green' : 'admin-badge--gray'"
+                    >{{ course.is_published ? "✓ Опубликован" : "○ Черновик" }}</span
+                  >
+                </td>
+                <td class="admin-muted">—</td>
+                <td class="admin-muted">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
       <aside class="admin-workspace-aside" aria-label="Сводка по курсам">
         <section class="admin-rail-card">
           <h3>Сигналы по содержанию</h3>
-          <div class="course-signal"><strong>Курсы и шаги</strong><span>{{ courses.length }} курсов · {{ totalModules }} модулей · {{ totalSteps }} шагов</span></div>
-          <p style="margin-top: 10px">Аналитика по ответам появится после подключения данных о попытках.</p>
+          <div class="course-signal">
+            <strong>Курсы и шаги</strong
+            ><span
+              >{{ courses.length }} курсов · {{ totalModules }} модулей ·
+              {{ totalSteps }} шагов</span
+            >
+          </div>
+          <p style="margin-top: 10px">
+            Аналитика по ответам появится после подключения данных о попытках.
+          </p>
         </section>
         <section class="admin-rail-card">
           <h3>Без назначения</h3>
-          <p>{{ groupsLoaded ? `${groups.filter((group) => group.curator_id === null).length} групп без куратора` : 'Данные о группах недоступны' }}</p>
+          <p>
+            {{
+              groupsLoaded
+                ? `${groups.filter((group) => group.curator_id === null).length} групп без куратора`
+                : "Данные о группах недоступны"
+            }}
+          </p>
           <RouterLink class="admin-link" :to="ADMIN_GROUPS_ROUTE.path">Назначить →</RouterLink>
         </section>
       </aside>
@@ -233,9 +279,26 @@ onMounted(load);
   font-weight: 700;
   text-decoration: none;
 }
-.course-title:hover { color: #3457f0 !important; }
-.admin-table { min-width: 660px; }
-.course-signal { display: grid; gap: 4px; padding: 10px 12px; border-radius: 12px; background: #fff1e6; color: #0f172a; font-size: 13px; }
-.course-signal span { color: #4a546b; }
-.admin-rail-card .admin-link { display: inline-block; margin-top: 10px; }
+.course-title:hover {
+  color: #3457f0 !important;
+}
+.admin-table {
+  min-width: 660px;
+}
+.course-signal {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff1e6;
+  color: #0f172a;
+  font-size: 13px;
+}
+.course-signal span {
+  color: #4a546b;
+}
+.admin-rail-card .admin-link {
+  display: inline-block;
+  margin-top: 10px;
+}
 </style>

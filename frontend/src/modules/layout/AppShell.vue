@@ -45,7 +45,10 @@ async function logout(): Promise<void> {
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'app-shell--collapsed': collapsed, 'app-shell--admin': auth.role === 'admin' }">
+  <div
+    class="app-shell"
+    :class="{ 'app-shell--collapsed': collapsed, 'app-shell--admin': auth.role === 'admin' }"
+  >
     <button
       v-if="mobileOpen"
       class="navigation-backdrop"
@@ -107,7 +110,16 @@ async function logout(): Promise<void> {
           :aria-expanded="mobileOpen"
           @click="mobileOpen = true"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
             <path d="M4 7h16M4 12h16M4 17h16" />
           </svg>
         </button>

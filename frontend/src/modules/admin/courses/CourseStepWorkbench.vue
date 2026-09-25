@@ -9,7 +9,12 @@ import RichTextEditor from "../steps/RichTextEditor.vue";
 import { stepTypeLabels } from "../shared/format";
 import type { Step } from "../shared/types";
 
-const props = defineProps<{ stepId: number; courseId: number; number: string; moduleTitle: string }>();
+const props = defineProps<{
+  stepId: number;
+  courseId: number;
+  number: string;
+  moduleTitle: string;
+}>();
 const emit = defineEmits<{ saved: [] }>();
 const step = ref<Step | null>(null);
 const form = ref<ReturnType<typeof formFromStep> | null>(null);
@@ -87,18 +92,32 @@ watch(() => props.stepId, load, { immediate: true });
     <p v-if="error" class="admin-error" role="alert">{{ error }}</p>
     <p v-if="success" class="admin-success" role="status">{{ success }}</p>
     <template v-if="form && step && !loading">
-      <div class="workbench-eyebrow">Шаг {{ number }} · редактор типа «{{ stepTypeLabels[step.type] }}»</div>
+      <div class="workbench-eyebrow">
+        Шаг {{ number }} · редактор типа «{{ stepTypeLabels[step.type] }}»
+      </div>
       <p class="workbench-module">{{ moduleTitle }}</p>
       <div class="workbench-top-row">
-        <label class="admin-field workbench-title">Название
+        <label class="admin-field workbench-title"
+          >Название
           <input v-model="form.title" maxlength="200" placeholder="Название шага" />
         </label>
-        <div class="admin-field workbench-grading"><span>Проверка</span><div class="workbench-readonly">{{ gradingLabel }}</div></div>
-        <label v-if="step.type !== 'theory'" class="admin-field workbench-points">Баллы
+        <div class="admin-field workbench-grading">
+          <span>Проверка</span>
+          <div class="workbench-readonly">{{ gradingLabel }}</div>
+        </div>
+        <label v-if="step.type !== 'theory'" class="admin-field workbench-points"
+          >Баллы
           <input v-model.number="form.maxScore" type="number" min="0" max="1000" />
         </label>
       </div>
-      <label class="admin-field workbench-body">{{ step.type === 'theory' ? 'Текст' : step.type === 'programming' ? 'Условие' : 'Вопрос или задание' }}
+      <label class="admin-field workbench-body"
+        >{{
+          step.type === "theory"
+            ? "Текст"
+            : step.type === "programming"
+              ? "Условие"
+              : "Вопрос или задание"
+        }}
         <RichTextEditor
           :key="`${step.id}-${step.revision.number}`"
           v-model="form.body"
@@ -107,10 +126,17 @@ watch(() => props.stepId, load, { immediate: true });
           @uploading="imageUploading = $event"
         />
       </label>
-      <div v-if="step.type === 'single_choice' || step.type === 'multiple_choice'" class="workbench-answer-list">
+      <div
+        v-if="step.type === 'single_choice' || step.type === 'multiple_choice'"
+        class="workbench-answer-list"
+      >
         <b>Варианты ответа</b>
         <div v-for="(option, index) in form.options" :key="option.id" class="workbench-answer">
-          <span class="admin-badge" :class="option.correct ? 'admin-badge--green' : 'admin-badge--gray'">{{ option.correct ? '✓' : '○' }}</span>
+          <span
+            class="admin-badge"
+            :class="option.correct ? 'admin-badge--green' : 'admin-badge--gray'"
+            >{{ option.correct ? "✓" : "○" }}</span
+          >
           <span>{{ index + 1 }}. {{ option.text }}</span>
         </div>
       </div>
@@ -120,13 +146,29 @@ watch(() => props.stepId, load, { immediate: true });
       </div>
       <div v-if="step.type === 'programming'" class="workbench-answer-list">
         <b>Задача с тестами</b>
-        <p>{{ form.testGroups.length }} групп тестов · {{ form.timeLimitMs }} мс · {{ form.memoryLimitMb }} МБ</p>
+        <p>
+          {{ form.testGroups.length }} групп тестов · {{ form.timeLimitMs }} мс ·
+          {{ form.memoryLimitMb }} МБ
+        </p>
       </div>
       <div class="workbench-footer">
-        <label class="admin-check"><input v-model="isBreaking" type="checkbox" /> Существенное изменение ответа</label>
+        <label class="admin-check"
+          ><input v-model="isBreaking" type="checkbox" /> Существенное изменение ответа</label
+        >
         <div class="admin-actions">
-          <RouterLink class="admin-button" :to="{ name: ADMIN_STEP_ROUTE.name, params: { stepId: step.id }, query: { courseId } }">Все настройки</RouterLink>
-          <button class="admin-button admin-button--primary" type="button" :disabled="saving || imageUploading" @click="save">{{ saving ? 'Сохраняем…' : 'Сохранить редакцию' }}</button>
+          <RouterLink
+            class="admin-button"
+            :to="{ name: ADMIN_STEP_ROUTE.name, params: { stepId: step.id }, query: { courseId } }"
+            >Все настройки</RouterLink
+          >
+          <button
+            class="admin-button admin-button--primary"
+            type="button"
+            :disabled="saving || imageUploading"
+            @click="save"
+          >
+            {{ saving ? "Сохраняем…" : "Сохранить редакцию" }}
+          </button>
         </div>
       </div>
     </template>
@@ -134,18 +176,85 @@ watch(() => props.stepId, load, { immediate: true });
 </template>
 
 <style scoped>
-.course-workbench { display: grid; align-content: start; gap: 15px; min-width: 0; padding: 20px 28px; }
-.workbench-eyebrow { margin: 0; color: #4a546b; font-size: 13px; }
-.workbench-module { margin: -11px 0 0; color: #7c869c; font-size: 12px; }
-.workbench-top-row { display: flex; align-items: end; gap: 12px; }
-.workbench-title { flex: 1; }
-.workbench-grading { width: 160px; }
-.workbench-points { width: 82px; }
-.workbench-readonly { display: flex; align-items: center; min-height: 40px; padding: 0 11px; border: 1px solid #e1e6f0; border-radius: 9px; background: #f4f6fb; font-size: 13px; }
-.workbench-body { --quill-editor-min-height: 240px; }
-.workbench-answer-list { display: grid; gap: 8px; font-size: 13px; }
-.workbench-answer-list p { margin: 0; color: #4a546b; }
-.workbench-answer { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border: 1px solid #e1e6f0; border-radius: 9px; background: #fff; }
-.workbench-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
-@media (max-width: 700px) { .workbench-top-row { flex-wrap: wrap; } .workbench-title { flex-basis: 100%; } .course-workbench { padding: 20px; } }
+.course-workbench {
+  display: grid;
+  align-content: start;
+  gap: 15px;
+  min-width: 0;
+  padding: 20px 28px;
+}
+.workbench-eyebrow {
+  margin: 0;
+  color: #4a546b;
+  font-size: 13px;
+}
+.workbench-module {
+  margin: -11px 0 0;
+  color: #7c869c;
+  font-size: 12px;
+}
+.workbench-top-row {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+}
+.workbench-title {
+  flex: 1;
+}
+.workbench-grading {
+  width: 160px;
+}
+.workbench-points {
+  width: 82px;
+}
+.workbench-readonly {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid #e1e6f0;
+  border-radius: 9px;
+  background: #f4f6fb;
+  font-size: 13px;
+}
+.workbench-body {
+  --quill-editor-min-height: 240px;
+}
+.workbench-answer-list {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+.workbench-answer-list p {
+  margin: 0;
+  color: #4a546b;
+}
+.workbench-answer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid #e1e6f0;
+  border-radius: 9px;
+  background: #fff;
+}
+.workbench-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+@media (max-width: 700px) {
+  .workbench-top-row {
+    flex-wrap: wrap;
+  }
+  .workbench-title {
+    flex-basis: 100%;
+  }
+  .course-workbench {
+    padding: 20px;
+  }
+}
 </style>

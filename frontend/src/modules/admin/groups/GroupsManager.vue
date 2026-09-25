@@ -153,18 +153,18 @@ onMounted(load);
 <template>
   <div class="admin-page">
     <Teleport to="#admin-page-header">
-    <div class="admin-toolbar">
-      <div>
-        <h2>Группы</h2>
+      <div class="admin-toolbar">
+        <div>
+          <h2>Группы</h2>
+        </div>
+        <button
+          class="admin-button admin-button--primary"
+          type="button"
+          @click="showCreate = !showCreate"
+        >
+          + Группа
+        </button>
       </div>
-      <button
-        class="admin-button admin-button--primary"
-        type="button"
-        @click="showCreate = !showCreate"
-      >
-        + Группа
-      </button>
-    </div>
     </Teleport>
     <p v-if="error" class="admin-error" role="alert">{{ error }}</p>
     <p v-if="success" class="admin-success" role="status">{{ success }}</p>
@@ -213,7 +213,9 @@ onMounted(load);
           >
             <span
               ><strong>{{ group.name }}</strong
-              ><small>{{ username(group.curator_id) }} · {{ group.students_count }} учеников</small></span
+              ><small
+                >{{ username(group.curator_id) }} · {{ group.students_count }} учеников</small
+              ></span
             ><span class="group-chevron" aria-hidden="true">›</span>
           </button>
         </div>
@@ -242,7 +244,14 @@ onMounted(load);
           <div class="group-courses">
             <strong>Курсы группы</strong>
             <span>Нет данных о назначенных курсах</span>
-            <button class="admin-button group-course-add" type="button" disabled title="Назначение курсов группам отсутствует в текущем API">+ Назначить курс</button>
+            <button
+              class="admin-button group-course-add"
+              type="button"
+              disabled
+              title="Назначение курсов группам отсутствует в текущем API"
+            >
+              + Назначить курс
+            </button>
           </div>
           <hr class="admin-divider" style="margin: 22px 0" />
           <button
@@ -264,15 +273,41 @@ onMounted(load);
           <div v-if="!members.length" class="admin-empty">Учеников пока нет</div>
           <div v-else class="admin-table-wrap">
             <table class="admin-table">
-              <thead><tr><th>Ученик</th><th>Класс</th><th>Прогресс</th><th>Отставание</th><th>Последний вход</th><th></th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Ученик</th>
+                  <th>Класс</th>
+                  <th>Прогресс</th>
+                  <th>Отставание</th>
+                  <th>Последний вход</th>
+                  <th></th>
+                </tr>
+              </thead>
               <tbody>
                 <tr v-for="member in members" :key="member.id">
-                  <td><strong>{{ member.username }}</strong><small>{{ member.email }}</small></td>
+                  <td>
+                    <strong>{{ member.username }}</strong
+                    ><small>{{ member.email }}</small>
+                  </td>
                   <td>—</td>
-                  <td><span class="group-progress-placeholder" aria-label="Данные о прогрессе недоступны" /></td>
+                  <td>
+                    <span
+                      class="group-progress-placeholder"
+                      aria-label="Данные о прогрессе недоступны"
+                    />
+                  </td>
                   <td>—</td>
                   <td>—</td>
-                  <td><button class="admin-button admin-button--danger" type="button" :disabled="busy" @click="removeStudent(member.id)">Исключить</button></td>
+                  <td>
+                    <button
+                      class="admin-button admin-button--danger"
+                      type="button"
+                      :disabled="busy"
+                      @click="removeStudent(member.id)"
+                    >
+                      Исключить
+                    </button>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -302,18 +337,69 @@ onMounted(load);
 </template>
 
 <style scoped>
-.groups-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); align-items: start; gap: 20px; }
-.groups-layout > .admin-panel { padding: 0; border: 0; background: transparent; }
-.groups-layout > .admin-stack { min-width: 0; }
-.groups-layout .admin-table { min-width: 760px; }
-.group-progress-placeholder { display: inline-block; width: 110px; height: 6px; border-radius: 999px; background: #e1e6f0; }
-.groups-layout .admin-stack > .admin-panel:first-child form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
-.groups-layout .admin-stack > .admin-panel:first-child form .admin-field:first-child { flex: 1 1 180px; }
-.groups-layout .admin-stack > .admin-panel:first-child form .admin-field:nth-child(2) { flex: 1 1 200px; }
-.group-help { margin: 12px 0 0; color: #4a546b; font-size: 12px; }
-.group-courses { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #e1e6f0; font-size: 13px; }
-.group-courses span { padding: 4px 10px; border-radius: 999px; background: #eaf0fe; color: #4a546b; }
-.group-course-add { min-height: 32px; border: 1px dashed #3457f0; border-radius: 999px; color: #3457f0; }
+.groups-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+.groups-layout > .admin-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.groups-layout > .admin-stack {
+  min-width: 0;
+}
+.groups-layout .admin-table {
+  min-width: 760px;
+}
+.group-progress-placeholder {
+  display: inline-block;
+  width: 110px;
+  height: 6px;
+  border-radius: 999px;
+  background: #e1e6f0;
+}
+.groups-layout .admin-stack > .admin-panel:first-child form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.groups-layout .admin-stack > .admin-panel:first-child form .admin-field:first-child {
+  flex: 1 1 180px;
+}
+.groups-layout .admin-stack > .admin-panel:first-child form .admin-field:nth-child(2) {
+  flex: 1 1 200px;
+}
+.group-help {
+  margin: 12px 0 0;
+  color: #4a546b;
+  font-size: 12px;
+}
+.group-courses {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e1e6f0;
+  font-size: 13px;
+}
+.group-courses span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eaf0fe;
+  color: #4a546b;
+}
+.group-course-add {
+  min-height: 32px;
+  border: 1px dashed #3457f0;
+  border-radius: 999px;
+  color: #3457f0;
+}
 .group-card {
   display: flex;
   align-items: center;
@@ -343,6 +429,13 @@ onMounted(load);
   color: #8995a7;
   font-size: 11px;
 }
-.group-chevron { color: #9ba5b8; font-size: 24px; }
-@media (max-width: 850px) { .groups-layout { grid-template-columns: 1fr; } }
+.group-chevron {
+  color: #9ba5b8;
+  font-size: 24px;
+}
+@media (max-width: 850px) {
+  .groups-layout {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

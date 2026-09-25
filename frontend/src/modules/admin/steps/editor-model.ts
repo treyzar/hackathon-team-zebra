@@ -94,7 +94,9 @@ function splitTitle(doc: RichText): { title: string; body: RichText } {
   const attrs = first?.attrs as Record<string, unknown> | undefined;
   if (first?.type !== "heading" || attrs?.zebra_title !== true) return { title: "", body: doc };
   const content = Array.isArray(first.content) ? first.content : [];
-  const title = content.map((item) => String((item as Record<string, unknown>).text ?? "")).join("");
+  const title = content
+    .map((item) => String((item as Record<string, unknown>).text ?? ""))
+    .join("");
   return { title, body: { type: "doc", content: rest.length ? rest : [{ type: "paragraph" }] } };
 }
 
@@ -103,7 +105,11 @@ function withTitle(title: string, body: RichText): RichText {
   return {
     type: "doc",
     content: [
-      { type: "heading", attrs: { level: 1, zebra_title: true }, content: [{ type: "text", text: title.trim() }] },
+      {
+        type: "heading",
+        attrs: { level: 1, zebra_title: true },
+        content: [{ type: "text", text: title.trim() }],
+      },
       ...body.content,
     ],
   };

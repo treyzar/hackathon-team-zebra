@@ -57,28 +57,26 @@ onMounted(load);
 <template>
   <div class="admin-page admin-page--detail">
     <Teleport to="#admin-page-header">
-    <div class="admin-toolbar admin-toolbar--detail">
-      <div>
+      <div class="admin-toolbar admin-toolbar--detail">
+        <div>
+          <RouterLink
+            class="admin-link"
+            :to="
+              Number.isInteger(courseId) && courseId > 0
+                ? { name: ADMIN_COURSE_ROUTE.name, params: { courseId } }
+                : { name: ADMIN_STEP_ROUTE.name, params: { stepId } }
+            "
+            >← Назад</RouterLink
+          >
+          <h2>{{ step ? stepTypeLabels[step.type] : "Шаг" }} #{{ stepId }}</h2>
+          <p>{{ revisions.length }} редакций сохранено</p>
+        </div>
         <RouterLink
-          class="admin-link"
-          :to="
-            Number.isInteger(courseId) && courseId > 0
-              ? { name: ADMIN_COURSE_ROUTE.name, params: { courseId } }
-              : { name: ADMIN_STEP_ROUTE.name, params: { stepId } }
-          "
-          >← Назад</RouterLink
+          class="admin-button admin-button--primary"
+          :to="{ name: ADMIN_STEP_ROUTE.name, params: { stepId }, query: route.query }"
+          >Редактировать шаг</RouterLink
         >
-        <h2>
-          {{ step ? stepTypeLabels[step.type] : "Шаг" }} #{{ stepId }}
-        </h2>
-        <p>{{ revisions.length }} редакций сохранено</p>
       </div>
-      <RouterLink
-        class="admin-button admin-button--primary"
-        :to="{ name: ADMIN_STEP_ROUTE.name, params: { stepId }, query: route.query }"
-        >Редактировать шаг</RouterLink
-      >
-    </div>
     </Teleport>
     <p v-if="error" class="admin-error" role="alert">{{ error }}</p>
     <div v-if="loading" class="admin-panel admin-empty">Загружаем историю…</div>

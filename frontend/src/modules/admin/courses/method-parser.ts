@@ -33,12 +33,16 @@ export function parseMethodText(source: string): ParsedMethod {
       continue;
     }
     if (!current) continue;
-    if (line.startsWith('Тип шага')) {
+    if (line.startsWith("Тип шага")) {
       current.type = line.replace(/^Тип шага\s*/i, "").trim() || "Не указан";
-      current.supported = /^(теория|контрольный вопрос|вопрос|задача с тестами|проект)$/i.test(current.type);
+      current.supported = /^(теория|контрольный вопрос|вопрос|задача с тестами|проект)$/i.test(
+        current.type,
+      );
     }
-    if (line.startsWith('Проверка')) current.grading = line.replace(/^Проверка\s*/i, "").trim() || "—";
-    if (line.startsWith('Что сдаёт ученик')) current.details = line.replace(/^Что сдаёт ученик\s*/i, "").trim() || "Текст";
+    if (line.startsWith("Проверка"))
+      current.grading = line.replace(/^Проверка\s*/i, "").trim() || "—";
+    if (line.startsWith("Что сдаёт ученик"))
+      current.details = line.replace(/^Что сдаёт ученик\s*/i, "").trim() || "Текст";
   }
   return { modules, steps };
 }

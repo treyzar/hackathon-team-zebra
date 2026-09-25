@@ -192,8 +192,11 @@ test("method preview identifies step boundaries and unsupported step types", () 
     "Модуль 1.3. Условия\nШаг 1.3.2. Проверь себя\nТип шага Контрольный вопрос\nПроверка Автоматическая\nШаг 1.3.3. Робот\nТип шага Робототехника",
   );
   assert.equal(parsed.modules, 1);
-  assert.deepEqual(parsed.steps.map((step) => [step.number, step.supported]), [
-    ["1.3.2", true],
-    ["1.3.3", false],
-  ]);
+  assert.deepEqual(
+    parsed.steps.map((step) => [step.number, step.supported]),
+    [
+      ["1.3.2", true],
+      ["1.3.3", false],
+    ],
+  );
 });
