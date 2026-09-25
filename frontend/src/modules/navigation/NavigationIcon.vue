@@ -23,7 +23,9 @@ defineProps<{ name: NavigationIconName }>();
       <path d="M9 21v-7h6v7" />
     </template>
     <template v-else-if="name === 'courses'">
-      <path d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z" />
+      <path
+        d="M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"
+      />
     </template>
     <template v-else-if="name === 'skills'">
       <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14" />

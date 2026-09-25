@@ -108,7 +108,7 @@ onMounted(load);
         </div>
         <div class="admin-actions">
           <RouterLink class="admin-button" :to="ADMIN_IMPORT_ROUTE.path"
-            >Импорт методички</RouterLink
+            >Импорт / экспорт</RouterLink
           >
           <button
             class="admin-button admin-button--primary"

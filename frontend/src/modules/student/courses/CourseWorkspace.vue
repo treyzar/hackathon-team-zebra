@@ -15,6 +15,7 @@ import type { Course, StudentStep } from "./types";
 import StepPlayer from "@/modules/student/steps/StepPlayer.vue";
 import { STUDENT_COURSES_ROUTE } from "@/pages/student/courses/constants";
 import { STUDENT_STEP_ROUTE } from "@/pages/student/step/constants";
+import StepComments from "@/modules/student/steps/StepComments.vue";
 
 const props = defineProps<{ courseId: number; stepId?: number }>();
 const course = ref<Course | null>(null);
@@ -162,7 +163,15 @@ onBeforeUnmount(() => {
             >← Мои курсы</RouterLink
           >
           <h2>{{ course.title }}</h2>
-          <p>{{ progressText(course.progress.steps_completed, course.progress.steps_total) }}</p>
+          <div class="student-outline-totals">
+            <span>{{
+              progressText(course.progress.steps_completed, course.progress.steps_total)
+            }}</span>
+            <strong
+              >{{ course.progress.points_earned }} из
+              {{ course.progress.points_max }} баллов</strong
+            >
+          </div>
           <div class="student-outline-progress">
             <span :style="{ width: `${course.progress.percent}%` }" />
           </div>
@@ -185,11 +194,12 @@ onBeforeUnmount(() => {
                 >
                 <span
                   >{{ stepLabels[item.type] }}
-                  <small>{{ moduleIndex + 1 }}.{{ stepIndex + 1 }}</small></span
+                  <small>{{ moduleIndex + 1 }}.{{ stepIndex + 1 }}</small>
+                  <small v-if="item.deadline" class="student-step-deadline"
+                    >До {{ new Date(item.deadline.due_at).toLocaleDateString("ru-RU") }}</small
+                  ></span
                 >
-                <small v-if="item.deadline" class="student-step-deadline">{{
-                  new Date(item.deadline.due_at).toLocaleDateString("ru-RU")
-                }}</small>
+                <small class="student-step-score">{{ item.max_score }}</small>
               </span>
               <RouterLink
                 v-else
@@ -220,17 +230,17 @@ onBeforeUnmount(() => {
                 </span>
                 <span
                   >{{ titles.get(item.id) || stepLabels[item.type] }}
-                  <small>{{ moduleIndex + 1 }}.{{ stepIndex + 1 }}</small></span
+                  <small>{{ moduleIndex + 1 }}.{{ stepIndex + 1 }}</small>
+                  <small v-if="item.deadline" class="student-step-deadline"
+                    >До {{ new Date(item.deadline.due_at).toLocaleDateString("ru-RU") }}</small
+                  ></span
                 >
-                <small v-if="item.deadline" class="student-step-deadline">{{
-                  new Date(item.deadline.due_at).toLocaleDateString("ru-RU")
-                }}</small>
                 <small
-                  v-else-if="item.max_score"
+                  v-if="item.max_score"
                   class="student-step-score"
-                  :class="{ 'student-step-score--earned': item.progress.completed }"
+                  :class="{ 'student-step-score--earned': item.progress.earned > 0 }"
                   >{{
-                    item.progress.completed ? `+${item.progress.earned}` : item.max_score
+                    item.progress.earned > 0 ? `+${item.progress.earned}` : item.max_score
                   }}</small
                 >
               </RouterLink>
@@ -251,14 +261,16 @@ onBeforeUnmount(() => {
           <div v-else-if="stepLoading" class="student-workspace-loading" role="status">
             Загружаем шаг…
           </div>
-          <StepPlayer
-            v-else-if="step"
-            :key="step.id"
-            :step="step"
-            :number="stepNumber"
-            :next="nextStep"
-            @refresh="refresh"
-          />
+          <template v-else-if="step">
+            <StepPlayer
+              :key="step.id"
+              :step="step"
+              :number="stepNumber"
+              :next="nextStep"
+              @refresh="refresh"
+            />
+            <StepComments :key="`comments-${step.id}`" :step-id="step.id"/>
+          </template>
           <div v-else class="student-step-unavailable">
             <h2>Шаг не найден</h2>
             <p>Вернитесь к оглавлению курса.</p>
@@ -344,10 +356,18 @@ onBeforeUnmount(() => {
   font-weight: 700;
   line-height: 1.25;
 }
-.student-outline-head p {
+.student-outline-totals {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
   margin: 0 0 12px;
   color: var(--color-muted);
   font-size: 15px;
+}
+.student-outline-totals strong {
+  color: var(--color-text);
+  font-size: 13px;
+  white-space: nowrap;
 }
 .student-outline-progress,
 .student-overview-progress {
@@ -376,6 +396,9 @@ onBeforeUnmount(() => {
   letter-spacing: 0.08em;
   line-height: 1.4;
   text-transform: uppercase;
+}
+.student-outline-module > div + div {
+  margin-top: 8px;
 }
 .student-outline-step {
   display: flex;
@@ -409,8 +432,6 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
 }
 .student-outline-step .student-step-deadline {
-  flex: none;
-  margin-left: auto;
   color: var(--color-warning);
 }
 .student-outline-step:hover:not(.student-outline-step--locked) {

@@ -3,6 +3,7 @@ import type { Pinia } from "pinia";
 
 import type { UserRole } from "@/api/http";
 import { adminRoutes } from "@/pages/admin/routes";
+import { curatorRoutes } from "@/pages/curator/routes";
 import { DASHBOARD_ROUTE } from "@/pages/dashboard/constants";
 import { dashboardRoutes } from "@/pages/dashboard/routes";
 import { FORBIDDEN_ROUTE } from "@/pages/forbidden/constants";
@@ -30,6 +31,7 @@ export function createAppRouter(pinia: Pinia) {
     routes: [
       ...dashboardRoutes,
       ...adminRoutes,
+      ...curatorRoutes,
       ...studentRoutes,
       ...workspaceSectionRoutes,
       ...forbiddenRoutes,

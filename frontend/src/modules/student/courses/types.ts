@@ -1,5 +1,6 @@
 import type { ProgrammingLanguage } from "../../languages";
 
+export type QuestionVisibility = "private" | "group" | "course";
 export type StepType = "theory" | "single_choice" | "multiple_choice" | "free_text" | "programming";
 export type StepAccess = "all" | "sequential";
 export type Grading = "none" | "auto" | "tests" | "tests_and_review" | "manual";
@@ -15,6 +16,16 @@ export type SubmissionStatus =
   | "rejected"
   | "error";
 
+export interface StudentQuestion {
+  id: number;
+  step_id: number;
+  text: string;
+  created_at: string;
+  is_mine: boolean;
+  visibility: QuestionVisibility;
+  answer: string | null;
+  answered_at: string | null;
+}
 export interface Progress {
   steps_total: number;
   steps_completed: number;

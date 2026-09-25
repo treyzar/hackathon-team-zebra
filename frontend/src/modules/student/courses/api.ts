@@ -8,6 +8,7 @@ import type {
   StudentStep,
   Submission,
   StudentNotification,
+  StudentQuestion,
 } from "./types";
 
 export const studentCourseApi = {
@@ -76,6 +77,13 @@ export const studentCourseApi = {
     await api.post(`/files/${ticket.id}/complete`);
     return ticket.id;
   },
+  async getStepQuestions(stepId: number): Promise<StudentQuestion[]> {
+    return (await api.get<StudentQuestion[]>(`/steps/${stepId}/questions`)).data;
+  },
+
+  async askQuestion(stepId: number, text: string): Promise<StudentQuestion> {
+    return (await api.post<StudentQuestion>(`/steps/${stepId}/questions`, {text})).data;
+  },
 };
 
 // Compatibility exports for existing step components.
@@ -88,3 +96,5 @@ export const submitAnswer = studentCourseApi.submitAnswer;
 export const getAnswer = studentCourseApi.getAnswer;
 export const getContentFileUrl = studentCourseApi.getContentFileUrl;
 export const uploadSubmissionFile = studentCourseApi.uploadSubmissionFile;
+export const getStepQuestions = studentCourseApi.getStepQuestions;
+export const askQuestion = studentCourseApi.askQuestion;
