@@ -70,12 +70,6 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
       icon: "reviews",
     },
     {
-      ...DASHBOARD_ROUTE,
-      label: "Обзор",
-      description: "Рабочее пространство куратора",
-      icon: "home",
-    },
-    {
       ...WORKSPACE_SECTION_ROUTES.curatorLearners,
       label: "Ученики",
       description: "Ученики ваших групп",
