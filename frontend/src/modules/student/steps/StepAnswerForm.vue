@@ -1,15 +1,18 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import type {
   ChoiceContent,
   FreeTextContent,
   ProgrammingContent,
+  NumberContent,
+  ShortTextContent,
   StudentStep,
 } from "@/modules/student/courses/types";
 import { LANGUAGES, type ProgrammingLanguage } from "../../languages";
 import ProgrammingEditor from "./ProgrammingEditor.vue";
 import type { AttachedFile } from "./useStepPlayer";
 
-defineProps<{
+const props = defineProps<{
   step: StudentStep;
   choice: ChoiceContent;
   freeText: FreeTextContent;
@@ -32,6 +35,9 @@ const emit = defineEmits<{
   "update:code": [value: string];
   "update:language": [value: ProgrammingLanguage];
 }>();
+
+const numberContent = computed(() => props.step.content as unknown as NumberContent);
+
 </script>
 
 <template>
@@ -147,5 +153,42 @@ const emit = defineEmits<{
       :disabled="blocked"
       @update:model-value="emit('update:code', $event)"
     />
+  </div>
+  <div v-else-if="step.type === 'short_text'" class="student-free-answer">
+    <label for="student-answer-text">Ответ</label>
+    <input
+      id="student-answer-text"
+      type="text"
+      :value="answerText"
+      maxlength="500"
+      :disabled="blocked"
+      placeholder="Введите короткий ответ"
+      @input="emit('update:answerText', ($event.target as HTMLInputElement).value)"
+    />
+    <span class="student-muted">До 500 символов.</span>
+  </div>
+
+  <div v-else-if="step.type === 'number'" class="student-free-answer">
+    <label for="student-answer-text">
+      {{ numberContent.kind === "decimal" ? "Число" : "Целое число" }}
+    </label>
+    <input
+      id="student-answer-text"
+      type="text"
+      inputmode="decimal"
+      :value="answerText"
+      maxlength="40"
+      :disabled="blocked"
+      :placeholder="numberContent.kind === 'decimal' ? 'Например, 3,14' : 'Например, 42'"
+      @input="emit('update:answerText', ($event.target as HTMLInputElement).value)"
+    />
+    <span class="student-muted">
+      <template v-if="numberContent.kind === 'decimal'">
+        Можно ввести точку или запятую. Округлите до
+        {{ numberContent.precision }}
+        {{ numberContent.precision === 1 ? "знака" : "знаков" }} после запятой.
+      </template>
+      <template v-else>Только целое число, без дробной части.</template>
+    </span>
   </div>
 </template>

@@ -4,8 +4,10 @@ export const stepLabels: Record<StepType, string> = {
   theory: "Теория",
   single_choice: "Вопрос с одним ответом",
   multiple_choice: "Вопрос с несколькими ответами",
-  free_text: "Задание с ответом",
+  free_text: "Задание с произвольным ответом",
   programming: "Задача с кодом",
+  number: "Вопрос с ответом в виде числа",
+  short_text: "Вопрос с коротким ответом",
 };
 
 /** Russian noun agreement: 1 балл, 2 балла, 5 баллов, 11 баллов, 21 балл. */
