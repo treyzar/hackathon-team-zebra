@@ -4,7 +4,6 @@ import test from "node:test";
 import { isNavigationItemActive, navigationByRole } from "../src/modules/navigation/items";
 import { CURATOR_REVIEWS_ROUTE } from "../src/pages/curator/reviews/constants";
 import { CURATOR_ANALYTICS_ROUTE } from "../src/pages/curator/analytics/constants";
-import { CURATOR_DEADLINES_ROUTE } from "../src/pages/curator/deadlines/constants";
 import { WORKSPACE_SECTION_PLACEHOLDERS } from "../src/pages/workspace-section/constants";
 import { CURATOR_LEARNERS_ROUTE } from "../src/pages/curator/learners/constants";
 import { sortLearners, statusCounts } from "../src/modules/curator/learners/presentation";
@@ -37,23 +36,6 @@ import {
   selectedQuestionId,
 } from "../src/modules/curator/questions/presentation";
 import type { StaffQuestion } from "../src/modules/curator/questions/types";
-import {
-  groupSteps,
-  validDeadlineInput,
-  withDeadlineDate,
-  withDeadlineTime,
-} from "../src/modules/curator/deadlines/presentation";
-import type { StepDeadline } from "../src/modules/curator/deadlines/types";
-import { deadlineFromInput, deadlineToInput } from "../src/modules/shared/deadline";
-
-test("group course deadline converts local date and time to an aware API value", () => {
-  const local = "2026-10-01T23:45";
-  const apiValue = deadlineFromInput(local);
-  assert.ok(apiValue?.endsWith("Z"));
-  assert.equal(deadlineToInput(apiValue), local);
-  assert.equal(deadlineFromInput(""), null);
-  assert.equal(deadlineToInput(null), "");
-});
 
 const works = [11, 12, 13].map((id) => ({ id })) as ReviewListItem[];
 
@@ -100,31 +82,6 @@ test("curator review queue is the first navigation item and stays active on a wo
   assert.equal(first?.path, CURATOR_REVIEWS_ROUTE.path);
   assert.equal(first?.label, "Работы на проверку");
   assert.equal(isNavigationItemActive(first!, "/curator/reviews/4/12"), true);
-});
-
-test("curator deadlines are navigable and step rows follow the course order", () => {
-  assert.ok(navigationByRole.curator.some((item) => item.path === CURATOR_DEADLINES_ROUTE.path));
-  const rows = [
-    { step_id: 11, module_id: 3, module_title: "Введение" },
-    { step_id: 12, module_id: 3, module_title: "Введение" },
-    { step_id: 13, module_id: 5, module_title: "Циклы" },
-  ] as StepDeadline[];
-  const modules = groupSteps(rows);
-  assert.deepEqual(
-    modules.map((module) => module.title),
-    ["Введение", "Циклы"],
-  );
-  assert.deepEqual(
-    modules.flatMap((module) => module.steps.map((step) => step.number)),
-    ["1.1", "1.2", "2.1"],
-  );
-});
-
-test("deadline date and time edits keep a complete local value", () => {
-  assert.equal(withDeadlineDate(null, "2026-10-03"), "2026-10-03T23:59");
-  assert.equal(withDeadlineTime("2026-10-03T23:59", "18:30"), "2026-10-03T18:30");
-  assert.equal(validDeadlineInput("2026-10-03T18:30"), true);
-  assert.equal(validDeadlineInput("2026-10-03T"), false);
 });
 
 test("curator analytics is available in navigation and derives group totals from API rows", () => {

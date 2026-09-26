@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -218,3 +219,5 @@ onMounted(loadFilters);
     </div>
   </section>
 </template>
+=======
+>>>>>>> parent of ac129ee (feat: добавит дедлайны)

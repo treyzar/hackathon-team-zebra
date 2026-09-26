@@ -152,9 +152,9 @@ class StudentCourseListItem(CourseListItem):
 
 class DeadlineView(BaseModel):
     due_at: datetime
-    # True when taken from a later step or the course deadline.
+    # True when taken from a later step (source_step_id) rather than set here.
     inherited: bool
-    source_step_id: int | None
+    source_step_id: int
 
 
 class StudentStepSummary(BaseModel):

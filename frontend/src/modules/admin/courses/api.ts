@@ -25,12 +25,7 @@ export const courseApi = {
   },
   async updateCourse(
     id: number,
-    data: Partial<
-      Pick<
-        Course,
-        "slug" | "title" | "description" | "step_access" | "is_published"
-      >
-    >,
+    data: Partial<Pick<Course, "slug" | "title" | "description" | "step_access" | "is_published">>,
   ): Promise<Course> {
     return (await api.patch<Course>(`/admin/courses/${id}`, data)).data;
   },
