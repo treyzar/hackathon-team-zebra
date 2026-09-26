@@ -17,7 +17,6 @@ export type NavigationIconName =
   | "home"
   | "courses"
   | "skills"
-  | "history"
   | "progress"
   | "learners"
   | "reviews"
@@ -54,12 +53,6 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
       label: "Карта навыков",
       description: "Навыки ваших курсов",
       icon: "skills",
-    },
-    {
-      ...WORKSPACE_SECTION_ROUTES.studentHistory,
-      label: "Мои работы",
-      description: "Отправленные решения и отзывы",
-      icon: "history",
     },
     {
       ...WORKSPACE_SECTION_ROUTES.studentProgress,
