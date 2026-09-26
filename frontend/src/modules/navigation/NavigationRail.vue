@@ -47,7 +47,7 @@ const items = computed(() => navigationForRole(props.role));
       <NavigationIcon :name="item.icon" />
     </RouterLink>
     <span class="rail-spacer" />
-    <NotificationBell variant="rail" class="rail-bell"/>
+    <NotificationBell variant="rail" class="rail-bell" />
     <span class="rail-avatar" :title="username">{{ username.slice(0, 1).toUpperCase() }}</span>
   </aside>
 </template>
@@ -136,7 +136,7 @@ const items = computed(() => navigationForRole(props.role));
   border-radius: 50%;
   background: var(--color-ink);
   color: #fff;
-  font-size: 13px;
+  font-size: max(13px, var(--font-size-floor, 0px));
   font-weight: 700;
 }
 

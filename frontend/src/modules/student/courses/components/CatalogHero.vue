@@ -35,7 +35,7 @@ defineProps<{
             params: { courseId: course.id, stepId: course.progress.next_step_id },
           }"
         >
-          Продолжить <span aria-hidden="true">→</span>
+          <span class="flex gap-2"> Продолжить <span aria-hidden="true">→</span> </span>
         </RouterLink>
         <span class="student-hero-meta">{{ course.progress.percent }}% курса пройдено</span>
       </div>
@@ -70,7 +70,7 @@ defineProps<{
   margin: 0 0 10px;
   color: #7c95ff;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.08em;
 }
 .student-hero h2 {
@@ -115,12 +115,12 @@ defineProps<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 56px;
+  min-height: var(--button-height);
   padding: 0 32px;
-  border-radius: 14px;
+  border-radius: var(--button-radius);
   background: #3457f0;
   color: #fff;
-  font-size: 15px;
+  font-size: var(--font-size-base);
   font-weight: 750;
   text-decoration: none;
   transition:

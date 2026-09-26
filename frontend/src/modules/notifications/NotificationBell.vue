@@ -96,11 +96,7 @@ watch(
       :class="`notifications-bell--${props.variant}`"
       type="button"
       :aria-expanded="open"
-      :aria-label="
-        store.hasUnread
-          ? `Уведомления, непрочитанных: ${store.unread}`
-          : 'Уведомления'
-      "
+      :aria-label="store.hasUnread ? `Уведомления, непрочитанных: ${store.unread}` : 'Уведомления'"
       :title="props.variant === 'sidebar' ? undefined : 'Уведомления'"
       @click="toggle"
     >
@@ -108,22 +104,11 @@ watch(
         <path d="M6 8a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6" />
         <path d="M10 18a2 2 0 0 0 4 0" />
       </svg>
-      <span v-if="props.variant === 'sidebar'" class="notifications-bell-label">
-        Уведомления
-      </span>
-      <span
-        v-if="store.hasUnread"
-        class="notifications-bell-dot"
-        aria-hidden="true"
-      />
+      <span v-if="props.variant === 'sidebar'" class="notifications-bell-label"> Уведомления </span>
+      <span v-if="store.hasUnread" class="notifications-bell-dot" aria-hidden="true" />
     </button>
 
-    <div
-      v-if="open"
-      class="notifications-popover"
-      role="dialog"
-      aria-label="Уведомления"
-    >
+    <div v-if="open" class="notifications-popover" role="dialog" aria-label="Уведомления">
       <header class="notifications-popover-head">
         <strong>Уведомления</strong>
         <button
@@ -141,9 +126,7 @@ watch(
       <div v-if="store.loading && !store.loaded" class="notifications-popover-empty">
         Загружаем…
       </div>
-      <div v-else-if="!store.items.length" class="notifications-popover-empty">
-        Пока пусто
-      </div>
+      <div v-else-if="!store.items.length" class="notifications-popover-empty">Пока пусто</div>
 
       <ul v-else class="notifications-popover-list">
         <li
@@ -208,7 +191,7 @@ watch(
 }
 .notifications-bell--sidebar {
   width: 100%;
-  min-height: 44px;
+  min-height: max(44px, var(--button-height, 0px));
   padding: 0 12px;
   border-radius: var(--radius-control, 10px);
   text-align: left;
@@ -283,15 +266,16 @@ watch(
   border-bottom: 1px solid var(--color-border);
 }
 .notifications-popover-head strong {
-  font-size: 14px;
+  font-size: max(14px, var(--font-size-floor, 0px));
 }
 .notifications-popover-action {
+  min-height: max(40px, var(--button-height, 0px));
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--color-primary, #3457f0);
   font: inherit;
-  font-size: 13px;
+  font-size: max(13px, var(--font-size-floor, 0px));
   font-weight: 600;
   cursor: pointer;
 }
@@ -301,7 +285,7 @@ watch(
 .notifications-popover-empty {
   padding: 24px 16px;
   color: var(--color-muted, #64748b);
-  font-size: 13px;
+  font-size: max(13px, var(--font-size-floor, 0px));
   text-align: center;
 }
 .notifications-popover-list {
@@ -331,6 +315,7 @@ watch(
   align-items: flex-start;
   gap: 12px;
   width: 100%;
+  min-height: max(44px, var(--button-height, 0px));
   padding: 11px 16px;
   border: 0;
   background: transparent;
@@ -350,17 +335,17 @@ watch(
   flex: 1;
 }
 .notifications-popover-body strong {
-  font-size: 13px;
+  font-size: max(13px, var(--font-size-floor, 0px));
   color: var(--color-text, #0f172a);
 }
 .notifications-popover-body span {
   color: var(--color-muted, #64748b);
-  font-size: 12px;
+  font-size: max(12px, var(--font-size-floor, 0px));
   overflow-wrap: anywhere;
 }
 .notifications-popover-time {
   color: var(--color-subtle, #94a3b8);
-  font-size: 11px;
+  font-size: max(11px, var(--font-size-floor, 0px));
   white-space: nowrap;
   padding-top: 2px;
 }

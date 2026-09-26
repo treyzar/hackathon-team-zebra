@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { RouterLink } from "vue-router";
-import { getStep, listCourses } from "./api";
-import { useAuthStore } from "@/stores/auth";
 import { studentCourseApi } from "./api";
 import { documentTitle, errorMessage, stepDocument, stepLabels } from "./presentation";
 import type { CourseListItem, MyRating } from "./types";
@@ -18,7 +15,6 @@ withDefaults(
   { overview: false },
 );
 
-const auth = useAuthStore();
 const courses = ref<CourseListItem[]>([]);
 const rating = ref<MyRating | null>(null);
 const loading = ref(true);
@@ -28,12 +24,6 @@ const nextType = ref("");
 const nextCourse = computed(() =>
   courses.value.find((course) => course.progress.next_step_id != null),
 );
-const totals = computed(() => ({
-  steps: courses.value.reduce((sum, course) => sum + course.progress.steps_completed, 0),
-  stepsTotal: courses.value.reduce((sum, course) => sum + course.progress.steps_total, 0),
-  points: courses.value.reduce((sum, course) => sum + course.progress.points_earned, 0),
-  pointsMax: courses.value.reduce((sum, course) => sum + course.progress.points_max, 0),
-}));
 
 async function loadNextStepTitle(course: CourseListItem | undefined): Promise<void> {
   nextTitle.value = "";
@@ -65,10 +55,6 @@ async function load(): Promise<void> {
   } finally {
     loading.value = false;
   }
-}
-
-function percentOf(value: number, total: number): number {
-  return total ? Math.round((value / total) * 100) : 0;
 }
 
 onMounted(load);
@@ -113,7 +99,7 @@ onMounted(load);
   gap: 16px;
   max-width: 1440px;
   margin: 0 auto;
-  font-size: 18px;
+  font-size: var(--font-size-base);
   line-height: 1.6;
 }
 .student-catalog-top {
@@ -182,13 +168,13 @@ onMounted(load);
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  min-height: 56px;
+  min-height: var(--button-height);
   margin-top: 8px;
   padding: 0 32px;
-  border-radius: 14px;
+  border-radius: var(--button-radius);
   background: var(--color-primary);
   color: #fff;
-  font-size: 18px;
+  font-size: var(--font-size-base);
   font-weight: 700;
   text-decoration: none;
 }
@@ -225,7 +211,7 @@ onMounted(load);
   border-radius: 999px;
   background: #eaf0fe;
   color: #3457f0;
-  font-size: 12px;
+  font-size: var(--font-size-small);
   font-weight: 800;
 }
 .student-points-value strong {
@@ -316,6 +302,7 @@ onMounted(load);
   color: var(--color-danger);
 }
 .student-empty button {
+  min-height: var(--button-height);
   margin-left: 8px;
   border: 0;
   background: transparent;

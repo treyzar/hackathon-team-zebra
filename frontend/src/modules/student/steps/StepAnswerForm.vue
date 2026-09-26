@@ -5,7 +5,6 @@ import type {
   FreeTextContent,
   ProgrammingContent,
   NumberContent,
-  ShortTextContent,
   StudentStep,
 } from "@/modules/student/courses/types";
 import { LANGUAGES, type ProgrammingLanguage } from "../../languages";
@@ -37,7 +36,6 @@ const emit = defineEmits<{
 }>();
 
 const numberContent = computed(() => props.step.content as unknown as NumberContent);
-
 </script>
 
 <template>

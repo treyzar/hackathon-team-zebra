@@ -121,11 +121,11 @@ export function useStepPlayer({ step, onRefresh }: UseStepPlayerOptions) {
     }
 
     if (step.value.type === "short_text") {
-        answerText.value = typeof answer?.text === "string" ? answer.text : "";
+      answerText.value = typeof answer?.text === "string" ? answer.text : "";
     }
 
     if (step.value.type === "number") {
-        answerText.value = typeof answer?.value === "string" ? answer.value : "";
+      answerText.value = typeof answer?.value === "string" ? answer.value : "";
     }
   }
 

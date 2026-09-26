@@ -1,8 +1,8 @@
 import type { CourseSkills, Skill, SkillState } from "./types";
 
-// Honeycomb geometry, in pixels: a cell is 130×112; columns step by 98 and
+// Honeycomb geometry, in pixels: a cell is 152×132; columns step by 114 and
 // every odd column is shifted down by half a cell.
-export const HEX = { width: 130, height: 112, column: 98, row: 114, padX: 40, padY: 48 };
+export const HEX = { width: 152, height: 132, column: 114, row: 134, padX: 40, padY: 52 };
 // Cells per column: courses grow to the right.
 export const ROWS = 4;
 

@@ -122,7 +122,7 @@ const barTotal = computed(() => parts.value.reduce((sum, part) => sum + part.poi
 }
 .rating-total span {
   color: #4a546b;
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 .rating-bar {
   display: flex;
@@ -145,7 +145,7 @@ const barTotal = computed(() => parts.value.reduce((sum, part) => sum + part.poi
   padding: 0 0 14px;
   border-bottom: 1px solid #e1e6f0;
   list-style: none;
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 .rating-parts li {
   display: grid;
@@ -170,7 +170,7 @@ const barTotal = computed(() => parts.value.reduce((sum, part) => sum + part.poi
   padding-bottom: 14px;
   border-bottom: 1px solid #e1e6f0;
   color: #4a546b;
-  font-size: 14px;
+  font-size: var(--font-size-small);
   line-height: 1.5;
 }
 .rating-goal b {
@@ -192,7 +192,7 @@ const barTotal = computed(() => parts.value.reduce((sum, part) => sum + part.poi
 }
 .rating-streak-head span {
   color: #b8520f;
-  font-size: 13px;
+  font-size: var(--font-size-small);
   font-weight: 700;
 }
 .rating-week {
@@ -218,7 +218,7 @@ const barTotal = computed(() => parts.value.reduce((sum, part) => sum + part.poi
   place-items: center;
   border-radius: 10px;
   background: #f0f2f6;
-  font-size: 12px;
+  font-size: var(--font-size-small);
   font-weight: 700;
 }
 .rating-day--done .rating-day-mark {
@@ -232,13 +232,13 @@ const barTotal = computed(() => parts.value.reduce((sum, part) => sum + part.poi
 }
 .rating-week small {
   color: #68748a;
-  font-size: 12px;
+  font-size: var(--font-size-small);
 }
 .rating-streak p,
 .rating-empty {
   margin: 0;
   color: #4a546b;
-  font-size: 13px;
+  font-size: var(--font-size-small);
 }
 @media (max-width: 1100px) {
   .rating-widget {

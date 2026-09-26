@@ -89,11 +89,11 @@ const defaultTitles: Record<NotificationTone, string> = {
 }
 .notification-toast__body strong {
   color: #1d2b43;
-  font-size: 14px;
+  font-size: max(14px, var(--font-size-floor, 0px));
 }
 .notification-toast__body span {
   color: #4a546b;
-  font-size: 13px;
+  font-size: max(13px, var(--font-size-floor, 0px));
   overflow-wrap: anywhere;
 }
 .notification-toast__close {
