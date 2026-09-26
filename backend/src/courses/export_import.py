@@ -8,11 +8,11 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import HTTPException, status
-from fontTools.ttLib.tables.grUtils import entries
 from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from config import settings
 from courses import service
 from courses.models import Course, Module, Step, StepRevision
 from courses.schemas import (
@@ -174,11 +174,21 @@ async def _store_archive_files(
     manifest: ArchiveManifest,
 ) -> dict[int, int]:
     mapping: dict[int, int] = {}
+    max_file_bytes = settings.max_upload_mb * 1024 * 1024
     for entry in manifest.files:
         if entry.purpose not in _ARCHIVE_PURPOSES:
             raise unprocessable(
                 f"Файл «{entry.filename}»: назначение «{entry.purpose.value}» "
                 f"нельзя перенести в курс"
+            )
+        if not entry.path.startswith(ARCHIVED_FILES_PREFIX):
+            raise unprocessable(
+                f"Файл «{entry.filename}»: путь «{entry.path}» должен "
+                f"начинаться с «{ARCHIVED_FILES_PREFIX}»"
+            )
+        if archive.getinfo(entry.path).file_size > max_file_bytes:
+            raise unprocessable(
+                f"Файл «{entry.filename}» больше {settings.max_upload_mb} МБ"
             )
 
         data = archive.read(entry.path)
@@ -204,13 +214,13 @@ async def _store_archive_files(
     return mapping
 
 
-async def import_course_archive(db, user, raw):
+async def import_course_archive(
+    db: AsyncSession, user: User, raw: bytes
+) -> tuple[Course, list[str]]:
     try:
         archive = zipfile.ZipFile(io.BytesIO(raw))
     except zipfile.BadZipfile as e:
-        raise unprocessable(
-            "Поврежденнный или неподдерживаемый тип архива (не .zip)."
-        ) from e
+        raise unprocessable("Повреждённый или неподдерживаемый архив (не .zip).") from e
 
     with archive:
         names = set(archive.namelist())
@@ -240,9 +250,19 @@ async def import_course_archive(db, user, raw):
         except ValidationError as e:
             raise unprocessable(_first_error(e, "файл")) from e
 
+        referenced = _collect_referenced_file_ids(raw_document)
+        unknown = referenced - set(manifest.by_id())
+        if unknown:
+            listed = ", ".join(str(i) for i in sorted(unknown))
+            raise unprocessable(
+                f"В «{COURSE_DOCUMENT_FILENAME}» есть ссылки на файлы, которых "
+                f"нет в «{MANIFEST_FILENAME}»: {listed}"
+            )
+
         mapping = await _store_archive_files(db, user, archive, manifest)
         _replace_file_ids(raw_document, mapping)
         document = CourseDocument.model_validate(raw_document)
+
     return await import_course_document(db, user, document)
 
 
@@ -338,7 +358,7 @@ async def export_as_archive(
         return None
 
     buffer = io.BytesIO()
-
+    entries = []
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         for file_id, file in files.items():
             data = await storage.read_object(file.storage_key)
