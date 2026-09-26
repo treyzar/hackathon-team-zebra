@@ -24,8 +24,8 @@ export const studentCourseApi = {
     return (await api.get<CourseProgress>(`/courses/${courseId}/progress`)).data;
   },
 
-  async getRating(courseId: number): Promise<MyRating> {
-    return (await api.get<MyRating>(`/courses/${courseId}/rating`)).data;
+  async getRating(): Promise<MyRating> {
+    return (await api.get<MyRating>("/rating")).data;
   },
 
   async listNotifications(

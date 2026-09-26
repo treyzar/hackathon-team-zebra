@@ -212,6 +212,8 @@ export interface RankTarget {
 }
 
 export interface RatingOpportunity {
+  course_id: number;
+  course_title: string;
   step_id: number;
   module_id: number;
   module_title: string;
@@ -221,14 +223,30 @@ export interface RatingOpportunity {
   can_gain: number;
 }
 
-export interface MyRating {
+export interface CoursePoints {
   course_id: number;
-  group_size: number;
+  title: string;
   points: number;
-  place: number;
-  tied_with: number;
+}
+
+export interface Streak {
+  days: number;
+  bonus: number;
+  // False: nothing counted today yet; the streak ends unless something is sent.
+  active_today: boolean;
+}
+
+/** Overall rating: points of every course plus the streak bonus. Group
+ * fields are null for a student without a group. */
+export interface MyRating {
+  total: number;
+  courses: CoursePoints[];
+  streak: Streak;
+  group_size: number | null;
+  place: number | null;
+  tied_with: number | null;
   next_place: RankTarget | null;
-  first_place: RankTarget;
+  first_place: RankTarget | null;
   opportunities: RatingOpportunity[];
 }
 

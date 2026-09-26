@@ -8,7 +8,13 @@ import type { CodeSample } from "./editor-model";
 import { uploadAnswerFile } from "./file-api";
 import RichTextEditor from "./RichTextEditor.vue";
 import StepTypePicker from "./StepTypePicker.vue";
-import { newStepForm, formFromStep, payloadFromForm, validateStepForm } from "./editor-model";
+import {
+  newStepForm,
+  formFromStep,
+  payloadFromForm,
+  usesChecklist,
+  validateStepForm,
+} from "./editor-model";
 import { stepTypeLabels } from "../shared/format";
 import type { Step, StepType } from "../shared/types";
 import { LANGUAGE_KEYS, LANGUAGES, type ProgrammingLanguage } from "@/modules/languages";
@@ -85,6 +91,14 @@ function toggleLanguage(key: ProgrammingLanguage): void {
 // The first allowed language is preselected for the student.
 function setDefaultLanguage(key: ProgrammingLanguage): void {
   form.value.languages = [key, ...form.value.languages.filter((item) => item !== key)];
+}
+
+const checklistTotal = computed(
+  () => Math.round(form.value.checklist.reduce((sum, item) => sum + item.points, 0) * 100) / 100,
+);
+
+function addChecklistItem(): void {
+  form.value.checklist.push({ id: crypto.randomUUID(), text: "", points: 1, hint: "" });
 }
 
 async function loadCourseTitle(): Promise<void> {
@@ -661,7 +675,12 @@ watch(
               </button>
             </div>
           </section>
-          <section v-if="form.type === 'programming'" class="admin-panel">
+          <!-- A curator checks by hand: tests would never run. They stay in the
+               form, so switching back to automatic checking keeps them. -->
+          <section
+            v-if="form.type === 'programming' && form.grading !== 'manual'"
+            class="admin-panel"
+          >
             <div class="admin-panel-head">
               <div>
                 <h2>Скрытые тесты</h2>
@@ -769,6 +788,53 @@ watch(
               </div>
             </div>
           </section>
+          <section v-if="usesChecklist(form)" class="admin-panel">
+            <div class="admin-panel-head">
+              <div>
+                <h2>Чек-лист проверки</h2>
+                <p>
+                  Куратор отмечает выполненные пункты, балл считается сам. Ученик пункты не видит.
+                  Без пунктов куратор ставит балл вручную.
+                </p>
+              </div>
+              <button
+                class="admin-button admin-button--subtle"
+                type="button"
+                :disabled="form.checklist.length >= 50"
+                @click="addChecklistItem"
+              >
+                + Пункт
+              </button>
+            </div>
+            <div v-for="(item, index) in form.checklist" :key="item.id" class="checklist-item">
+              <label class="admin-field checklist-text"
+                >Пункт {{ index + 1
+                }}<input
+                  v-model="item.text"
+                  maxlength="500"
+                  placeholder="Что должно быть выполнено"
+              /></label>
+              <label class="admin-field checklist-points"
+                >Баллы<input v-model.number="item.points" type="number" min="0" step="any"
+              /></label>
+              <label class="admin-field checklist-hint"
+                >Подсказка для проверяющего<input
+                  v-model="item.hint"
+                  maxlength="2000"
+                  placeholder="Необязательно"
+              /></label>
+              <button class="admin-button" type="button" @click="form.checklist.splice(index, 1)">
+                Убрать
+              </button>
+            </div>
+            <p
+              v-if="form.checklist.length"
+              class="admin-note"
+              :class="{ 'checklist-total--off': checklistTotal !== form.maxScore }"
+            >
+              Сумма баллов: {{ checklistTotal }} из {{ form.maxScore }}
+            </p>
+          </section>
         </div>
         <div class="admin-stack step-settings-rail">
           <section class="admin-panel">
@@ -824,7 +890,7 @@ watch(
                     <option value="tests_and_review">Тесты и куратор</option>
                     <option value="manual">Только куратор</option>
                   </select></label
-                ><label class="admin-field"
+                ><label v-if="form.grading !== 'manual'" class="admin-field"
                   >Начисление баллов<select v-model="form.scoring">
                     <option value="all_or_nothing">Всё или ничего</option>
                     <option value="per_group">За группы тестов</option>
@@ -1018,6 +1084,21 @@ watch(
 .choice-row > input:first-child {
   flex: none;
   accent-color: #17915a;
+}
+.checklist-item {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) 90px minmax(0, 2fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 12px;
+}
+.checklist-total--off {
+  color: #b8520f;
+}
+@media (max-width: 900px) {
+  .checklist-item {
+    grid-template-columns: 1fr 90px;
+  }
 }
 .language-picker {
   display: flex;

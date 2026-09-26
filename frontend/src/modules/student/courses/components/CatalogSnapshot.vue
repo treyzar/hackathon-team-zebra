@@ -1,51 +1,42 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { CourseListItem, StudentNotification } from "../types";
-import { notificationPresentation } from "../presentation";
+import type { MyRating } from "../types";
+import { ratingGoalText, ratingPlaceText, streakText } from "../presentation";
 
 const props = defineProps<{
-  courses: CourseListItem[];
-  notifications: StudentNotification[];
+  rating: MyRating | null;
 }>();
 
-const points = computed(() =>
-  props.courses.reduce((sum, course) => sum + course.progress.points_earned, 0),
-);
-const pointsMax = computed(() =>
-  props.courses.reduce((sum, course) => sum + course.progress.points_max, 0),
-);
-const pointsPercent = computed(() =>
-  pointsMax.value ? Math.min(100, Math.round((points.value / pointsMax.value) * 100)) : 0,
-);
-const recent = computed(() => props.notifications.slice(0, 2));
+const place = computed(() => (props.rating ? ratingPlaceText(props.rating) : null));
+const goal = computed(() => (props.rating ? ratingGoalText(props.rating) : null));
 </script>
 
 <template>
-  <aside class="student-snapshot" aria-label="Баллы и последние события">
+  <aside class="student-snapshot" aria-label="Мои баллы">
     <section class="student-points">
       <div class="student-points-heading">
         <strong>Мои баллы</strong>
-        <span>{{ pointsMax ? `из ${pointsMax}` : "" }}</span>
+        <span v-if="place">{{ place }}</span>
       </div>
-      <div class="student-points-value">{{ points }}</div>
-      <div class="student-points-track" aria-hidden="true">
-        <span :style="{ width: `${pointsPercent}%` }" />
-      </div>
-      <p>{{ pointsPercent }}% от доступных сейчас баллов</p>
-    </section>
-
-    <section class="student-news">
-      <strong class="student-news-title">Что нового</strong>
-      <div v-if="!recent.length" class="student-news-empty">Новых событий пока нет.</div>
-      <article
-        v-for="notification in recent"
-        :key="notification.id"
-        class="student-news-card"
-        :class="`student-news-card--${notificationPresentation(notification).tone}`"
-      >
-        <b>{{ notificationPresentation(notification).title }}</b>
-        <span>{{ notificationPresentation(notification).description }}</span>
-      </article>
+      <template v-if="rating">
+        <div class="student-points-value">{{ rating.total }}</div>
+        <ul class="student-points-parts" aria-label="Из чего складываются баллы">
+          <li v-for="course in rating.courses" :key="course.course_id">
+            <span>{{ course.title }}</span>
+            <b>{{ course.points }}</b>
+          </li>
+          <li class="student-points-streak">
+            <span>{{ streakText(rating.streak) }}</span>
+            <b>+{{ rating.streak.bonus }}</b>
+          </li>
+        </ul>
+        <p v-if="goal">{{ goal }}</p>
+        <p class="student-points-note">
+          Серия: +2 балла за каждый день подряд, когда вы отправили решение с баллами или на
+          проверку.
+        </p>
+      </template>
+      <p v-else class="student-points-note">Не удалось загрузить рейтинг.</p>
     </section>
   </aside>
 </template>
@@ -63,8 +54,6 @@ const recent = computed(() => props.notifications.slice(0, 2));
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid #e1e6f0;
 }
 .student-points-heading {
   display: flex;
@@ -85,75 +74,40 @@ const recent = computed(() => props.notifications.slice(0, 2));
   letter-spacing: -0.04em;
   line-height: 1;
 }
-.student-points-track {
-  height: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #e1e6f0;
+.student-points-parts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
 }
-.student-points-track span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: #3457f0;
+.student-points-parts li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.student-points-parts span {
+  min-width: 0;
+  color: #334155;
+  overflow-wrap: anywhere;
+}
+.student-points-parts b {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.student-points-streak b {
+  color: #17915a;
+}
+.student-points-note {
+  color: #68748a !important;
 }
 .student-points p {
   margin: 0;
   color: #4a546b;
   font-size: 13px;
-}
-.student-news {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 12px;
-}
-.student-news-title {
-  font-size: 15px;
-}
-.student-news-empty {
-  padding: 12px 0;
-  color: #68748a;
-  font-size: 14px;
-}
-.student-news-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 11px 13px;
-  border-radius: 12px;
-  font-size: 14px;
-  line-height: 1.4;
-}
-.student-news-card b {
-  font-size: 13px;
-}
-.student-news-card span {
-  color: #334155;
-}
-.student-news-card--success {
-  background: #e4f5ec;
-}
-.student-news-card--success b {
-  color: #17915a;
-}
-.student-news-card--warning {
-  background: #fff1e6;
-}
-.student-news-card--warning b {
-  color: #b8520f;
-}
-.student-news-card--info {
-  background: #eaf0fe;
-}
-.student-news-card--info b {
-  color: #3457f0;
-}
-.student-news-card--neutral {
-  background: #f0f2f6;
-}
-.student-news-card--neutral b {
-  color: #4a546b;
 }
 @media (max-width: 1100px) {
   .student-snapshot {

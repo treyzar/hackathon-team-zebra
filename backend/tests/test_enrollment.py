@@ -33,7 +33,6 @@ async def test_not_enrolled_student_sees_nothing(client, admin, course, make_use
         await client.get(f"/steps/{step}/submissions", headers=h),
         await submit(client, h, step, {"option_id": A}),
         await client.get(f"/courses/{course[0]}/progress", headers=h),
-        await client.get(f"/courses/{course[0]}/rating", headers=h),
     ):
         assert r.status_code == 404, r.request.url
 
@@ -119,7 +118,8 @@ async def test_group_views_count_only_enrolled(
     base = f"/groups/{group_id}/courses/{course[0]}"
     progress = (await client.get(f"{base}/progress", headers=curator)).json()
     assert [r["student_id"] for r in progress] == [enrolled_id]
-    rating = (await client.get(f"{base}/rating", headers=curator)).json()
-    assert [r["student_id"] for r in rating] == [enrolled_id]
-    mine = (await client.get(f"/courses/{course[0]}/rating", headers=enrolled)).json()
-    assert mine["group_size"] == 1
+    # The rating is per group, over each student's own courses: a groupmate
+    # not enrolled here is ranked with none of this course's points.
+    rating = (await client.get(f"/groups/{group_id}/rating", headers=curator)).json()
+    courses = {r["student_id"]: [c["course_id"] for c in r["courses"]] for r in rating}
+    assert courses == {enrolled_id: [course[0]], outsider_id: []}

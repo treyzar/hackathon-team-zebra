@@ -6,7 +6,7 @@ import {
   payloadFromForm,
   validateStepForm,
 } from "../src/modules/admin/steps/editor-model";
-import { textToDoc } from "../src/modules/admin/shared/format";
+import { fullName, textToDoc } from "../src/modules/admin/shared/format";
 import {
   docImageIds,
   docToQuillOps,
@@ -14,6 +14,8 @@ import {
   quillOpsToDoc,
 } from "../src/modules/admin/steps/quill-document";
 import type { Step } from "../src/modules/admin/shared/types";
+import { orderByRating, ratingParts } from "../src/modules/admin/groups/rating";
+import type { GroupRatingRow } from "../src/modules/admin/groups/types";
 import { parseMethodText } from "../src/modules/admin/courses/method-parser";
 import { reorderIds } from "../src/modules/admin/courses/reorder";
 
@@ -234,4 +236,121 @@ test("method preview identifies step boundaries and unsupported step types", () 
       ["1.3.3", false],
     ],
   );
+});
+
+test("group rating: parts of the total and members by place", () => {
+  const row = (
+    student_id: number,
+    place: number,
+    days = 0,
+    courses = [{ course_id: 1, title: "Python", points: 6 }],
+  ): GroupRatingRow => ({
+    place,
+    student_id,
+    username: `u${student_id}`,
+    name: "",
+    surname: "",
+    patronymic: "",
+    total: 0,
+    courses,
+    streak: { days, bonus: 2 * days, active_today: true },
+  });
+  assert.equal(
+    ratingParts(
+      row(1, 1, 3, [
+        { course_id: 1, title: "Python", points: 6 },
+        { course_id: 2, title: "Алгоритмы", points: 4 },
+      ]),
+    ),
+    "Python 6 · Алгоритмы 4 · серия 3 дн. +6",
+  );
+  assert.equal(ratingParts(row(1, 1)), "Python 6");
+  assert.equal(ratingParts(row(1, 1, 0, [])), "Нет курсов");
+
+  const members = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }];
+  // Ties keep the list order; a member missing from the rating goes last.
+  const rows = [row(3, 1), row(1, 2), row(4, 2)];
+  assert.deepEqual(
+    orderByRating(members, rows).map((m) => m.id),
+    [3, 1, 4, 2],
+  );
+  assert.deepEqual(orderByRating(members, null), members);
+});
+
+test("a user is shown by full name, or by username without one", () => {
+  const user = {
+    id: 1,
+    username: "ivanov",
+    email: "i@example.com",
+    role: "student" as const,
+    name: "Иван",
+    surname: "Иванов",
+    patronymic: "",
+  };
+  assert.equal(fullName(user), "Иванов Иван");
+  assert.equal(fullName({ ...user, patronymic: "Петрович" }), "Иванов Иван Петрович");
+  assert.equal(fullName({ ...user, name: "", surname: "" }), "ivanov");
+});
+
+test("a curator-only programming step sends no tests", () => {
+  const form = newStepForm("programming");
+  form.body = textToDoc("Напишите программу");
+  form.testGroups = [{ name: "", points: 0, tests: [] }]; // unfinished, now hidden
+  form.grading = "manual";
+  assert.equal(validateStepForm(form), null);
+  assert.deepEqual(payloadFromForm(form).answer_key.test_groups, []);
+  assert.equal(payloadFromForm(form).settings.grading, "manual");
+
+  form.grading = "tests_and_review";
+  assert.match(validateStepForm(form) ?? "", /группа с тестами/);
+});
+
+test("a checklist is kept, checked against the maximum and only sent for curator grading", () => {
+  const form = newStepForm("free_text");
+  form.body = textToDoc("Опишите проект");
+  form.maxScore = 5;
+  form.checklist = [
+    { id: "a", text: " Есть план ", points: 2, hint: " 3 шага " },
+    { id: "b", text: "Работает", points: 2, hint: "" },
+  ];
+  assert.match(validateStepForm(form) ?? "", /Сумма баллов чек-листа \(4\)/);
+  form.checklist[1]!.points = 3;
+  assert.equal(validateStepForm(form), null);
+  assert.deepEqual(payloadFromForm(form).settings.checklist, [
+    { id: "a", text: "Есть план", points: 2, hint: "3 шага" },
+    { id: "b", text: "Работает", points: 3, hint: null },
+  ]);
+
+  // Saving through any editor keeps it: the form reads it back.
+  const step = {
+    id: 1,
+    module_id: 1,
+    type: "free_text",
+    position: 0,
+    is_hidden: false,
+    revision: {
+      number: 1,
+      created_at: "2026-09-26T00:00:00Z",
+      author_id: 1,
+      comment: null,
+      is_breaking: false,
+      max_score: 5,
+      schema_version: 1,
+      content: { question: textToDoc("Опишите проект") },
+      answer_key: {},
+      settings: payloadFromForm(form).settings,
+    },
+  } satisfies Step;
+  assert.deepEqual(formFromStep(step).checklist, [
+    { id: "a", text: "Есть план", points: 2, hint: "3 шага" },
+    { id: "b", text: "Работает", points: 3, hint: "" },
+  ]);
+
+  const code = newStepForm("programming");
+  code.body = textToDoc("Задача");
+  code.checklist = [{ id: "a", text: "Стиль", points: 99, hint: "" }];
+  code.grading = "tests"; // automatic: no checklist, not validated, not sent
+  assert.equal("checklist" in payloadFromForm(code).settings, false);
+  code.grading = "manual";
+  assert.match(validateStepForm(code) ?? "", /чек-листа/);
 });
