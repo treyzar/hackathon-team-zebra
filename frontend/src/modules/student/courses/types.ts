@@ -1,10 +1,18 @@
 import type { ProgrammingLanguage } from "../../languages";
 
 export type QuestionVisibility = "private" | "group" | "course";
-export type StepType = "theory" | "single_choice" | "multiple_choice" | "free_text" | "programming";
 export type StepAccess = "all" | "sequential";
 export type Grading = "none" | "auto" | "tests" | "tests_and_review" | "manual";
 export type ShowAnswer = "never" | "after_wrong" | "after_attempts_exhausted" | "after_solved";
+export type StepType =
+  | "theory"
+  | "single_choice"
+  | "multiple_choice"
+  | "free_text"
+  | "programming"
+  | "number"
+  | "short_text";
+
 export type SubmissionStatus =
   | "queued"
   | "running"
@@ -15,6 +23,16 @@ export type SubmissionStatus =
   | "accepted"
   | "rejected"
   | "error";
+
+export interface NumberContent {
+  question: RichDocument;
+  kind: "integer" | "decimal";
+  precision: number;
+}
+
+export interface ShortTextContent {
+  question: RichDocument;
+}
 
 export interface StudentQuestion {
   id: number;

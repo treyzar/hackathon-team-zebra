@@ -21,7 +21,7 @@ const cards: {
   },
   {
     label: "Контрольный вопрос",
-    description: "Один или несколько вариантов",
+    description: "Один или несколько вариантов выбора",
     grading: "АВТОПРОВЕРКА",
     icon: "?",
     type: "multiple_choice",
@@ -40,6 +40,20 @@ const cards: {
     icon: "⚑",
     type: "free_text",
   },
+  {
+    label: "Краткий текст",
+    description: "Слово или фраза",
+    grading: "АВТОПРОВЕРКА",
+    icon: "Aa",
+    type: "short_text"
+  },
+  {
+    label: "Число",
+    description: "Целочисленное или вещественное число",
+    grading: "АВТОПРОВЕРКА",
+    icon: "№",
+    type: "number"
+  }
 ];
 
 function keydown(event: KeyboardEvent): void {

@@ -369,6 +369,7 @@ watch(
               />
             </div>
           </section>
+
           <section
             v-if="form.type === 'single_choice' || form.type === 'multiple_choice'"
             class="admin-panel step-answer-section"
@@ -522,6 +523,57 @@ watch(
                   </button>
                 </div>
               </div>
+            </div>
+          </section>
+          <section v-if="form.type === 'number'" class="admin-panel step-answer-section">
+            <div class="admin-panel-head">
+              <div>
+                <h2>Правильный ответ</h2>
+                <p>Целое число или дробное с заданной точностью.</p>
+              </div>
+            </div>
+            <div class="admin-form">
+              <label class="admin-field">
+                Тип числа
+                <select v-model="form.numberKind">
+                  <option value="integer">Целое</option>
+                  <option value="decimal">Дробное</option>
+                </select>
+              </label>
+              <label v-if="form.numberKind === 'decimal'" class="admin-field">
+                Точность (знаков после запятой)
+                <input v-model.number="form.numberPrecision" type="number" min="0" max="10" />
+              </label>
+              <label class="admin-field">
+                Эталон
+                <input v-model="form.numberValue" placeholder="Например, 3.14159" />
+              </label>
+            </div>
+          </section>
+          <section v-if="form.type === 'short_text'" class="admin-panel step-answer-section">
+            <div class="admin-panel-head">
+              <div>
+                <h2>Проверка ответа</h2>
+                <p>Автоматически — по списку допустимых ответов, или вручную куратором.</p>
+              </div>
+            </div>
+            <div class="admin-form">
+              <label class="admin-field">
+                Способ проверки
+                <select v-model="form.shortTextGrading">
+                  <option value="auto">Автоматически</option>
+                  <option value="manual">Куратор</option>
+                </select>
+              </label>
+              <label class="admin-field">
+                Допустимые ответы (по одному в строке)
+                <textarea v-model="form.shortTextAccepted" rows="5"
+                          placeholder="Москва&#10;Moscow&#10;город Москва" />
+              </label>
+              <label class="admin-check">
+                <input v-model="form.shortTextCaseSensitive" type="checkbox" />
+                Учитывать регистр
+              </label>
             </div>
           </section>
           <section v-if="form.type === 'programming'" class="admin-panel">
