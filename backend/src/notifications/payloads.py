@@ -19,10 +19,12 @@ class DeadlinePassedPayload(BaseModel):
 
 
 class DeadlineChangedPayload(BaseModel):
-    step_id: int
+    step_id: int | None = None
     course_id: int
-    deadline: datetime
+    deadline: datetime | None
     previous: datetime | None = None
+    step_title: str | None = None
+    course_title: str | None = None
 
 
 class SubmissionReviewedPayload(BaseModel):

@@ -49,7 +49,7 @@ export interface StepProgress {
 export interface Deadline {
   due_at: string;
   inherited: boolean;
-  source_step_id: number;
+  source_step_id: number | null;
 }
 
 export interface CourseListItem {

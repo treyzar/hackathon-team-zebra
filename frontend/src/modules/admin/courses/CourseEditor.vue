@@ -302,7 +302,8 @@ async function deleteModule(module: Module): Promise<void> {
 }
 
 async function dismissAdded(): Promise<void> {
-  const { added: _added, ...query } = route.query;
+  const query = { ...route.query };
+  delete query.added;
   await router.replace({ query });
 }
 
@@ -350,8 +351,8 @@ watch(courseId, load);
             type="button"
             @click="tab = tab === 'structure' ? 'passport' : 'structure'"
           >
-            {{ tab === "structure" ? "Настройки" : "К структуре" }}</button
-          >
+            {{ tab === "structure" ? "Настройки" : "К структуре" }}
+          </button>
           <RouterLink class="admin-button" :to="ADMIN_IMPORT_ROUTE.path"
             >Импорт / экспорт</RouterLink
           >
@@ -591,7 +592,7 @@ watch(courseId, load);
         <div class="admin-panel-head">
           <div>
             <h2>Настройки курса</h2>
-            <p>Название, адрес и порядок доступа к шагам.</p>
+            <p>Название, адрес, порядок доступа к шагам и срок прохождения.</p>
           </div>
         </div>
         <form class="admin-form" @submit.prevent="saveCourse">

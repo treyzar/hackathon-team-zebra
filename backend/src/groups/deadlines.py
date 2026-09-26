@@ -1,10 +1,9 @@
-"""Deadlines of steps, per group.
+"""Course deadlines and deadlines of steps, per group.
 
 A curator (for their own groups) or an admin sets a deadline on a step. A step
 without its own deadline gets the deadline of the nearest following step that
-has one: set a deadline on the last step of a topic and every step before it
-shares it. Only the deadlines people set are stored; inherited ones are
-computed when shown, so the two are always told apart.
+has one, or the course deadline after the last step deadline. Only deadlines
+people set are stored; inherited ones are computed when shown.
 """
 
 from dataclasses import dataclass
@@ -18,12 +17,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access_docs import access_note
 from auth import require_curator
 from courses import service as courses_svc
-from courses.models import Module, Step
+from courses.models import Course, Enrollment, Module, Step, StepRevision
 from courses.schemas import DeadlineView
 from database import access_db
-from groups.models import Deadline, Group, GroupStudent
+from groups.models import Deadline, Group, GroupCourseDeadline, GroupStudent
 from groups.service import manageable_group
 from models import Role, User
+from notifications.models import NotificationType
+from notifications.payloads import DeadlineChangedPayload
+from notifications.service import create_notification
 
 deadlines = APIRouter(prefix="/groups", tags=["deadlines"])
 
@@ -31,36 +33,108 @@ deadlines = APIRouter(prefix="/groups", tags=["deadlines"])
 @dataclass
 class Effective:
     due_at: datetime
-    # The step whose deadline this is; equals the step itself unless inherited.
-    source_step_id: int
+    # None means the course deadline; otherwise the source step.
+    source_step_id: int | None
 
 
 async def effective_deadlines(
     db: AsyncSession, group_id: int | None, course_id: int
 ) -> dict[int, Effective]:
-    """Deadline of every visible step of the course for the group, own or
-    inherited from the nearest following step. Steps after the last deadline
-    have none."""
-    if group_id is None:
-        return {}
-    order = [s.id for s in await courses_svc.visible_steps_in_order(db, course_id)]
-    own = dict(
-        (
-            await db.execute(
-                select(Deadline.step_id, Deadline.due_at).where(
-                    Deadline.group_id == group_id, Deadline.step_id.in_(order)
-                )
+    """Deadline of each visible step: nearest following step deadline for the
+    group, then the group's course deadline as a fallback."""
+    course_deadline = None
+    if group_id is not None:
+        group_deadline = await db.scalar(
+            select(GroupCourseDeadline.due_at).where(
+                GroupCourseDeadline.group_id == group_id,
+                GroupCourseDeadline.course_id == course_id,
             )
-        ).all()
+        )
+        course_deadline = group_deadline
+    order = [s.id for s in await courses_svc.visible_steps_in_order(db, course_id)]
+    own = (
+        dict(
+            (
+                await db.execute(
+                    select(Deadline.step_id, Deadline.due_at).where(
+                        Deadline.group_id == group_id, Deadline.step_id.in_(order)
+                    )
+                )
+            ).all()
+        )
+        if group_id is not None
+        else {}
     )
     result: dict[int, Effective] = {}
-    carry: Effective | None = None
+    carry: Effective | None = (
+        Effective(course_deadline, None) if course_deadline is not None else None
+    )
     for step_id in reversed(order):
         if step_id in own:
             carry = Effective(own[step_id], step_id)
         if carry is not None:
             result[step_id] = carry
     return result
+
+
+async def _notify_changed_deadline(
+    db: AsyncSession,
+    group_id: int,
+    course_id: int,
+    step_id: int | None,
+    before: dict[int, Effective],
+    previous_due: datetime | None = None,
+) -> None:
+    """Notify enrolled group students only when the effective schedule changed."""
+    after = await effective_deadlines(db, group_id, course_id)
+    if all(
+        (before.get(key).due_at if key in before else None)
+        == (after.get(key).due_at if key in after else None)
+        for key in before.keys() | after.keys()
+    ):
+        return
+
+    course = await db.get(Course, course_id)
+    source = after.get(step_id) if step_id is not None else None
+    previous = before.get(step_id) if step_id is not None else None
+    if step_id is None:
+        group_due = await db.scalar(
+            select(GroupCourseDeadline.due_at).where(
+                GroupCourseDeadline.group_id == group_id,
+                GroupCourseDeadline.course_id == course_id,
+            )
+        )
+        current_due = group_due
+    else:
+        current_due = source.due_at if source else None
+    step_title = None
+    if step_id is not None:
+        step = await db.get(Step, step_id)
+        revision = (
+            await db.get(StepRevision, step.current_revision_id) if step else None
+        )
+        step_title = courses_svc.get_step_title(revision.content) if revision else None
+    payload = DeadlineChangedPayload(
+        step_id=step_id,
+        course_id=course_id,
+        deadline=current_due,
+        previous=previous.due_at if previous else previous_due,
+        step_title=step_title,
+        course_title=course.title,
+    )
+    students = await db.scalars(
+        select(GroupStudent.user_id)
+        .join(
+            Enrollment,
+            (Enrollment.user_id == GroupStudent.user_id)
+            & (Enrollment.course_id == course_id),
+        )
+        .where(GroupStudent.group_id == group_id)
+    )
+    for user_id in students:
+        await create_notification(
+            db, user_id, NotificationType.DEADLINE_CHANGED, payload
+        )
 
 
 async def submission_deadlines(
@@ -131,11 +205,20 @@ class OwnDeadline(BaseModel):
 class StepDeadline(BaseModel):
     step_id: int
     module_id: int
+    module_title: str
+    module_position: int
+    step_position: int
+    title: str
     type: str
     # What a person set on this step, if anything.
     own: OwnDeadline | None
     # What students see: own or inherited.
     effective: DeadlineView | None
+
+
+class CourseDeadlineState(BaseModel):
+    own: OwnDeadline | None
+    effective_due_at: datetime | None
 
 
 def view(step_id: int, eff: Effective | None) -> DeadlineView | None:
@@ -167,13 +250,102 @@ async def list_groups(
     ]
 
 
+async def _course_deadline_state(
+    db: AsyncSession, group_id: int, course: Course
+) -> CourseDeadlineState:
+    own = await db.scalar(
+        select(GroupCourseDeadline).where(
+            GroupCourseDeadline.group_id == group_id,
+            GroupCourseDeadline.course_id == course.id,
+        )
+    )
+    return CourseDeadlineState(
+        own=OwnDeadline.model_validate(own) if own else None,
+        effective_due_at=own.due_at if own else None,
+    )
+
+
+@deadlines.get(
+    "/{group_id}/courses/{course_id}/deadline", response_model=CourseDeadlineState
+)
+@access_note("Куратор — только для своей группы, администратор — для любой.")
+async def get_course_deadline(
+    group_id: int,
+    course_id: int,
+    user: User = Depends(require_curator),
+    db: AsyncSession = Depends(access_db),
+):
+    await manageable_group(db, user, group_id)
+    course = await courses_svc.get_course(db, course_id)
+    return await _course_deadline_state(db, group_id, course)
+
+
+@deadlines.put(
+    "/{group_id}/courses/{course_id}/deadline", response_model=CourseDeadlineState
+)
+@access_note("Куратор — только для своей группы, администратор — для любой.")
+async def set_course_deadline(
+    group_id: int,
+    course_id: int,
+    data: DeadlineIn,
+    user: User = Depends(require_curator),
+    db: AsyncSession = Depends(access_db),
+):
+    await manageable_group(db, user, group_id)
+    await courses_svc.get_course(db, course_id)
+    before = await effective_deadlines(db, group_id, course_id)
+    deadline = await db.scalar(
+        select(GroupCourseDeadline).where(
+            GroupCourseDeadline.group_id == group_id,
+            GroupCourseDeadline.course_id == course_id,
+        )
+    )
+    previous_due = deadline.due_at if deadline else None
+    if deadline is None:
+        deadline = GroupCourseDeadline(group_id=group_id, course_id=course_id)
+        db.add(deadline)
+    deadline.due_at = data.due_at
+    deadline.set_by = user.id
+    await db.flush()
+    await db.refresh(deadline)
+    await _notify_changed_deadline(db, group_id, course_id, None, before, previous_due)
+    return CourseDeadlineState(
+        own=OwnDeadline.model_validate(deadline), effective_due_at=deadline.due_at
+    )
+
+
+@deadlines.delete("/{group_id}/courses/{course_id}/deadline", status_code=204)
+@access_note("Куратор — только для своей группы, администратор — для любой.")
+async def delete_course_deadline(
+    group_id: int,
+    course_id: int,
+    user: User = Depends(require_curator),
+    db: AsyncSession = Depends(access_db),
+):
+    await manageable_group(db, user, group_id)
+    await courses_svc.get_course(db, course_id)
+    deadline = await db.scalar(
+        select(GroupCourseDeadline).where(
+            GroupCourseDeadline.group_id == group_id,
+            GroupCourseDeadline.course_id == course_id,
+        )
+    )
+    if deadline is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Deadline not found")
+    before = await effective_deadlines(db, group_id, course_id)
+    previous_due = deadline.due_at
+    await db.delete(deadline)
+    await db.flush()
+    await _notify_changed_deadline(db, group_id, course_id, None, before, previous_due)
+
+
 @deadlines.get(
     "/{group_id}/courses/{course_id}/deadlines", response_model=list[StepDeadline]
 )
 @access_note(
     "Куратор — только для своей группы, администратор — для любой. Все видимые "
     "шаги курса по порядку: дедлайн, выставленный на шаге (`own`), и итоговый, "
-    "который видят ученики (`effective`)."
+    "который видят ученики (`effective`), с дедлайном курса как запасным."
 )
 async def course_deadlines(
     group_id: int,
@@ -185,7 +357,22 @@ async def course_deadlines(
     await courses_svc.get_course(db, course_id)
     effective = await effective_deadlines(db, group_id, course_id)
     order = [s.id for s in await courses_svc.visible_steps_in_order(db, course_id)]
-    steps = {s.id: s for s in await db.scalars(select(Step).where(Step.id.in_(order)))}
+    steps = {
+        step.id: (step, content)
+        for step, content in await db.execute(
+            select(Step, StepRevision.content)
+            .join(StepRevision, StepRevision.id == Step.current_revision_id)
+            .where(Step.id.in_(order))
+        )
+    }
+    modules = {
+        module.id: module
+        for module in await db.scalars(
+            select(Module).where(
+                Module.id.in_({step.module_id for step, _ in steps.values()})
+            )
+        )
+    }
     own = {
         d.step_id: d
         for d in await db.scalars(
@@ -197,8 +384,12 @@ async def course_deadlines(
     return [
         StepDeadline(
             step_id=step_id,
-            module_id=steps[step_id].module_id,
-            type=steps[step_id].type,
+            module_id=steps[step_id][0].module_id,
+            module_title=modules[steps[step_id][0].module_id].title,
+            module_position=modules[steps[step_id][0].module_id].position,
+            step_position=steps[step_id][0].position,
+            title=courses_svc.get_step_title(steps[step_id][1]),
+            type=steps[step_id][0].type,
             own=OwnDeadline.model_validate(own[step_id]) if step_id in own else None,
             effective=view(step_id, effective.get(step_id)),
         )
@@ -220,7 +411,9 @@ async def set_deadline(
     db: AsyncSession = Depends(access_db),
 ):
     await manageable_group(db, user, group_id)
-    await _live_step(db, step_id)
+    step = await _live_step(db, step_id)
+    module = await db.get(Module, step.module_id)
+    before = await effective_deadlines(db, group_id, module.course_id)
     deadline = await db.scalar(
         select(Deadline).where(
             Deadline.group_id == group_id, Deadline.step_id == step_id
@@ -233,6 +426,7 @@ async def set_deadline(
     deadline.set_by = user.id
     await db.flush()
     await db.refresh(deadline)
+    await _notify_changed_deadline(db, group_id, module.course_id, step_id, before)
     return deadline
 
 
@@ -252,4 +446,9 @@ async def delete_deadline(
     )
     if deadline is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Deadline not found")
+    step = await db.get(Step, step_id)
+    module = await db.get(Module, step.module_id)
+    before = await effective_deadlines(db, group_id, module.course_id)
     await db.delete(deadline)
+    await db.flush()
+    await _notify_changed_deadline(db, group_id, module.course_id, step_id, before)
