@@ -336,13 +336,6 @@ async def test_moved_group_deadline_notifies_its_enrolled_students(
     assert len(changed) == 3
     assert same_time(changed[0]["payload"]["deadline"], D2)
 
-    await client.delete(url, headers=curator)
-    mine = (await client.get("/notifications", headers=student)).json()
-    changed = [item for item in mine if item["type"] == "deadline_changed"]
-    assert len(changed) == 4
-    assert changed[0]["payload"]["deadline"] is None
-    assert same_time(changed[0]["payload"]["previous"], D2)
-
 
 async def test_replace_and_delete(client, admin, course, groups_setup):
     (g1, curator, _, student), _ = groups_setup

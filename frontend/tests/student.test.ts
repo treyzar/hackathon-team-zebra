@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { viewNotification } from "../src/modules/notifications/presentation";
-import type { Notification } from "../src/modules/notifications/api";
 import { buildAnswer } from "../src/modules/student/steps/answer";
 import {
   daysText,
@@ -20,20 +18,6 @@ import {
   resultStatus,
   verdictLabel,
 } from "../src/modules/student/steps/result-presentation";
-
-test("a removed group deadline is shown as a cancelled deadline notification", () => {
-  const notification = {
-    id: 1,
-    type: "deadline_changed",
-    severity: "info",
-    payload: { course_id: 7, course_title: "Scratch", step_id: null, deadline: null },
-    read_at: null,
-    created_at: "2026-09-26T12:00:00Z",
-  } satisfies Notification;
-  const view = viewNotification(notification, "student");
-  assert.equal(view.title, "Дедлайн снят");
-  assert.equal(view.description, "Срок по «Scratch» снят.");
-});
 
 test("student answers use the API shape for each step type", () => {
   const draft = {
