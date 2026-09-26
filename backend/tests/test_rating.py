@@ -25,6 +25,11 @@ async def rating(client, headers):
     return r.json()
 
 
+def short(streak):
+    """The streak without its week, which depends on today's date."""
+    return {k: v for k, v in streak.items() if k not in ("week", "today")}
+
+
 async def join(client, admin, make_user, group_id, **kwargs):
     user_id, headers = await make_user(**kwargs)
     r = await client.put(
@@ -83,7 +88,7 @@ async def test_total_is_courses_plus_streak(client, course, ranked):
     assert got[0]["courses"] == [
         {"course_id": course[0], "title": "Python", "points": 6}
     ]
-    assert got[0]["streak"] == {"days": 1, "bonus": 2, "active_today": True}
+    assert short(got[0]["streak"]) == {"days": 1, "bonus": 2, "active_today": True}
 
 
 async def test_places_share_on_ties(client, ranked):
@@ -257,14 +262,14 @@ async def test_streak_days(client, admin, course, groups_setup):
     await sent(steps[1], {"option_id": A}, now - day)
     streak = (await rating(client, student))["streak"]
     # Kept from yesterday: the day is not over.
-    assert streak == {"days": 2, "bonus": 4, "active_today": False}
+    assert short(streak) == {"days": 2, "bonus": 4, "active_today": False}
 
     # Today: a wrong answer (0 points) does not count, work waiting for a
     # curator does.
     await sent(steps[2], {"option_id": B}, now)
     assert (await rating(client, student))["streak"]["active_today"] is False
     await sent(essay, {"text": "эссе"}, now)
-    assert (await rating(client, student))["streak"] == {
+    assert short((await rating(client, student))["streak"]) == {
         "days": 3,
         "bonus": 6,
         "active_today": True,
@@ -277,7 +282,7 @@ async def test_missed_day_resets_streak(client, admin, course, groups_setup):
     sub = (await submit(client, student, step, {"option_id": A})).json()["id"]
     await set_sent_at(sub, datetime.now(UTC) - timedelta(days=2))
     me = await rating(client, student)
-    assert me["streak"] == {"days": 0, "bonus": 0, "active_today": False}
+    assert short(me["streak"]) == {"days": 0, "bonus": 0, "active_today": False}
     assert me["total"] == 2  # the points stay
 
 
@@ -375,3 +380,25 @@ async def test_access(client, admin, ranked, groups_setup):
     assert (await client.get(url, headers=student)).status_code == 403
     # The personal rating is for students.
     assert (await client.get("/rating", headers=ranked["curator"])).status_code == 403
+
+
+async def test_streak_week(client, admin, course, groups_setup):
+    from datetime import date as date_
+
+    (_, _, _, student), _ = groups_setup
+    steps = [
+        await add_step(client, admin, course[1], single_choice()) for _ in range(2)
+    ]
+    now = datetime.now(UTC)
+    for step, when in zip(steps, (now, now - timedelta(days=7)), strict=True):
+        sub = (await submit(client, student, step, {"option_id": A})).json()["id"]
+        await set_sent_at(sub, when)
+
+    week = (await rating(client, student))["streak"]["week"]
+    days = [date_.fromisoformat(d["date"]) for d in week]
+    assert len(days) == 7 and days[0].weekday() == 0  # Monday to Sunday
+    assert days == [days[0] + timedelta(days=i) for i in range(7)]
+    # Only today's work shows; last week's is outside this week.
+    active = [d for d, day in zip(days, week, strict=True) if day["active"]]
+    today = date_.fromisoformat((await rating(client, student))["streak"]["today"])
+    assert active == [today]

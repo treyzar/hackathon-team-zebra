@@ -5,10 +5,11 @@ import {
   daysText,
   documentTitle,
   pointsText,
-  ratingGoalText,
+  ratingGoal,
   ratingPlaceText,
   stepDocument,
-  streakText,
+  streakHint,
+  streakWeek,
 } from "../src/modules/student/courses/presentation";
 import type { MyRating } from "../src/modules/student/courses/types";
 import { renderRichText, richTextImageIds } from "../src/modules/student/courses/rich-text";
@@ -124,50 +125,111 @@ function myRating(overrides: Partial<MyRating> = {}): MyRating {
   return {
     total: 12,
     courses: [{ course_id: 1, title: "Python", points: 8 }],
-    streak: { days: 2, bonus: 4, active_today: true },
-    group_size: 4,
-    place: 2,
+    streak: {
+      days: 2,
+      bonus: 4,
+      active_today: true,
+      today: "2026-09-24",
+      week: ["21", "22", "23", "24", "25", "26", "27"].map((day) => ({
+        date: `2026-09-${day}`,
+        active: day === "23" || day === "24",
+      })),
+    },
+    group_size: 8,
+    place: 3,
     tied_with: 0,
-    next_place: { place: 1, points: 14, gap: 2, plan: [5], reachable: true },
-    first_place: { place: 1, points: 14, gap: 2, plan: [5], reachable: true },
-    opportunities: [],
+    next_place: { place: 2, points: 21, gap: 9, plan: [5], reachable: true },
+    first_place: { place: 1, points: 30, gap: 18, plan: [5, 6], reachable: true },
+    opportunities: [
+      {
+        course_id: 1,
+        course_title: "Python",
+        step_id: 5,
+        module_id: 1,
+        module_title: "Циклы",
+        position: 2,
+        type: "programming",
+        action: "complete",
+        can_gain: 10,
+      },
+      {
+        course_id: 1,
+        course_title: "Python",
+        step_id: 6,
+        module_id: 1,
+        module_title: "Циклы",
+        position: 3,
+        type: "single_choice",
+        action: "complete",
+        can_gain: 10,
+      },
+    ],
     ...overrides,
   };
 }
 
-test("rating texts: place, goal and streak", () => {
+test("rating widget texts: place, goal and the week of the streak", () => {
   assert.equal(pointsText(2.5), "2.5 балла");
   assert.equal(daysText(1), "1 день");
   assert.equal(daysText(3), "3 дня");
   assert.equal(daysText(12), "12 дней");
 
   const rating = myRating();
-  assert.equal(ratingPlaceText(rating), "2 место из 4");
-  assert.equal(ratingGoalText(rating), "Наберите больше 2 баллов, чтобы подняться на 1 место");
-  const blocked = myRating({
-    next_place: { place: 1, points: 14, gap: 2, plan: [], reachable: false },
+  assert.equal(ratingPlaceText(rating), "3-е место в группе из 8");
+  assert.deepEqual(ratingGoal(rating), {
+    before: "До 2-го места",
+    points: "9 баллов",
+    after: ". Это одна задача с тестами.",
   });
-  assert.match(ratingGoalText(blocked) ?? "", /^До 1 места 2 балла: /);
-  const gap = (value: number) =>
-    ratingGoalText(
-      myRating({ next_place: { place: 1, points: 9, gap: value, plan: [], reachable: true } }),
-    );
-  assert.match(gap(21) ?? "", /больше 21 балла,/);
-  assert.match(gap(1.5) ?? "", /больше 1.5 балла,/);
-  assert.match(gap(11) ?? "", /больше 11 баллов,/);
+  const two = myRating({
+    next_place: { place: 2, points: 21, gap: 9, plan: [5, 6], reachable: true },
+  });
+  assert.equal(ratingGoal(two)?.after, ". Это 2 шага.");
+  const blocked = myRating({
+    next_place: { place: 2, points: 21, gap: 9, plan: [], reachable: false },
+  });
+  assert.match(ratingGoal(blocked)?.after ?? "", /не хватает/);
   assert.equal(
-    ratingGoalText(myRating({ place: 1, next_place: null })),
+    ratingGoal(myRating({ place: 1, next_place: null }))?.before,
     "Вы на первом месте в группе",
   );
   // Without a group there is no place and no goal.
   const alone = myRating({ group_size: null, place: null, next_place: null });
   assert.equal(ratingPlaceText(alone), null);
-  assert.equal(ratingGoalText(alone), null);
+  assert.equal(ratingGoal(alone), null);
 
-  assert.equal(streakText(rating.streak), "Серия 2 дня");
-  assert.equal(
-    streakText({ days: 2, bonus: 4, active_today: false }),
-    "Серия 2 дня — отправьте решение сегодня, чтобы не прервать",
-  );
-  assert.match(streakText({ days: 0, bonus: 0, active_today: false }), /^Серии нет/);
+  const week = (today: string, active: string[], days: number) =>
+    streakWeek({
+      days,
+      bonus: 2 * days,
+      active_today: active.includes(today),
+      today,
+      week: ["21", "22", "23", "24", "25", "26", "27"].map((day) => ({
+        date: `2026-09-${day}`,
+        active: active.includes(`2026-09-${day}`),
+      })),
+    }).map((day) => `${day.label}:${day.state}`);
+  // Every day with counted work is marked, the earlier run too.
+  assert.deepEqual(week("2026-09-26", ["2026-09-24", "2026-09-26"], 1), [
+    "Пн:missed",
+    "Вт:missed",
+    "Ср:missed",
+    "Чт:done",
+    "Пт:missed",
+    "Сб:done",
+    "Вс:future",
+  ]);
+  assert.deepEqual(week("2026-09-25", ["2026-09-23", "2026-09-24"], 2).slice(2, 5), [
+    "Ср:done",
+    "Чт:done",
+    "Пт:today",
+  ]);
+  const open = {
+    ...rating.streak,
+    active_today: false,
+    week: rating.streak.week.map((d) => ({ ...d, active: d.date === "2026-09-23" })),
+  };
+  assert.equal(streakHint(open), "Сдай один шаг сегодня — серия продолжится.");
+  assert.match(streakHint(rating.streak), /уже засчитано/);
+  assert.match(streakHint({ ...open, days: 0 }), /начнётся серия/);
 });

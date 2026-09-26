@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel
 
@@ -131,6 +131,12 @@ class CoursePoints(BaseModel):
     points: float
 
 
+class StreakDay(BaseModel):
+    date: date
+    # A submission that earned points or waits for a check was sent that day.
+    active: bool
+
+
 class Streak(BaseModel):
     # Days in a row with a submission that earned points or waits for a check.
     days: int
@@ -139,6 +145,9 @@ class Streak(BaseModel):
     # False: today has no such submission yet, the streak is kept from
     # yesterday and ends unless the student sends something today.
     active_today: bool
+    # Today in the platform's time zone, and its week, Monday to Sunday.
+    today: date
+    week: list[StreakDay]
 
 
 class MyRating(BaseModel):

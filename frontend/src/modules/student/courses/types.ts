@@ -211,11 +211,19 @@ export interface CoursePoints {
   points: number;
 }
 
+export interface StreakDay {
+  date: string;
+  active: boolean;
+}
+
 export interface Streak {
   days: number;
   bonus: number;
   // False: nothing counted today yet; the streak ends unless something is sent.
   active_today: boolean;
+  // Today in the platform's time zone and its week, Monday to Sunday.
+  today: string;
+  week: StreakDay[];
 }
 
 /** Overall rating: points of every course plus the streak bonus. Group
