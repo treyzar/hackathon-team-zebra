@@ -69,6 +69,8 @@ class ReviewDetail(ReviewListItem):
     result_details: dict[str, Any]
     is_outdated: bool
     review_comment: str | None
+    # Met criteria of the checklist (``settings.checklist``), once reviewed.
+    review_checklist: list[str] | None
     reviewer_id: int | None
     reviewed_at: datetime | None
     # The revision the student answered, including the reference answer.
@@ -82,6 +84,9 @@ class Verdict(BaseModel):
     # Default: accepted -> score from tests (or max), rejected -> 0.
     score: float | None = Field(default=None, ge=0)
     comment: str | None = Field(default=None, max_length=10_000)
+    # Ids of the met criteria, for a step with a checklist: the score is
+    # their sum, so ``score`` is not sent then.
+    checked: list[str] | None = Field(default=None, max_length=50)
 
 
 def _visible(user: User) -> Select:
@@ -179,6 +184,7 @@ async def _detail(db: AsyncSession, row) -> ReviewDetail:
         result_details=sub.result_details,
         is_outdated=sub.is_outdated,
         review_comment=sub.review_comment,
+        review_checklist=sub.review_checklist,
         reviewer_id=sub.reviewer_id,
         reviewed_at=sub.reviewed_at,
         content=parsed.content.model_dump(mode="json"),
@@ -284,6 +290,8 @@ async def review_submission(
         data.score,
         data.comment,
         rev.max_score,
+        svc.parse(row[2], rev).settings.checklist,
+        data.checked,
     )
     await db.flush()
     return await _detail(db, row)

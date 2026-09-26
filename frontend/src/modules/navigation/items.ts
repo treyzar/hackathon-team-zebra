@@ -7,7 +7,6 @@ import { ADMIN_USERS_ROUTE } from "@/pages/admin/users/constants";
 import { CURATOR_REVIEWS_ROUTE } from "@/pages/curator/reviews/constants";
 import { CURATOR_QUESTIONS_ROUTE } from "@/pages/curator/questions/constants";
 import { CURATOR_ANALYTICS_ROUTE } from "@/pages/curator/analytics/constants";
-import { CURATOR_DEADLINES_ROUTE } from "@/pages/curator/deadlines/constants";
 import { CURATOR_LEARNERS_ROUTE } from "@/pages/curator/learners/constants";
 import { STUDENT_COURSES_ROUTE } from "@/pages/student/courses/constants";
 import { WORKSPACE_SECTION_ROUTES } from "@/pages/workspace-section/constants";

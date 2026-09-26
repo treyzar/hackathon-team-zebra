@@ -16,7 +16,7 @@ from notifications.models import Severity as NotificationSeverity
 from notifications.payloads import SubmissionReviewedPayload
 from notifications.service import create_notification
 from progress.stats import StepStats, stats_for
-from steps.base import FileInfo, GradeResult, Grading, ShowAnswer
+from steps.base import ChecklistItem, FileInfo, GradeResult, Grading, ShowAnswer
 from steps.registry import ParsedRevision
 from submissions.models import Submission, SubmissionStatus
 
@@ -142,6 +142,25 @@ async def submit(
     return sub
 
 
+def _checklist_score(
+    checklist: list[ChecklistItem], checked: list[str] | None, score: float | None
+) -> tuple[float, list[str]]:
+    """The score of a checklist review: the points of the criteria marked as
+    met. The curator marks criteria, the score follows; typing a score as
+    well would let the two disagree."""
+    if not checklist:
+        raise unprocessable("This step has no checklist")
+    if checked is None:
+        raise unprocessable("Mark the met criteria of the checklist")
+    if score is not None:
+        raise unprocessable("The score is counted from the checklist")
+    known = {item.id for item in checklist}
+    if unknown := set(checked) - known:
+        raise unprocessable(f"Unknown checklist items: {sorted(unknown)}")
+    met = [item for item in checklist if item.id in set(checked)]
+    return round(sum(item.points for item in met), 2), [item.id for item in met]
+
+
 async def apply_review(
     db: AsyncSession,
     sub: Submission,
@@ -150,11 +169,15 @@ async def apply_review(
     score: float | None,
     comment: str | None,
     max_score: int,
+    checklist: list[ChecklistItem] = (),
+    checked: list[str] | None = None,
 ) -> None:
     if sub.status != SubmissionStatus.PENDING_REVIEW:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Submission is not awaiting review"
         )
+    if checklist or checked is not None:
+        score, checked = _checklist_score(checklist, checked, score)
     if score is None:
         # Accepted: keep the tests' score if there were tests, else full score.
         score = (
@@ -169,6 +192,7 @@ async def apply_review(
     sub.reviewer_id = reviewer.id
     sub.reviewed_at = now()
     sub.review_comment = comment
+    sub.review_checklist = checked
 
     course_id = await db.scalar(
         select(Module.course_id)

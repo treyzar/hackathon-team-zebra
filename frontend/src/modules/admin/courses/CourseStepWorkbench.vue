@@ -37,6 +37,13 @@ const gradingLabel = computed(() =>
           : "Авто",
 );
 
+const shortTextAccepted = computed(() =>
+  (form.value?.shortTextAccepted ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean),
+);
+
 async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
@@ -143,6 +150,36 @@ watch(() => props.stepId, load, { immediate: true });
       <div v-if="step.type === 'free_text' && form.criteria" class="workbench-answer-list">
         <b>Критерии проверки · для куратора</b>
         <p>{{ form.criteria }}</p>
+      </div>
+      <div v-if="step.type === 'short_text'" class="workbench-answer-list">
+        <b
+          >Правильные ответы<template v-if="form.shortTextCaseSensitive">
+            · с учётом регистра</template
+          ></b
+        >
+        <div v-for="answer in shortTextAccepted" :key="answer" class="workbench-answer">
+          <span>{{ answer }}</span>
+        </div>
+        <p v-if="!shortTextAccepted.length" class="admin-muted">
+          Список пуст — ответ проверяет куратор вручную.
+        </p>
+        <p v-else-if="form.shortTextGrading === 'manual'" class="admin-muted">
+          Проверка вручную: список для куратора — подсказка.
+        </p>
+      </div>
+
+      <div v-if="step.type === 'number'" class="workbench-answer-list">
+        <b>Правильный ответ</b>
+        <div class="workbench-answer">
+          <span>{{ form.numberValue || "—" }}</span>
+        </div>
+        <p class="admin-muted">
+          <template v-if="form.numberKind === 'decimal'">
+            Дробное, точность — {{ form.numberPrecision }}
+            {{ form.numberPrecision === 1 ? "знак" : "знаков" }} после запятой.
+          </template>
+          <template v-else>Целое число.</template>
+        </p>
       </div>
       <div v-if="step.type === 'programming'" class="workbench-answer-list">
         <template v-if="form.grading === 'manual'">

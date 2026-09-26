@@ -11,6 +11,8 @@ export const stepTypeLabels: Record<StepType, string> = {
   multiple_choice: "Контрольный вопрос",
   free_text: "Проект",
   programming: "Задача с тестами",
+  short_text: "Краткий ответ",
+  number: "Число"
 };
 
 export function textToDoc(value: string): RichText {

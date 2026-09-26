@@ -1,6 +1,6 @@
 import type { RichDocument } from "@/modules/student/courses/types";
 import { richDocument } from "@/modules/shared/stepTitle";
-import type { ReviewDetail, ReviewListItem, ReviewVerdict } from "./types";
+import type { ChecklistItem, ReviewDetail, ReviewListItem, ReviewVerdict } from "./types";
 
 export { taskDocument, taskTitle } from "@/modules/shared/stepTitle";
 
@@ -100,6 +100,30 @@ export function verdictFor(
   return {
     verdict: mode === "revise" ? "rejected" : "accepted",
     score: mode === "full" ? maxScore : mode === "revise" ? 0 : score,
+    comment: comment.trim() || null,
+  };
+}
+
+/** Criteria of the step's checklist; empty when the step has none. */
+export function reviewChecklist(detail: ReviewDetail): ChecklistItem[] {
+  const items = detail.settings.checklist;
+  return Array.isArray(items) ? (items as ChecklistItem[]) : [];
+}
+
+export function checklistScore(items: ChecklistItem[], checked: string[]): number {
+  const met = items.filter((item) => checked.includes(item.id));
+  return Math.round(met.reduce((sum, item) => sum + item.points, 0) * 100) / 100;
+}
+
+/** The score follows from the met criteria, so none is sent. */
+export function checklistVerdict(
+  accepted: boolean,
+  checked: string[],
+  comment: string,
+): ReviewVerdict {
+  return {
+    verdict: accepted ? "accepted" : "rejected",
+    checked,
     comment: comment.trim() || null,
   };
 }

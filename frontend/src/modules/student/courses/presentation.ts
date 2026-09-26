@@ -4,8 +4,10 @@ export const stepLabels: Record<StepType, string> = {
   theory: "Теория",
   single_choice: "Вопрос с одним ответом",
   multiple_choice: "Вопрос с несколькими ответами",
-  free_text: "Задание с ответом",
+  free_text: "Задание с произвольным ответом",
   programming: "Задача с кодом",
+  number: "Вопрос с ответом в виде числа",
+  short_text: "Вопрос с коротким ответом",
 };
 
 /** Russian noun agreement: 1 балл, 2 балла, 5 баллов, 11 баллов, 21 балл. */
@@ -28,36 +30,72 @@ function plural(count: number, one: string, few: string, many: string): string {
   return many;
 }
 
-/** After "больше", "до": "больше 2 баллов", "больше 21 балла". */
-function pointsGenitive(count: number): string {
-  const one = Number.isInteger(count) && plural(count, "one", "few", "many") === "one";
-  return `${count} ${one || !Number.isInteger(count) ? "балла" : "баллов"}`;
-}
-
 export function daysText(count: number): string {
   return `${count} ${plural(count, "день", "дня", "дней")}`;
 }
 
-/** "2 место из 4"; null without a group. */
-export function ratingPlaceText(rating: import("./types").MyRating): string | null {
+type Rating = import("./types").MyRating;
+type StreakInfo = import("./types").Streak;
+
+/** "3-е место в группе из 8"; null without a group. */
+export function ratingPlaceText(rating: Rating): string | null {
   if (rating.place == null || rating.group_size == null) return null;
-  return `${rating.place} место из ${rating.group_size}`;
+  return `${rating.place}-е место в группе из ${rating.group_size}`;
 }
 
-/** What it takes to move up; null without a group. */
-export function ratingGoalText(rating: import("./types").MyRating): string | null {
+// How a single step of each kind is named in "Это одна задача с тестами".
+const ONE_STEP: Record<string, string> = {
+  programming: "одна задача с тестами",
+  single_choice: "один контрольный вопрос",
+  multiple_choice: "один контрольный вопрос",
+  free_text: "одно задание с ответом",
+  number: "один вопрос с числовым ответом",
+  short_text: "один вопрос с коротким ответом",
+};
+
+/** What it takes to reach the next place, with the points to highlight:
+ * "До 2-го места" + "9 баллов" + ". Это одна задача с тестами." Equal
+ * ratings share a place, so the gap reaches it; the plan is enough to
+ * overtake. Null without a group. */
+export function ratingGoal(
+  rating: Rating,
+): { before: string; points: string; after: string } | null {
   if (rating.place == null) return null;
   const target = rating.next_place;
-  if (!target || target.gap == null) return "Вы на первом месте в группе";
-  if (target.reachable)
-    return `Наберите больше ${pointsGenitive(target.gap)}, чтобы подняться на ${target.place} место`;
-  return `До ${target.place} места ${pointsText(target.gap)}: заданий пока не хватает, помогут дни серии`;
+  if (!target || target.gap == null)
+    return { before: "Вы на первом месте в группе", points: "", after: "" };
+  const plan = rating.opportunities.filter((o) => target.plan.includes(o.step_id));
+  let after = ". Заданий пока не хватает — помогут дни серии.";
+  if (target.reachable && plan.length === 1)
+    after = `. Это ${ONE_STEP[plan[0]!.type] ?? "один шаг"}.`;
+  else if (target.reachable)
+    after = `. Это ${plan.length} ${plural(plan.length, "шаг", "шага", "шагов")}.`;
+  return { before: `До ${target.place}-го места`, points: pointsText(target.gap), after };
 }
 
-export function streakText(streak: import("./types").Streak): string {
-  if (!streak.days) return "Серии нет — отправьте решение сегодня, чтобы начать";
-  const head = `Серия ${daysText(streak.days)}`;
-  return streak.active_today ? head : `${head} — отправьте решение сегодня, чтобы не прервать`;
+export function streakHint(streak: StreakInfo): string {
+  if (streak.active_today) return "Сегодня уже засчитано — завтра серия продолжится.";
+  if (streak.days) return "Сдай один шаг сегодня — серия продолжится.";
+  return "Сдай один шаг сегодня — начнётся серия.";
+}
+
+export type StreakCellState = "done" | "today" | "missed" | "future";
+
+const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+/** The week of the streak: days with counted work, today still open,
+ * missed and future days. */
+export function streakWeek(streak: StreakInfo): { label: string; state: StreakCellState }[] {
+  return streak.week.map((day, index) => ({
+    label: WEEKDAYS[index] ?? "",
+    state: day.active
+      ? "done"
+      : day.date === streak.today
+        ? "today"
+        : day.date > streak.today
+          ? "future"
+          : "missed",
+  }));
 }
 
 export function progressText(completed: number, total: number): string {

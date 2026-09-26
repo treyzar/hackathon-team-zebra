@@ -1,7 +1,8 @@
 import type { UserResponse, UserRole } from "@/api/http";
 
 export type RichText = { type: "doc"; content: Record<string, unknown>[] };
-export type StepType = "theory" | "single_choice" | "multiple_choice" | "free_text" | "programming";
+export type StepType =
+  "theory" | "single_choice" | "multiple_choice" | "free_text" | "programming" | "number" | "short_text";
 export type StepAccess = "all" | "sequential";
 
 export interface Course {

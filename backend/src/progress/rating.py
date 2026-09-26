@@ -43,6 +43,7 @@ from progress.schemas import (
     RankTarget,
     RatingRow,
     Streak,
+    StreakDay,
 )
 from progress.service import (
     CourseProgress,
@@ -87,6 +88,8 @@ async def streaks(
     days: dict[int, set[date]] = defaultdict(set)
     for user_id, created_at in rows:
         days[user_id].add(created_at.astimezone(tz).date())
+    monday = today - timedelta(days=today.weekday())
+    week = [monday + timedelta(days=i) for i in range(7)]
     result = {}
     for user_id in user_ids:
         length = _streak_days(days[user_id], today)
@@ -94,6 +97,8 @@ async def streaks(
             days=length,
             bonus=STREAK_DAY_BONUS * length,
             active_today=today in days[user_id],
+            today=today,
+            week=[StreakDay(date=d, active=d in days[user_id]) for d in week],
         )
     return result
 

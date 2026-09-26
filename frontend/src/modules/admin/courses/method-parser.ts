@@ -35,9 +35,10 @@ export function parseMethodText(source: string): ParsedMethod {
     if (!current) continue;
     if (line.startsWith("Тип шага")) {
       current.type = line.replace(/^Тип шага\s*/i, "").trim() || "Не указан";
-      current.supported = /^(теория|контрольный вопрос|вопрос|задача с тестами|проект)$/i.test(
-        current.type,
-      );
+      current.supported =
+        /^(теория|контрольный вопрос|вопрос|задача с тестами|программирование|проект|свободный ответ|число|краткий ответ|короткий ответ|краткий текст|короткий текст)$/i.test(
+          current.type,
+        );
     }
     if (line.startsWith("Проверка"))
       current.grading = line.replace(/^Проверка\s*/i, "").trim() || "—";

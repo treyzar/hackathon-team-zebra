@@ -1,10 +1,18 @@
 import type { ProgrammingLanguage } from "../../languages";
 
 export type QuestionVisibility = "private" | "group" | "course";
-export type StepType = "theory" | "single_choice" | "multiple_choice" | "free_text" | "programming";
 export type StepAccess = "all" | "sequential";
 export type Grading = "none" | "auto" | "tests" | "tests_and_review" | "manual";
 export type ShowAnswer = "never" | "after_wrong" | "after_attempts_exhausted" | "after_solved";
+export type StepType =
+  | "theory"
+  | "single_choice"
+  | "multiple_choice"
+  | "free_text"
+  | "programming"
+  | "number"
+  | "short_text";
+
 export type SubmissionStatus =
   | "queued"
   | "running"
@@ -15,6 +23,16 @@ export type SubmissionStatus =
   | "accepted"
   | "rejected"
   | "error";
+
+export interface NumberContent {
+  question: RichDocument;
+  kind: "integer" | "decimal";
+  precision: number;
+}
+
+export interface ShortTextContent {
+  question: RichDocument;
+}
 
 export interface StudentQuestion {
   id: number;
@@ -211,11 +229,19 @@ export interface CoursePoints {
   points: number;
 }
 
+export interface StreakDay {
+  date: string;
+  active: boolean;
+}
+
 export interface Streak {
   days: number;
   bonus: number;
   // False: nothing counted today yet; the streak ends unless something is sent.
   active_today: boolean;
+  // Today in the platform's time zone and its week, Monday to Sunday.
+  today: string;
+  week: StreakDay[];
 }
 
 /** Overall rating: points of every course plus the streak bonus. Group

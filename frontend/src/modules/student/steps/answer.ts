@@ -39,5 +39,13 @@ export function buildAnswer(
       return buildFreeTextAnswer(content, draft);
     case "programming":
       return draft.code.trim() ? { code: draft.code, language: draft.language } : null;
+    case "number": {
+      const value = draft.text.trim();
+      return value ? { value } : null;
+    }
+    case "short_text": {
+      const value = draft.text.trim();
+      return value ? { text: value } : null;
+    }
   }
 }
