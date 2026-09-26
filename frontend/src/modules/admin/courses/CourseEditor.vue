@@ -712,6 +712,7 @@ watch(courseId, load);
   min-width: 0;
 }
 .course-editor-layout .admin-list {
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
 }
 .course-module-head {
@@ -759,6 +760,7 @@ watch(courseId, load);
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   min-height: 42px;
   padding: 8px 9px;
   border: 1px solid #e1e6f0;
@@ -787,9 +789,8 @@ watch(courseId, load);
 }
 .course-step-name {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .course-step-hidden {
   margin: 0 !important;
