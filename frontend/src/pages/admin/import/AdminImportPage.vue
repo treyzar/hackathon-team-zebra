@@ -109,7 +109,7 @@ async function exportSchema(): Promise<void> {
   exporting.value = "schema";
   exportError.value = "";
   try {
-    download(await courseApi.exportImportSchema(), "course-import-schema.json");
+    download(await courseApi.exportImportSchema(), "course-import-schema");
   } catch (cause) {
     exportError.value = getApiErrorMessage(cause);
   } finally {
