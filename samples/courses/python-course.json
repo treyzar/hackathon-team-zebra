@@ -606,7 +606,8 @@
                     "tests": [
                       { "input": "10\n", "output": "55" },
                       { "input": "100\n", "output": "5050" },
-                      { "input": "999999\n", "output": "499999500000" }
+                      { "input": "999999\n", "output": "499999500000" },
+                      { "input": "1000000\n", "output": "500000500000" }
                     ]
                   }
                 ],
@@ -646,7 +647,8 @@
                     "name": "скрытые",
                     "points": 10,
                     "tests": [
-                      { "input": "72\n", "output": "12" },
+                      { "input": "7\n", "output": "2" },
+                      { "input": "12\n", "output": "6" },
                       { "input": "36\n", "output": "9" },
                       { "input": "999983\n", "output": "2" },
                       { "input": "720720\n", "output": "240" },
