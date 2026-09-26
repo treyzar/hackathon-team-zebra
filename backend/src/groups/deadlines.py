@@ -116,7 +116,9 @@ async def _notify_changed_deadline(
         revision = (
             await db.get(StepRevision, step.current_revision_id) if step else None
         )
-        step_title = courses_svc.get_step_title(revision.content) if revision else None
+        step_title = (
+            courses_svc.get_step_title(revision.content) if revision else None
+        ) or f"Шаг #{step_id}"
     payload = DeadlineChangedPayload(
         step_id=step_id,
         course_id=course_id,

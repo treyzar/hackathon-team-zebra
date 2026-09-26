@@ -141,7 +141,7 @@ async function save(): Promise<void> {
       savedCount += 1;
     }
     await loadSelection();
-    success.value = "Дедлайны сохранены";
+    if (!error.value) success.value = "Дедлайны сохранены";
   } catch (cause) {
     error.value = savedCount
       ? `Часть сроков сохранена. Повторите сохранение остальных: ${getApiErrorMessage(cause)}`
@@ -189,8 +189,8 @@ onMounted(loadFilters);
 
     <p v-if="error" class="deadlines-message deadlines-message--error" role="alert">
       {{ error }}
-      <button v-if="!courseState && ready" type="button" @click="loadSelection">Повторить</button>
-      <button v-else-if="loadingFilters" type="button" @click="loadFilters">Повторить</button>
+      <button v-if="!ready" type="button" @click="loadFilters">Повторить</button>
+      <button v-else-if="!courseState" type="button" @click="loadSelection">Повторить</button>
     </p>
     <p v-if="success" class="deadlines-message deadlines-message--success" role="status">
       {{ success }}

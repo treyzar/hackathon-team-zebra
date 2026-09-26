@@ -66,7 +66,7 @@ function changeTime(row: StepDeadline, event: Event): void {
             <input
               type="time"
               :value="deadlineTime(draft(item.deadline))"
-              :disabled="disabled"
+              :disabled="disabled || !deadlineDate(draft(item.deadline))"
               :aria-label="`Время для шага ${item.number}`"
               @input="changeTime(item.deadline, $event)"
             />
