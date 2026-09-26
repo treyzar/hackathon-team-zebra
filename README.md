@@ -772,9 +772,12 @@ docker compose up -d --build
 - Первый администратор:
   `docker compose exec dev uv run --no-sync python src/set_role.py <username> admin`
 
-Код заданий по программированию проверяется на серверном Judge0
+Код заданий по программированию проверяется на Judge0 в среде linux
 (`JUDGE0_URL` в `.env`): локально Judge0 не работает на Docker Desktop,
-которому нужен cgroup v1.
+которому нужен cgroup v1. Токен для серверного Judge0 для локальной разработки в WSL
+(`JUDGE0_AUTH_TOKEN`) выдаёт разработчик проекта — за ним нужно обратиться
+к разработчикам. Без токена не работает только проверка кода, остальные
+функции платформы доступны.
 
 ### Тесты и линтер
 
@@ -813,7 +816,7 @@ TEST_DB_URL="postgresql+asyncpg://user:pass@localhost:5432/app_test" uv run pyte
 | `JWT_KEY` | Ключ подписи токенов входа; смена разлогинивает всех |
 | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Ключи файлового хранилища (SeaweedFS) |
 | `S3_BUCKET` | Бакет для файлов, по умолчанию в шаблоне `zebra` |
-| `JUDGE0_AUTH_TOKEN` | Токен доступа к Judge0 (`X-Auth-Token`); локально — тот же, что на сервере |
+| `JUDGE0_AUTH_TOKEN` | Токен доступа к Judge0 (`X-Auth-Token`); локально — тот же, что на сервере; ключ выдаёт разработчик проекта |
 
 **Только сервер** (`docker-compose.prod.yml`):
 
