@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import io
+import json
+import zipfile
+from pathlib import PurePosixPath
 from typing import Any
+from uuid import uuid4
 
 from fastapi import HTTPException, status
+from fontTools.ttLib.tables.grUtils import entries
 from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +22,15 @@ from courses.schemas import (
     ExportedModule,
     ExportedStep,
 )
-from files.models import File, FileStatus
+from files import storage
+from files.models import File, FilePurpose, FileStatus
+from files.schemas import (
+    ARCHIVED_FILES_PREFIX,
+    COURSE_DOCUMENT_FILENAME,
+    MANIFEST_FILENAME,
+    ArchiveManifest,
+    ManifestFile,
+)
 from models import User
 from steps import StepPayload
 
@@ -43,6 +57,27 @@ def _unique_slug(base: str, taken: set[str]) -> str:
     while f"{base}-{n}" in taken:
         n += 1
     return f"{base}-{n}"
+
+
+_DROPPED_FILE_ID = 0
+_FILE_REFERENCE_KEYS = ("file_id", "input_file", "output_file")
+
+
+def _replace_file_ids(value: Any, mapping: dict[int, int]) -> None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in _FILE_REFERENCE_KEYS and isinstance(item, int):
+                value[key] = mapping.get(item, _DROPPED_FILE_ID)
+            elif key == "files" and isinstance(item, list):
+                value[key] = [
+                    mapping.get(x, _DROPPED_FILE_ID) if isinstance(x, int) else x
+                    for x in item
+                ]
+            else:
+                _replace_file_ids(item, mapping)
+    elif isinstance(value, list):
+        for item in value:
+            _replace_file_ids(item, mapping)
 
 
 def _collect_referenced_file_ids(payload: dict[str, Any]) -> set[int]:
@@ -129,14 +164,91 @@ def _require_mapping(value: Any, what: str) -> dict[str, Any]:
     return value
 
 
-async def import_course(
-    db: AsyncSession, user: User, raw: bytes
-) -> tuple[Course, list[str]]:
-    try:
-        document = CourseDocument.model_validate_json(raw)
-    except ValidationError as e:
-        raise unprocessable(_first_error(e, "файл")) from e
+_ARCHIVE_PURPOSES = frozenset({FilePurpose.CONTENT, FilePurpose.ANSWER_KEY})
 
+
+async def _store_archive_files(
+    db: AsyncSession,
+    user: User,
+    archive: zipfile.ZipFile,
+    manifest: ArchiveManifest,
+) -> dict[int, int]:
+    mapping: dict[int, int] = {}
+    for entry in manifest.files:
+        if entry.purpose not in _ARCHIVE_PURPOSES:
+            raise unprocessable(
+                f"Файл «{entry.filename}»: назначение «{entry.purpose.value}» "
+                f"нельзя перенести в курс"
+            )
+
+        data = archive.read(entry.path)
+        if len(data) != entry.size:
+            raise unprocessable(
+                f"Файл «{entry.filename}»: в манифесте {entry.size} байт, "
+                f"в архиве {len(data)}"
+            )
+
+        file = File(
+            owner_id=user.id,
+            purpose=entry.purpose,
+            status=FileStatus.READY,
+            storage_key=f"{entry.purpose.value}/{uuid4().hex}",
+            filename=entry.filename,
+            mime=entry.mime,
+            size=len(data),
+        )
+        db.add(file)
+        await db.flush()
+        await storage.write_object(file.storage_key, data, file.mime)
+        mapping[entry.id] = file.id
+    return mapping
+
+
+async def import_course_archive(db, user, raw):
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(raw))
+    except zipfile.BadZipfile as e:
+        raise unprocessable(
+            "Поврежденнный или неподдерживаемый тип архива (не .zip)."
+        ) from e
+
+    with archive:
+        names = set(archive.namelist())
+
+        for required in (COURSE_DOCUMENT_FILENAME, MANIFEST_FILENAME):
+            if required not in names:
+                raise unprocessable(f"В архиве нет «{required}»")
+
+        try:
+            manifest = ArchiveManifest.model_validate_json(
+                archive.read(MANIFEST_FILENAME)
+            )
+        except ValidationError as e:
+            raise unprocessable(_first_error(e, MANIFEST_FILENAME)) from e
+
+        if missing := manifest.paths() - names:
+            listed = ", ".join(f"«{p}»" for p in sorted(missing))
+            raise unprocessable(f"В архиве не обнаружены файлы: {listed}")
+
+        try:
+            raw_document = json.loads(archive.read(COURSE_DOCUMENT_FILENAME))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            raise unprocessable(f"«{COURSE_DOCUMENT_FILENAME}»: {e}") from e
+
+        try:
+            CourseDocument.model_validate(raw_document)
+        except ValidationError as e:
+            raise unprocessable(_first_error(e, "файл")) from e
+
+        mapping = await _store_archive_files(db, user, archive, manifest)
+        _replace_file_ids(raw_document, mapping)
+        document = CourseDocument.model_validate(raw_document)
+    return await import_course_document(db, user, document)
+
+
+async def import_course_document(
+    db: AsyncSession, user: User, document: CourseDocument
+) -> tuple[Course, list[str]]:
     data = document.course
     warnings: list[str] = []
 
@@ -194,6 +306,62 @@ async def import_course(
             )
 
     return course, warnings
+
+
+async def import_course(
+    db: AsyncSession, user: User, raw: bytes
+) -> tuple[Course, list[str]]:
+    if zipfile.is_zipfile(io.BytesIO(raw)):
+        return await import_course_archive(db, user, raw)
+    try:
+        document = CourseDocument.model_validate_json(raw)
+    except ValidationError as e:
+        raise unprocessable(_first_error(e, "файл")) from e
+
+    return await import_course_document(db, user, document)
+
+
+async def export_as_archive(
+    db: AsyncSession, course: Course, document: dict[str, Any]
+) -> bytes | None:
+    file_ids = _collect_referenced_file_ids(document)
+
+    if not file_ids:
+        return None
+
+    rows = await db.scalars(
+        select(File).where(File.id.in_(file_ids), File.status == FileStatus.READY)
+    )
+    files = {file.id: file for file in rows}
+
+    if not files:
+        return None
+
+    buffer = io.BytesIO()
+
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for file_id, file in files.items():
+            data = await storage.read_object(file.storage_key)
+            exported_name = PurePosixPath(file.filename).name or f"file_{file_id}"
+            exported_path = f"{ARCHIVED_FILES_PREFIX}{file_id}__{exported_name}"
+
+            archive.writestr(exported_path, data)
+            entries.append(
+                ManifestFile(
+                    id=file_id,
+                    path=exported_path,
+                    purpose=file.purpose,
+                    mime=file.mime,
+                    size=len(data),
+                )
+            )
+        archive.writestr(
+            COURSE_DOCUMENT_FILENAME, json.dumps(document, ensure_ascii=False, indent=2)
+        )
+        archive.writestr(
+            MANIFEST_FILENAME, ArchiveManifest(files=entries).model_dump_json(indent=2)
+        )
+    return buffer.getvalue()
 
 
 async def export_as_json(db: AsyncSession, course: Course) -> dict[str, Any]:
