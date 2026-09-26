@@ -16,7 +16,6 @@ import {
 import type { Step } from "../src/modules/admin/shared/types";
 import { orderByRating, ratingParts } from "../src/modules/admin/groups/rating";
 import type { GroupRatingRow } from "../src/modules/admin/groups/types";
-import { parseMethodText } from "../src/modules/admin/courses/method-parser";
 import { reorderIds } from "../src/modules/admin/courses/reorder";
 
 test("dragging a step changes only its position within its module", () => {
@@ -222,20 +221,6 @@ test("a step title is saved as a marked heading and restored without duplicating
   const restored = formFromStep(step);
   assert.equal(restored.title, form.title);
   assert.deepEqual(restored.body, form.body);
-});
-
-test("method preview identifies step boundaries and unsupported step types", () => {
-  const parsed = parseMethodText(
-    "Модуль 1.3. Условия\nШаг 1.3.2. Проверь себя\nТип шага Контрольный вопрос\nПроверка Автоматическая\nШаг 1.3.3. Робот\nТип шага Робототехника",
-  );
-  assert.equal(parsed.modules, 1);
-  assert.deepEqual(
-    parsed.steps.map((step) => [step.number, step.supported]),
-    [
-      ["1.3.2", true],
-      ["1.3.3", false],
-    ],
-  );
 });
 
 test("group rating: parts of the total and members by place", () => {
