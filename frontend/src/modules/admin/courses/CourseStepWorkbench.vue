@@ -152,30 +152,37 @@ watch(() => props.stepId, load, { immediate: true });
         <p>{{ form.criteria }}</p>
       </div>
       <div v-if="step.type === 'short_text'" class="workbench-answer-list">
-        <b>Правильные ответы
-          <template v-if="form.shortTextCaseSensitive"> (с учётом регистра)</template>
-        </b>
-        <ul v-if="shortTextAccepted.length">
-          <li v-for="answer in shortTextAccepted" :key="answer">{{ answer }}</li>
-        </ul>
-        <p v-else class="admin-muted">
+        <b
+          >Правильные ответы<template v-if="form.shortTextCaseSensitive">
+            · с учётом регистра</template
+          ></b
+        >
+        <div v-for="answer in shortTextAccepted" :key="answer" class="workbench-answer">
+          <span class="admin-badge admin-badge--green">✓</span>
+          <span>{{ answer }}</span>
+        </div>
+        <p v-if="!shortTextAccepted.length" class="admin-muted">
           Список пуст — ответ проверяет куратор вручную.
         </p>
-        <p v-if="form.shortTextGrading === 'manual'" class="admin-muted">
-          Проверка вручную: список для куратора — подсказка, может быть пустым.
+        <p v-else-if="form.shortTextGrading === 'manual'" class="admin-muted">
+          Проверка вручную: список для куратора — подсказка.
         </p>
       </div>
 
-<div v-if="step.type === 'number'" class="workbench-answer-list">
-  <b>Правильный ответ</b>
-  <p>
-    <strong>{{ form.numberValue || "—" }}</strong>
-    <template v-if="form.numberKind === 'decimal'">
-      · точность {{ form.numberPrecision }}
-      {{ form.numberPrecision === 1 ? "знак" : "знаков" }} после запятой
-    </template>
-  </p>
-</div>
+      <div v-if="step.type === 'number'" class="workbench-answer-list">
+        <b>Правильный ответ</b>
+        <div class="workbench-answer">
+          <span class="admin-badge admin-badge--green">✓</span>
+          <span>{{ form.numberValue || "—" }}</span>
+        </div>
+        <p class="admin-muted">
+          <template v-if="form.numberKind === 'decimal'">
+            Дробное, точность — {{ form.numberPrecision }}
+            {{ form.numberPrecision === 1 ? "знак" : "знаков" }} после запятой.
+          </template>
+          <template v-else>Целое число.</template>
+        </p>
+      </div>
       <div v-if="step.type === 'programming'" class="workbench-answer-list">
         <b>Задача с тестами</b>
         <p>
