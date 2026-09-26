@@ -13,6 +13,7 @@ import {
 } from "../src/modules/student/courses/presentation";
 import type { MyRating } from "../src/modules/student/courses/types";
 import {
+  bandColumns,
   hexLayout,
   initialSkill,
   skillCountsText,
@@ -264,8 +265,8 @@ test("skill map: courses are bands of honeycomb cells", () => {
     { course_id: 1, title: "Scratch", skills: Array.from({ length: 5 }, () => skill()) },
     { course_id: 2, title: "Python", skills: [skill({ current: true })] },
   ]);
-  // Four cells per column: Scratch takes two columns, Python one, then
-  // one "new course" cell.
+  // Four cells per column: Scratch takes two columns, Python one. Only the
+  // student's own courses: no placeholder cells.
   assert.deepEqual(
     layout.cells.map((cell) => [cell.courseId, cell.x, cell.y]),
     [
@@ -275,7 +276,6 @@ test("skill map: courses are bands of honeycomb cells", () => {
       [1, 40, 390],
       [1, 138, 105], // odd column: half a cell lower
       [2, 236, 48],
-      [0, 334, 219],
     ],
   );
   assert.deepEqual(
@@ -283,14 +283,31 @@ test("skill map: courses are bands of honeycomb cells", () => {
     [
       ["SCRATCH", 40],
       ["PYTHON", 236],
-      ["ПОЯВИТСЯ ПОЗЖЕ", 334],
     ],
   );
-  assert.equal(layout.cells.at(-1)!.skill, null);
+  assert.equal(layout.width, 40 * 2 + 2 * 98 + 130);
   assert.deepEqual(
     initialSkill([{ course_id: 2, title: "Python", skills: [skill(), skill({ current: true })] }]),
     { courseId: 2, index: 1 },
   );
+});
+
+test("skill map: a long course name widens its band instead of overlapping", () => {
+  const long = "Алгоритмика: первые задачи на Python"; // 36 letters ≈ 324px
+  assert.equal(bandColumns("Smoke", 1), 1);
+  assert.equal(bandColumns(long, 1), 3);
+  assert.equal(bandColumns(long, 13), 4); // the skills need more anyway
+  assert.equal(bandColumns("x".repeat(200), 1), 4); // capped; the rest is cut
+  const layout = hexLayout([
+    { course_id: 1, title: long, skills: [skill()] },
+    { course_id: 2, title: "Smoke", skills: [skill()] },
+  ]);
+  const [first, second] = layout.labels;
+  // The next course starts after the long name, and no label is wider than
+  // the room up to the next band.
+  assert.equal(second!.x, 40 + 3 * 98);
+  assert.ok(first!.x + first!.width < second!.x);
+  assert.equal(first!.title, long);
 });
 
 test("skill map: what a cell and the selected card say", () => {

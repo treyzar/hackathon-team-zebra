@@ -11,15 +11,23 @@ export interface HexCell {
   x: number;
   y: number;
   courseId: number;
-  skill: Skill | null; // null: the "a new course will appear" cell
+  skill: Skill;
 }
 
 export interface HexLabel {
   text: string;
+  title: string;
   x: number;
   y: number;
-  soon: boolean;
+  // The label never gets wider than its course's band.
+  width: number;
 }
+
+// A course label is 12px bold capitals with letter spacing: about 9px a
+// letter. Enough to keep labels of neighbouring bands apart.
+const LABEL_LETTER = 9;
+// The widest band a long name may claim; beyond it the name is cut.
+const MAX_LABEL_COLUMNS = 4;
 
 function position(column: number, row: number): { x: number; y: number } {
   return {
@@ -28,8 +36,21 @@ function position(column: number, row: number): { x: number; y: number } {
   };
 }
 
-/** Each course is a band of columns with its name above it; one more cell
- * at the end says that new courses will appear. */
+function bandWidth(columns: number): number {
+  return (columns - 1) * HEX.column + HEX.width;
+}
+
+/** Columns a course takes: enough for its skills and for its name. */
+export function bandColumns(title: string, skills: number): number {
+  const forSkills = Math.max(1, Math.ceil(skills / ROWS));
+  let forLabel = 1;
+  while (forLabel < MAX_LABEL_COLUMNS && bandWidth(forLabel) < title.length * LABEL_LETTER)
+    forLabel += 1;
+  return Math.max(forSkills, forLabel);
+}
+
+/** Each course is a band of columns with its name above it; only the
+ * student's own courses are on the map. */
 export function hexLayout(courses: CourseSkills[]): {
   cells: HexCell[];
   labels: HexLabel[];
@@ -40,7 +61,15 @@ export function hexLayout(courses: CourseSkills[]): {
   const labels: HexLabel[] = [];
   let column = 0;
   for (const course of courses) {
-    labels.push({ text: course.title.toUpperCase(), ...position(column, 0), y: 14, soon: false });
+    const columns = bandColumns(course.title, course.skills.length);
+    labels.push({
+      text: course.title.toUpperCase(),
+      title: course.title,
+      x: position(column, 0).x,
+      y: 14,
+      // Up to the next band, which starts one column step further.
+      width: columns * HEX.column - 8,
+    });
     course.skills.forEach((skill, index) => {
       cells.push({
         key: `${course.course_id}-${index}`,
@@ -49,15 +78,12 @@ export function hexLayout(courses: CourseSkills[]): {
         ...position(column + Math.floor(index / ROWS), index % ROWS),
       });
     });
-    column += Math.max(1, Math.ceil(course.skills.length / ROWS));
+    column += columns;
   }
-  labels.push({ text: "ПОЯВИТСЯ ПОЗЖЕ", ...position(column, 0), y: 14, soon: true });
-  cells.push({ key: "soon", courseId: 0, skill: null, ...position(column, 1) });
-  column += 1;
   return {
     cells,
     labels,
-    width: HEX.padX * 2 + (column - 1) * HEX.column + HEX.width,
+    width: HEX.padX * 2 + Math.max(0, column - 1) * HEX.column + HEX.width,
     height: HEX.padY + (ROWS - 1) * HEX.row + HEX.row / 2 + HEX.height + 24,
   };
 }

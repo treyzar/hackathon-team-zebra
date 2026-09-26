@@ -27,7 +27,7 @@ const selectedCourse = computed(() =>
   courses.value.find((course) => course.course_id === selected.value?.courseId),
 );
 // "You are here" marks the first skill of the module with the next step.
-const here = computed(() => layout.value.cells.find((cell) => cell.skill?.current));
+const here = computed(() => layout.value.cells.find((cell) => cell.skill.current));
 
 async function load(): Promise<void> {
   loading.value = true;
@@ -71,8 +71,8 @@ onMounted(load);
             v-for="label in layout.labels"
             :key="label.text + label.x"
             class="hexmap-label"
-            :class="{ 'hexmap-label--soon': label.soon }"
-            :style="{ left: `${label.x}px`, top: `${label.y}px` }"
+            :title="label.title"
+            :style="{ left: `${label.x}px`, top: `${label.y}px`, maxWidth: `${label.width}px` }"
             >{{ label.text }}</span
           >
           <button
@@ -81,25 +81,17 @@ onMounted(load);
             type="button"
             class="hx"
             :class="[
-              cell.skill ? `hx--${cell.skill.state}` : 'hx--soon',
-              { 'hx--current': cell.skill?.current, 'hx--selected': cell.key === selectedKey },
+              `hx--${cell.skill.state}`,
+              { 'hx--current': cell.skill.current, 'hx--selected': cell.key === selectedKey },
             ]"
             :style="{ left: `${cell.x}px`, top: `${cell.y}px` }"
-            :disabled="!cell.skill"
             :aria-pressed="cell.key === selectedKey"
             @click="selectedKey = cell.key"
           >
             <span class="hi">
-              <template v-if="cell.skill">
-                <span class="hi-icon" aria-hidden="true">{{ skillIcons[cell.skill.state] }}</span>
-                <span class="hi-name">{{ cell.skill.name }}</span>
-                <span class="hi-sub">{{ skillSub(cell.skill) }}</span>
-              </template>
-              <template v-else>
-                <span class="hi-icon" aria-hidden="true">+</span>
-                <span class="hi-name">Новый курс</span>
-                <span class="hi-sub">скоро</span>
-              </template>
+              <span class="hi-icon" aria-hidden="true">{{ skillIcons[cell.skill.state] }}</span>
+              <span class="hi-name">{{ cell.skill.name }}</span>
+              <span class="hi-sub">{{ skillSub(cell.skill) }}</span>
             </span>
           </button>
           <span
@@ -112,7 +104,7 @@ onMounted(load);
       </div>
 
       <aside class="hexmap-side">
-        <div v-if="selected?.skill" class="hexmap-card hexmap-selected">
+        <div v-if="selected" class="hexmap-card hexmap-selected">
           <span class="hexmap-kicker">ВЫБРАНА СОТА</span>
           <strong class="hexmap-title">{{ selected.skill.name }}</strong>
           <span class="hexmap-muted">{{
@@ -211,10 +203,9 @@ onMounted(load);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-}
-.hexmap-label--soon {
-  color: #7c869c;
 }
 
 /* A cell: the outer hexagon is the border, the inner one the fill. */
@@ -228,9 +219,6 @@ onMounted(load);
   background: var(--hx-border);
   font: inherit;
   cursor: pointer;
-}
-.hx:disabled {
-  cursor: default;
 }
 .hi {
   position: absolute;
@@ -282,20 +270,14 @@ onMounted(load);
   --hx-fill: #fff;
   --hx-text: #0f172a;
 }
-.hx--locked,
-.hx--soon {
+.hx--locked {
   --hx-text: #7c869c;
 }
 .hx--locked {
   --hx-border: #d5dbe6;
   --hx-fill: #f4f6fb;
 }
-.hx--soon {
-  --hx-border: #e1e6f0;
-  --hx-fill: #fff;
-}
-.hx--locked .hi,
-.hx--soon .hi {
+.hx--locked .hi {
   background-image: repeating-linear-gradient(
     135deg,
     transparent 0 8px,
