@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 from courses.models import StepAccess
 from progress.schemas import ProgressSummary, StepProgress, Totals
@@ -44,8 +44,39 @@ class CourseOut(ORM):
     step_access: StepAccess
 
 
+def _clean_skills(skills: list[str]) -> list[str]:
+    """Trimmed, without blanks and repeats (case does not make a new skill)."""
+    result, seen = [], set()
+    for skill in skills:
+        skill = " ".join(skill.split())
+        if skill and skill.casefold() not in seen:
+            seen.add(skill.casefold())
+            result.append(skill)
+    return result
+
+
+Skills = Annotated[
+    list[Annotated[str, Field(max_length=60)]],
+    Field(max_length=12),
+    AfterValidator(_clean_skills),
+]
+
+
 class ModuleIn(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"title": "Циклы", "skills": ["Циклы", "Условия"]}]
+        }
+    )
     title: str = Field(min_length=1, max_length=200)
+    skills: Skills = []
+
+
+class ModuleUpdate(BaseModel):
+    """Only the fields that are sent change."""
+
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    skills: Skills | None = None
 
 
 class Order(BaseModel):
@@ -130,6 +161,7 @@ class AdminModuleOut(BaseModel):
     id: int
     title: str
     position: int
+    skills: list[str]
     steps: list[AdminStepSummary]
 
 
@@ -239,6 +271,7 @@ class ExportedStep(BaseModel):
 class ExportedModule(BaseModel):
     model_config = ConfigDict(extra="forbid")
     title: str
+    skills: Skills = []
     steps: list[ExportedStep] = []
 
 

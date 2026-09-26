@@ -2,7 +2,13 @@ import type { UserResponse, UserRole } from "@/api/http";
 
 export type RichText = { type: "doc"; content: Record<string, unknown>[] };
 export type StepType =
-  "theory" | "single_choice" | "multiple_choice" | "free_text" | "programming" | "number" | "short_text";
+  | "theory"
+  | "single_choice"
+  | "multiple_choice"
+  | "free_text"
+  | "programming"
+  | "number"
+  | "short_text";
 export type StepAccess = "all" | "sequential";
 
 export interface Course {
@@ -27,6 +33,8 @@ export interface Module {
   id: number;
   title: string;
   position: number;
+  // Skills of the module on the students' skill map.
+  skills: string[];
   steps: StepSummary[];
 }
 

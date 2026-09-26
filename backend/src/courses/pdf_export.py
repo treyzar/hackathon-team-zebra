@@ -259,6 +259,12 @@ def _build_pdf_html(
         parts.append(
             f"<section><h2 class='{css_class}'>Модуль {index}. {_escape(module.title)}</h2>"
         )
+        if module.skills:
+            parts.append(
+                "<p class='muted'>Навыки: "
+                + ", ".join(_escape(skill) for skill in module.skills)
+                + "</p>"
+            )
         items = parsed_by_module[module.id]
         if not items:
             parts.append("<p class='muted'>В модуле пока нет шагов.</p>")

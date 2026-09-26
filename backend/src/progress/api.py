@@ -17,6 +17,7 @@ from progress.rating import my_rating, rating_of
 from progress.schemas import (
     CourseAnalytics,
     CourseProgressOut,
+    CourseSkills,
     Learner,
     LearnerCourse,
     LearnerGroup,
@@ -28,6 +29,7 @@ from progress.schemas import (
     StudentProgressRow,
 )
 from progress.service import course_progress
+from progress.skills import skill_map
 
 progress_api = APIRouter(tags=["progress"])
 require_student = require_roles(Role.STUDENT)
@@ -282,3 +284,20 @@ async def list_learners(
             )
         )
     return result
+
+
+@progress_api.get("/skills", response_model=list[CourseSkills])
+@access_note(
+    "Только ученик и только своя карта: курсы, на которые он записан, и навыки "
+    "их модулей. Правила — в README, раздел «Карта навыков»."
+)
+async def get_skill_map(
+    user: User = Depends(require_student),
+    db: AsyncSession = Depends(access_db),
+):
+    """Карта навыков: у каждого курса навыки его модулей — `gold` (все шаги
+    модуля выполнены, все задания с первой попытки на максимум), `done` (все
+    шаги выполнены), `in_progress`, `open` (можно начать) или `locked`
+    (откроется после модуля `opens_after`). У навыка — счётчики шагов модуля,
+    шаг для «Продолжить» и отметка `current` («Ты здесь»)."""
+    return await skill_map(db, user)

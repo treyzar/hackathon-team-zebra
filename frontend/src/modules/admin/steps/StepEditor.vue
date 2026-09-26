@@ -581,8 +581,11 @@ watch(
               </label>
               <label class="admin-field">
                 Допустимые ответы (по одному в строке)
-                <textarea v-model="form.shortTextAccepted" rows="5"
-                          placeholder="Москва&#10;Moscow&#10;город Москва" />
+                <textarea
+                  v-model="form.shortTextAccepted"
+                  rows="5"
+                  placeholder="Москва&#10;Moscow&#10;город Москва"
+                />
               </label>
               <label class="admin-check">
                 <input v-model="form.shortTextCaseSensitive" type="checkbox" />
@@ -898,14 +901,6 @@ watch(
                 ></template
               >
             </div>
-          </section>
-          <section class="admin-panel">
-            <div class="admin-panel-head">
-              <div><h2>Навыки на карте</h2></div>
-            </div>
-            <p class="admin-muted">
-              Привязка навыков к шагу появится после добавления этого поля в API.
-            </p>
           </section>
           <section class="admin-panel">
             <div class="admin-panel-head">

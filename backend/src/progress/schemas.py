@@ -285,3 +285,35 @@ class ModuleAnalytics(BaseModel):
     module: ModuleStats
     steps: list[StepColumn]
     students: list[StudentSteps]
+
+
+# --- skill map -----------------------------------------------------------------
+
+
+class Skill(BaseModel):
+    name: str
+    module_id: int
+    module_title: str
+    # gold (every step completed, every task at full score on the first
+    # attempt) | done (every step completed) | in_progress | open | locked
+    # (the course opens steps one by one and the module is not open yet).
+    state: str
+    # Steps of the module: completed, waiting for a check, returned by a
+    # curator and not redone yet; the rest is ahead.
+    steps_total: int
+    steps_completed: int
+    steps_checking: int
+    steps_returned: int
+    # The first open step of the module still to do, for "continue".
+    next_step_id: int | None
+    # The student's next step in the course is in this module.
+    current: bool
+    # For a locked module: the module to finish first.
+    opens_after: str | None
+
+
+class CourseSkills(BaseModel):
+    course_id: int
+    title: str
+    # Skills of the course's modules, in course order.
+    skills: list[Skill]

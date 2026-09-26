@@ -11,6 +11,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -53,6 +54,11 @@ class Module(BaseDB):
     title: Mapped[str] = mapped_column(String(200))
     position: Mapped[int] = mapped_column(Integer)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Skills the module teaches, shown on the student's skill map. Whether a
+    # student has them is computed from progress, never stored.
+    skills: Mapped[list[str]] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
+    )
 
 
 class Step(BaseDB):

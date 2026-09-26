@@ -12,6 +12,14 @@ import {
   streakWeek,
 } from "../src/modules/student/courses/presentation";
 import type { MyRating } from "../src/modules/student/courses/types";
+import {
+  hexLayout,
+  initialSkill,
+  skillCountsText,
+  skillSegments,
+  skillSub,
+} from "../src/modules/student/skills/presentation";
+import type { Skill } from "../src/modules/student/skills/types";
 import { renderRichText, richTextImageIds } from "../src/modules/student/courses/rich-text";
 import {
   failedTests,
@@ -232,4 +240,78 @@ test("rating widget texts: place, goal and the week of the streak", () => {
   assert.equal(streakHint(open), "Сдай один шаг сегодня — серия продолжится.");
   assert.match(streakHint(rating.streak), /уже засчитано/);
   assert.match(streakHint({ ...open, days: 0 }), /начнётся серия/);
+});
+
+function skill(overrides: Partial<Skill> = {}): Skill {
+  return {
+    name: "Циклы",
+    module_id: 3,
+    module_title: "Повторение",
+    state: "in_progress",
+    steps_total: 6,
+    steps_completed: 2,
+    steps_checking: 1,
+    steps_returned: 1,
+    next_step_id: 9,
+    current: false,
+    opens_after: null,
+    ...overrides,
+  };
+}
+
+test("skill map: courses are bands of honeycomb cells", () => {
+  const layout = hexLayout([
+    { course_id: 1, title: "Scratch", skills: Array.from({ length: 5 }, () => skill()) },
+    { course_id: 2, title: "Python", skills: [skill({ current: true })] },
+  ]);
+  // Four cells per column: Scratch takes two columns, Python one, then
+  // one "new course" cell.
+  assert.deepEqual(
+    layout.cells.map((cell) => [cell.courseId, cell.x, cell.y]),
+    [
+      [1, 40, 48],
+      [1, 40, 162],
+      [1, 40, 276],
+      [1, 40, 390],
+      [1, 138, 105], // odd column: half a cell lower
+      [2, 236, 48],
+      [0, 334, 219],
+    ],
+  );
+  assert.deepEqual(
+    layout.labels.map((label) => [label.text, label.x]),
+    [
+      ["SCRATCH", 40],
+      ["PYTHON", 236],
+      ["ПОЯВИТСЯ ПОЗЖЕ", 334],
+    ],
+  );
+  assert.equal(layout.cells.at(-1)!.skill, null);
+  assert.deepEqual(
+    initialSkill([{ course_id: 2, title: "Python", skills: [skill(), skill({ current: true })] }]),
+    { courseId: 2, index: 1 },
+  );
+});
+
+test("skill map: what a cell and the selected card say", () => {
+  assert.equal(skillSub(skill()), "2 из 6 · ↺ 1");
+  assert.equal(skillSub(skill({ steps_returned: 0 })), "2 из 6");
+  assert.equal(skillSub(skill({ state: "locked", opens_after: "Основы" })), "после «Основы»");
+  assert.equal(
+    skillSub(skill({ steps_total: 0, steps_completed: 0, steps_checking: 0, steps_returned: 0 })),
+    "шагов пока нет",
+  );
+  assert.deepEqual(skillSegments(skill()), [
+    "completed",
+    "completed",
+    "checking",
+    "returned",
+    "ahead",
+    "ahead",
+  ]);
+  assert.equal(skillCountsText(skill()), "2 зачтено · 1 на проверке · 1 возвращено · 2 впереди");
+  assert.equal(
+    skillCountsText(skill({ steps_checking: 0, steps_returned: 0 })),
+    "2 зачтено · 4 впереди",
+  );
 });

@@ -25,6 +25,7 @@ from courses.schemas import (
     EnrollResult,
     ImportResult,
     ModuleIn,
+    ModuleUpdate,
     Order,
     RevisionOut,
     RevisionSummary,
@@ -96,7 +97,11 @@ async def get_course_tree(course_id: int, db: AsyncSession = Depends(access_db))
         **CourseOut.model_validate(course).model_dump(),
         modules=[
             AdminModuleOut(
-                id=m.id, title=m.title, position=m.position, steps=steps[m.id]
+                id=m.id,
+                title=m.title,
+                position=m.position,
+                skills=m.skills,
+                steps=steps[m.id],
             )
             for m in modules
         ],
@@ -134,10 +139,18 @@ async def create_module(
 ):
     course = await svc.get_course(db, course_id)
     position = await svc.next_position(db, Module.position, Module.course_id, course.id)
-    module = Module(course_id=course.id, title=data.title, position=position)
+    module = Module(
+        course_id=course.id, title=data.title, position=position, skills=data.skills
+    )
     db.add(module)
     await db.flush()
-    return AdminModuleOut(id=module.id, title=module.title, position=position, steps=[])
+    return AdminModuleOut(
+        id=module.id,
+        title=module.title,
+        position=position,
+        skills=module.skills,
+        steps=[],
+    )
 
 
 @authoring.put("/courses/{course_id}/modules/order", status_code=204)
@@ -152,10 +165,15 @@ async def reorder_modules(
 
 
 @authoring.patch("/modules/{module_id}", status_code=204)
-async def rename_module(
-    module_id: int, data: ModuleIn, db: AsyncSession = Depends(access_db)
+async def update_module(
+    module_id: int, data: ModuleUpdate, db: AsyncSession = Depends(access_db)
 ):
-    (await svc.get_module(db, module_id)).title = data.title
+    """Переименовать модуль и/или задать его навыки для карты навыков."""
+    module = await svc.get_module(db, module_id)
+    if data.title is not None:
+        module.title = data.title
+    if data.skills is not None:
+        module.skills = data.skills
 
 
 @authoring.delete("/modules/{module_id}", status_code=204)

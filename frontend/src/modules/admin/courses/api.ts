@@ -25,12 +25,7 @@ export const courseApi = {
   },
   async updateCourse(
     id: number,
-    data: Partial<
-      Pick<
-        Course,
-        "slug" | "title" | "description" | "step_access" | "is_published"
-      >
-    >,
+    data: Partial<Pick<Course, "slug" | "title" | "description" | "step_access" | "is_published">>,
   ): Promise<Course> {
     return (await api.patch<Course>(`/admin/courses/${id}`, data)).data;
   },
@@ -51,8 +46,9 @@ export const courseApi = {
   async createModule(courseId: number, title: string): Promise<Module> {
     return (await api.post<Module>(`/admin/courses/${courseId}/modules`, { title })).data;
   },
-  async renameModule(id: number, title: string): Promise<void> {
-    await api.patch(`/admin/modules/${id}`, { title });
+  /** Only the fields that are sent change. */
+  async updateModule(id: number, data: { title?: string; skills?: string[] }): Promise<void> {
+    await api.patch(`/admin/modules/${id}`, data);
   },
   async deleteModule(id: number): Promise<void> {
     await api.delete(`/admin/modules/${id}`);

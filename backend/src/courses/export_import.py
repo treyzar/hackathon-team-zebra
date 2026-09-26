@@ -157,7 +157,10 @@ async def import_course(
 
     for module_index, module in enumerate(data.modules):
         db_module = Module(
-            course_id=course.id, title=module.title, position=module_index
+            course_id=course.id,
+            title=module.title,
+            position=module_index,
+            skills=module.skills,
         )
         db.add(db_module)
         await db.flush()
@@ -243,7 +246,8 @@ async def export_as_json(db: AsyncSession, course: Course) -> dict[str, Any]:
             description=course.description,
             step_access=course.step_access,
             modules=[
-                ExportedModule(title=m.title, steps=by_module[m.id]) for m in modules
+                ExportedModule(title=m.title, skills=m.skills, steps=by_module[m.id])
+                for m in modules
             ],
         ),
     )

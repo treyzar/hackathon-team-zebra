@@ -34,6 +34,30 @@
         { "type": "null" }
       ]
     },
+    "skills": {
+      "type": "array",
+      "description": "Навыки модуля для карты навыков учеников.",
+      "maxItems": 12,
+      "items": { "type": "string", "minLength": 1, "maxLength": 60 },
+      "default": []
+    },
+    "checklist": {
+      "type": "array",
+      "description": "Чек-лист ручной проверки: сумма points равна max_score; только при проверке куратором.",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "points"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "text": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "points": { "type": "number", "minimum": 0, "maximum": 1000 },
+          "hint": { "type": ["string", "null"], "maxLength": 2000 }
+        }
+      },
+      "default": []
+    },
     "course": {
       "type": "object",
       "required": ["slug", "title", "modules"],
@@ -52,6 +76,7 @@
       "additionalProperties": false,
       "properties": {
         "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "skills": { "$ref": "#/$defs/skills" },
         "steps": { "type": "array", "items": { "$ref": "#/$defs/step" } }
       }
     },
@@ -221,7 +246,8 @@
           "properties": {
             "grading": { "const": "manual" },
             "max_attempts": { "$ref": "#/$defs/maxAttempts" },
-            "show_answer": { "$ref": "#/$defs/showAnswer" }
+            "show_answer": { "$ref": "#/$defs/showAnswer" },
+            "checklist": { "$ref": "#/$defs/checklist" }
           }
         }
       }
@@ -331,7 +357,8 @@
               "default": "all_or_nothing"
             },
             "max_attempts": { "$ref": "#/$defs/maxAttempts" },
-            "show_answer": { "$ref": "#/$defs/showAnswer" }
+            "show_answer": { "$ref": "#/$defs/showAnswer" },
+            "checklist": { "$ref": "#/$defs/checklist" }
           }
         }
       }
@@ -404,7 +431,8 @@
           "properties": {
             "grading": { "enum": ["auto", "manual"], "default": "auto" },
             "max_attempts": { "$ref": "#/$defs/maxAttempts" },
-            "show_answer": { "$ref": "#/$defs/showAnswer" }
+            "show_answer": { "$ref": "#/$defs/showAnswer" },
+            "checklist": { "$ref": "#/$defs/checklist" }
           }
         }
       }

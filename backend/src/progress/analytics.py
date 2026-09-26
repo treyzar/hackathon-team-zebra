@@ -51,7 +51,7 @@ class ModuleState(enum.StrEnum):
 
 
 @dataclass
-class _Work:
+class StepWork:
     """A student's attempts at one step, oldest first."""
 
     attempts: int = 0
@@ -62,9 +62,9 @@ class _Work:
     last_at: datetime | None = None
 
 
-async def _work(
+async def step_work(
     db: AsyncSession, students: list[User], step_ids: list[int]
-) -> dict[tuple[int, int], _Work]:
+) -> dict[tuple[int, int], StepWork]:
     rows = await db.execute(
         select(
             Submission.user_id,
@@ -83,7 +83,7 @@ async def _work(
         )
         .order_by(Submission.id)
     )
-    work: dict[tuple[int, int], _Work] = defaultdict(_Work)
+    work: dict[tuple[int, int], StepWork] = defaultdict(StepWork)
     for user_id, step_id, status, score, created_at, graded_max in rows:
         w = work[(user_id, step_id)]
         if w.attempts == 0 and score is not None:
@@ -150,7 +150,7 @@ def _student_info(s: User) -> StudentInfo:
 async def _collect(db: AsyncSession, course: Course, students: list[User]):
     progress = await course_progress(db, course, students)
     step_ids = [s.id for s in await visible_steps_in_order(db, course.id)]
-    return progress, await _work(db, students, step_ids)
+    return progress, await step_work(db, students, step_ids)
 
 
 async def course_analytics(
@@ -230,7 +230,7 @@ async def module_analytics(
     for student in students:
         cells = []
         for r in _module_results(progress[student.id], module.id):
-            w = work.get((student.id, r.step.id), _Work())
+            w = work.get((student.id, r.step.id), StepWork())
             cells.append(
                 StepCell(
                     step_id=r.step.id,

@@ -6,7 +6,7 @@ import {
   payloadFromForm,
   validateStepForm,
 } from "../src/modules/admin/steps/editor-model";
-import { fullName, textToDoc } from "../src/modules/admin/shared/format";
+import { fullName, parseSkills, textToDoc } from "../src/modules/admin/shared/format";
 import {
   docImageIds,
   docToQuillOps,
@@ -371,4 +371,9 @@ test("a checklist is kept, checked against the maximum and only sent for curator
   assert.equal("checklist" in payloadFromForm(code).settings, false);
   code.grading = "manual";
   assert.match(validateStepForm(code) ?? "", /чек-листа/);
+});
+
+test("module skills are typed separated by commas", () => {
+  assert.deepEqual(parseSkills(" Циклы  for , условия,, циклы for, "), ["Циклы for", "условия"]);
+  assert.deepEqual(parseSkills(""), []);
 });

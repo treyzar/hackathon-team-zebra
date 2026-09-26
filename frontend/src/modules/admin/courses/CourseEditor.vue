@@ -7,7 +7,7 @@ import { courseApi } from "./api";
 import { reorderIds } from "./reorder";
 import CourseStepWorkbench from "./CourseStepWorkbench.vue";
 import { stepApi } from "../steps/api";
-import { docToText, stepTypeLabels, textToDoc } from "../shared/format";
+import { docToText, parseSkills, stepTypeLabels, textToDoc } from "../shared/format";
 import type { CourseTree, Module, StepAccess, StepSummary } from "../shared/types";
 import { ADMIN_COURSES_ROUTE } from "@/pages/admin/courses/constants";
 import { ADMIN_PUBLISH_ROUTE } from "@/pages/admin/publish/constants";
@@ -31,6 +31,7 @@ const stepAccess = ref<StepAccess>("all");
 const newModuleTitle = ref("");
 const renamingId = ref<number | null>(null);
 const renameValue = ref("");
+const skillsValue = ref("");
 type DragItem = { kind: "module"; id: number } | { kind: "step"; moduleId: number; id: number };
 const dragging = ref<DragItem | null>(null);
 const dropTarget = ref<DragItem | null>(null);
@@ -140,12 +141,21 @@ async function createModule(): Promise<void> {
   }
 }
 
+function startEdit(module: Module): void {
+  renamingId.value = module.id;
+  renameValue.value = module.title;
+  skillsValue.value = module.skills.join(", ");
+}
+
 async function renameModule(id: number): Promise<void> {
   if (!renameValue.value.trim()) return;
   busy.value = true;
   error.value = "";
   try {
-    await courseApi.renameModule(id, renameValue.value.trim());
+    await courseApi.updateModule(id, {
+      title: renameValue.value.trim(),
+      skills: parseSkills(skillsValue.value),
+    });
     renamingId.value = null;
     await load();
   } catch (cause) {
@@ -447,6 +457,13 @@ watch(courseId, load);
                         >{{ moduleIndex + 1 }}. {{ module.title.toUpperCase() }}</span
                       >
                       <small>{{ stepsText(module.steps.length) }}</small>
+                      <span
+                        v-for="skill in module.skills"
+                        :key="skill"
+                        class="course-module-skill"
+                        title="Навык на карте навыков учеников"
+                        >{{ skill }}</span
+                      >
                     </div>
                     <form v-else class="admin-actions" @submit.prevent="renameModule(module.id)">
                       <input
@@ -455,6 +472,11 @@ watch(courseId, load);
                         maxlength="200"
                         required
                         aria-label="Название модуля"
+                      /><input
+                        v-model="skillsValue"
+                        class="admin-input"
+                        placeholder="Навыки через запятую"
+                        aria-label="Навыки модуля для карты навыков, через запятую"
                       /><button class="admin-button admin-button--primary" :disabled="busy">
                         Сохранить</button
                       ><button class="admin-button" type="button" @click="renamingId = null">
@@ -462,15 +484,8 @@ watch(courseId, load);
                       </button>
                     </form>
                     <div v-if="renamingId !== module.id" class="admin-actions">
-                      <button
-                        class="admin-button"
-                        type="button"
-                        @click="
-                          renamingId = module.id;
-                          renameValue = module.title;
-                        "
-                      >
-                        Переименовать</button
+                      <button class="admin-button" type="button" @click="startEdit(module)">
+                        Изменить</button
                       ><button
                         class="admin-button admin-button--danger"
                         type="button"
@@ -724,6 +739,14 @@ watch(courseId, load);
   flex-wrap: wrap;
   gap: 7px;
   min-width: 0;
+}
+.course-module-skill {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #e4f5ec;
+  color: #11683f;
+  font-size: 12px;
+  font-weight: 600;
 }
 .course-module-title small {
   color: #8992a3;

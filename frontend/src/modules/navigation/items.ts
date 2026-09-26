@@ -9,6 +9,7 @@ import { CURATOR_QUESTIONS_ROUTE } from "@/pages/curator/questions/constants";
 import { CURATOR_ANALYTICS_ROUTE } from "@/pages/curator/analytics/constants";
 import { CURATOR_LEARNERS_ROUTE } from "@/pages/curator/learners/constants";
 import { STUDENT_COURSES_ROUTE } from "@/pages/student/courses/constants";
+import { STUDENT_SKILLS_ROUTE } from "@/pages/student/skills/constants";
 import { WORKSPACE_SECTION_ROUTES } from "@/pages/workspace-section/constants";
 import { CURATOR_DEADLINES_ROUTE } from "@/pages/curator/deadlines/constants";
 
@@ -49,9 +50,9 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
       icon: "courses",
     },
     {
-      ...WORKSPACE_SECTION_ROUTES.studentSkills,
+      ...STUDENT_SKILLS_ROUTE,
       label: "Карта навыков",
-      description: "Ваш путь в программировании",
+      description: "Навыки ваших курсов",
       icon: "skills",
     },
     {

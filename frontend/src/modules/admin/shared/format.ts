@@ -12,8 +12,23 @@ export const stepTypeLabels: Record<StepType, string> = {
   free_text: "Проект",
   programming: "Задача с тестами",
   short_text: "Краткий ответ",
-  number: "Число"
+  number: "Число",
 };
+
+/** "Циклы, условия,, циклы" -> ["Циклы", "условия"]: the admin types
+ * skills separated by commas; the server trims and drops repeats too. */
+export function parseSkills(value: string): string[] {
+  const seen = new Set<string>();
+  return value
+    .split(",")
+    .map((item) => item.trim().replace(/\s+/g, " "))
+    .filter((item) => {
+      const key = item.toLocaleLowerCase();
+      if (!item || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
 
 export function textToDoc(value: string): RichText {
   return {
