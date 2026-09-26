@@ -43,6 +43,9 @@ export const courseApi = {
   async exportCoursePdf(id: number): Promise<Blob> {
     return (await api.get<Blob>(`/admin/courses/${id}/export_pdf`, { responseType: "blob" })).data;
   },
+  async exportImportSchema(): Promise<Blob> {
+    return (await api.get<Blob>("/admin/courses/import/schema", { responseType: "blob" })).data;
+  },
   async createModule(courseId: number, title: string): Promise<Module> {
     return (await api.post<Module>(`/admin/courses/${courseId}/modules`, { title })).data;
   },

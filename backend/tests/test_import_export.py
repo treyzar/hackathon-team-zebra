@@ -308,3 +308,26 @@ async def test_import_and_export_require_admin(client, make_user):
             headers=h,
         )
         assert r.status_code == 403
+
+
+@requires_db
+async def test_import_schema_download_describes_every_step_type(client, admin):
+    r = await client.get("/admin/courses/import/schema", headers=admin[1])
+    assert r.status_code == 200
+    assert "attachment" in r.headers["content-disposition"]
+    schema = r.json()
+    assert schema["$schema"].endswith("2020-12/schema")
+    assert set(schema["required"]) == {"schema_version", "course"}
+    # Every registered step type must be importable, so the schema has to
+    # list its payload.
+    described = json.dumps(schema)
+    for key in ("theory", "single_choice", "number", "free_text", "programming"):
+        assert f'"{key}"' in described
+
+
+@requires_db
+async def test_import_schema_requires_admin(client, make_user):
+    for role in ("student", "curator"):
+        _, h = await make_user(role)
+        r = await client.get("/admin/courses/import/schema", headers=h)
+        assert r.status_code == 403

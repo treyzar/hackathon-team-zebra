@@ -16,7 +16,7 @@ const selectedFile = ref<File | null>(null);
 const importedCourse = ref<CourseImportResult | null>(null);
 const loadingCourses = ref(true);
 const importing = ref(false);
-const exporting = ref<"json" | "pdf" | "">("");
+const exporting = ref<"json" | "pdf" | "schema" | "">("");
 const dragging = ref(false);
 const loadError = ref("");
 const importError = ref("");
@@ -98,6 +98,18 @@ async function exportCourse(format: "json" | "pdf"): Promise<void> {
         ? await courseApi.exportCourseJson(selectedCourse.value.id)
         : await courseApi.exportCoursePdf(selectedCourse.value.id);
     download(blob, selectedCourse.value.slug);
+  } catch (cause) {
+    exportError.value = getApiErrorMessage(cause);
+  } finally {
+    exporting.value = "";
+  }
+}
+
+async function exportSchema(): Promise<void> {
+  exporting.value = "schema";
+  exportError.value = "";
+  try {
+    download(await courseApi.exportImportSchema(), "course-import-schema.json");
   } catch (cause) {
     exportError.value = getApiErrorMessage(cause);
   } finally {
@@ -237,6 +249,16 @@ onMounted(loadCourses);
           >
             <span aria-hidden="true">↓</span>
             {{ exporting === "pdf" ? "Готовим PDF…" : "Скачать PDF" }}
+          </button>
+          <button
+            class="admin-button"
+            type="button"
+            title="JSON Schema формата файла для импорта и экспорта"
+            :disabled="Boolean(exporting)"
+            @click="exportSchema"
+          >
+            <span aria-hidden="true">↓</span>
+            {{ exporting === "schema" ? "Готовим схему…" : "Скачать схему JSON" }}
           </button>
         </div>
       </section>

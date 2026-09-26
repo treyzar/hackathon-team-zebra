@@ -18,6 +18,7 @@ from courses.schemas import (
     AdminStepOut,
     AdminStepSummary,
     CourseCreate,
+    CourseDocument,
     CourseOut,
     CourseUpdate,
     EnrolledStudent,
@@ -418,6 +419,24 @@ async def export_course_pdf(
         content=pdf,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{course.slug}.pdf"'},
+    )
+
+
+@authoring.get("/courses/import/schema")
+async def export_import_schema() -> Response:
+    """JSON Schema of the import/export file, built from the model that
+    validates an import, so it cannot drift from what the server accepts."""
+    schema = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        **CourseDocument.model_json_schema(),
+    }
+    body = json.dumps(schema, ensure_ascii=False, indent=2).encode("utf-8")
+    return Response(
+        content=body,
+        media_type="application/json; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="course-import-schema.json"'
+        },
     )
 
 
