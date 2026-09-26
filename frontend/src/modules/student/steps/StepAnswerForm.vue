@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import type {
   ChoiceContent,
   FreeTextContent,
   ProgrammingContent,
+  NumberContent,
+  ShortTextContent,
   StudentStep,
 } from "@/modules/student/courses/types";
 import { LANGUAGES, type ProgrammingLanguage } from "../../languages";
@@ -32,7 +35,9 @@ const emit = defineEmits<{
   "update:code": [value: string];
   "update:language": [value: ProgrammingLanguage];
 }>();
+
 const numberContent = computed(() => props.step.content as unknown as NumberContent);
+
 </script>
 
 <template>

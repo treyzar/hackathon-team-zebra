@@ -50,7 +50,8 @@ export interface StepForm {
   numberPrecision: number;
   numberValue: string;
   shortTextAccepted: string;
-  shortTextCaseSensitive: boolean
+  shortTextCaseSensitive: boolean;
+  shortTextGrading: string;
 }
 
 export function newStepForm(type: StepType = "theory"): StepForm {
@@ -87,6 +88,7 @@ export function newStepForm(type: StepType = "theory"): StepForm {
     numberValue: "",
     shortTextAccepted: "",
     shortTextCaseSensitive: false,
+    shortTextGrading: "auto",
   };
 }
 
@@ -206,6 +208,7 @@ export function formFromStep(step: Step): StepForm {
     const accepted = Array.isArray(answerKey.accepted) ? answerKey.accepted : [];
     form.shortTextAccepted = accepted.map(String).join("\n");
     form.shortTextCaseSensitive = Boolean(answerKey.case_sensitive);
+    form.shortTextGrading = String(settings.grading ?? "auto");
   }
 
   return form;
@@ -295,7 +298,9 @@ export function payloadFromForm(form: StepForm): StepPayload {
           ? "manual"
           : form.type === "programming"
             ? form.grading
-            : "auto",
+            : form.type === "short_text"
+              ? form.shortTextGrading
+              : "auto",
     max_attempts: form.maxAttempts === "" ? null : form.maxAttempts,
     show_answer: form.showAnswer,
   };
