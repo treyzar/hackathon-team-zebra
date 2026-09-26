@@ -1,5 +1,6 @@
 import { api } from "@/api/http";
 import type { AdminUser, Group } from "../shared/types";
+import type { GroupRatingRow } from "./types";
 
 export const groupApi = {
   async groups(): Promise<Group[]> {
@@ -24,6 +25,10 @@ export const groupApi = {
 
   async addStudent(groupId: number, userId: number): Promise<void> {
     await api.put(`/admin/groups/${groupId}/students/${userId}`);
+  },
+
+  async rating(groupId: number): Promise<GroupRatingRow[]> {
+    return (await api.get<GroupRatingRow[]>(`/groups/${groupId}/rating`)).data;
   },
 
   async removeStudent(groupId: number, userId: number): Promise<void> {

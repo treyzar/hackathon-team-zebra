@@ -11,13 +11,15 @@ import GroupStudentsPanel from "./components/GroupStudentsPanel.vue";
 import GroupCoursesPanel from "./components/GroupCoursesPanel.vue";
 import { useNotifications } from "@/modules/notifications/useNotifications";
 import type { AdminUser, Group } from "../shared/types";
-import type { AdminCourse, GroupCourseCoverage } from "./types";
+import type { AdminCourse, GroupCourseCoverage, GroupRatingRow } from "./types";
 
 const groups = ref<Group[]>([]);
 const users = ref<AdminUser[]>([]);
 const members = ref<AdminUser[]>([]);
 const courses = ref<AdminCourse[]>([]);
 const courseCoverage = ref<GroupCourseCoverage[]>([]);
+// null: the rating did not load; the student list works without it.
+const rating = ref<GroupRatingRow[] | null>([]);
 
 const selectedId = ref<number | null>(null);
 const showCreate = ref(false);
@@ -72,7 +74,19 @@ async function loadBase(): Promise<void> {
 async function loadSelectedGroupData(): Promise<void> {
   // Course coverage depends on the current member list, so keep this sequential.
   await loadMembers();
-  await loadCourseCoverage();
+  await Promise.all([loadCourseCoverage(), loadRating()]);
+}
+
+async function loadRating(): Promise<void> {
+  if (selectedId.value === null) {
+    rating.value = [];
+    return;
+  }
+  try {
+    rating.value = await groupApi.rating(selectedId.value);
+  } catch {
+    rating.value = null;
+  }
 }
 
 async function loadMembers(): Promise<void> {
@@ -155,7 +169,7 @@ async function addStudent(userId: number): Promise<void> {
       groupApi.groups(),
       groupApi.groupStudents(selectedId.value),
     ]);
-    await loadCourseCoverage();
+    await Promise.all([loadCourseCoverage(), loadRating()]);
     notifications.success("Ученик добавлен в группу");
   } catch (cause) {
     notifications.error(getApiErrorMessage(cause));
@@ -173,7 +187,7 @@ async function removeStudent(userId: number): Promise<void> {
       groupApi.groups(),
       groupApi.groupStudents(selectedId.value),
     ]);
-    await loadCourseCoverage();
+    await Promise.all([loadCourseCoverage(), loadRating()]);
     notifications.success("Ученик исключён из группы");
   } catch (cause) {
     notifications.error(getApiErrorMessage(cause));
@@ -187,7 +201,7 @@ async function enrollGroup(courseId: number): Promise<void> {
   busy.value = true;
   try {
     const result = await courseEnrollmentApi.enrollGroup(courseId, selectedId.value);
-    await loadCourseCoverage();
+    await Promise.all([loadCourseCoverage(), loadRating()]);
 
     const enrolled = result.enrolled.length;
     const existed = result.already_enrolled.length;
@@ -299,6 +313,7 @@ onBeforeUnmount(() => {
         <GroupStudentsPanel
           :members="members"
           :students="students"
+          :rating="rating"
           :busy="busy"
           @add="addStudent"
           @remove="removeStudent"

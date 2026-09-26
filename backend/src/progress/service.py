@@ -32,7 +32,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from courses.access import locked_steps
-from courses.models import Course, StepRevision
+from courses.models import Course, Enrollment, StepRevision
 from courses.service import OrderedStep, live_modules, visible_steps_in_order
 from models import User
 from progress.schemas import ProgressSummary, StepProgress, StepProgressDetail, Totals
@@ -242,3 +242,23 @@ async def course_progress(
         locked = await locked_steps(db, user, course)
         progress[user.id] = CourseProgress(results, _next_step(results, locked))
     return progress
+
+
+async def studied_courses(
+    db: AsyncSession, user_ids: list[int]
+) -> dict[int, list[Course]]:
+    """Published courses each user is enrolled in, oldest course first."""
+    rows = await db.execute(
+        select(Enrollment.user_id, Course)
+        .join(Course, Course.id == Enrollment.course_id)
+        .where(
+            Enrollment.user_id.in_(user_ids),
+            Course.is_published,
+            Course.deleted_at.is_(None),
+        )
+        .order_by(Course.id)
+    )
+    result: dict[int, list[Course]] = {user_id: [] for user_id in user_ids}
+    for user_id, course in rows:
+        result[user_id].append(course)
+    return result

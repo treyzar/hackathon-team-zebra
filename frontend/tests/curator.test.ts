@@ -6,6 +6,9 @@ import { CURATOR_REVIEWS_ROUTE } from "../src/pages/curator/reviews/constants";
 import { CURATOR_ANALYTICS_ROUTE } from "../src/pages/curator/analytics/constants";
 import { CURATOR_DEADLINES_ROUTE } from "../src/pages/curator/deadlines/constants";
 import { WORKSPACE_SECTION_PLACEHOLDERS } from "../src/pages/workspace-section/constants";
+import { CURATOR_LEARNERS_ROUTE } from "../src/pages/curator/learners/constants";
+import { sortLearners, statusCounts } from "../src/modules/curator/learners/presentation";
+import type { Learner } from "../src/modules/curator/learners/types";
 import {
   activityLabel,
   averageProgress,
@@ -277,4 +280,33 @@ test("waiting time uses minutes and hours from the API", () => {
   assert.equal(waitingLabel(0), "меньше минуты");
   assert.equal(waitingLabel(2 * 3600 + 40 * 60), "2 ч 40 мин");
   assert.equal(waitingLabel(27 * 3600), "1 д 3 ч");
+});
+
+test("learners: the page is real and needy students come first", () => {
+  assert.ok(navigationByRole.curator.some((item) => item.path === CURATOR_LEARNERS_ROUTE.path));
+  assert.equal(
+    WORKSPACE_SECTION_PLACEHOLDERS.some((item) => item.path === CURATOR_LEARNERS_ROUTE.path),
+    false,
+  );
+  const learner = (surname: string, status: Learner["status"]): Learner => ({
+    student_id: surname.length,
+    username: surname.toLowerCase(),
+    name: "Имя",
+    surname,
+    patronymic: "",
+    status,
+    courses: [],
+  });
+  const students = [
+    learner("Яковлев", "on_track"),
+    learner("Борисов", null),
+    learner("Петров", "slowed"),
+    learner("Антонов", "on_track"),
+    learner("Иванов", "falling_behind"),
+  ];
+  assert.deepEqual(
+    sortLearners(students).map((s) => s.surname),
+    ["Иванов", "Петров", "Антонов", "Яковлев", "Борисов"],
+  );
+  assert.deepEqual(statusCounts(students), { falling_behind: 1, slowed: 1, on_track: 2 });
 });

@@ -145,11 +145,17 @@ watch(() => props.stepId, load, { immediate: true });
         <p>{{ form.criteria }}</p>
       </div>
       <div v-if="step.type === 'programming'" class="workbench-answer-list">
-        <b>Задача с тестами</b>
-        <p>
-          {{ form.testGroups.length }} групп тестов · {{ form.timeLimitMs }} мс ·
-          {{ form.memoryLimitMb }} МБ
-        </p>
+        <template v-if="form.grading === 'manual'">
+          <b>Задача с проверкой куратором</b>
+          <p>Тесты не запускаются: решение оценивает куратор.</p>
+        </template>
+        <template v-else>
+          <b>Задача с тестами</b>
+          <p>
+            {{ form.testGroups.length }} групп тестов · {{ form.timeLimitMs }} мс ·
+            {{ form.memoryLimitMb }} МБ
+          </p>
+        </template>
       </div>
       <div class="workbench-footer">
         <label class="admin-check"

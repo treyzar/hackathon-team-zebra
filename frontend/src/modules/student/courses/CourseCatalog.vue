@@ -5,7 +5,7 @@ import { getStep, listCourses } from "./api";
 import { useAuthStore } from "@/stores/auth";
 import { studentCourseApi } from "./api";
 import { documentTitle, errorMessage, stepDocument, stepLabels } from "./presentation";
-import type { CourseListItem, StudentNotification } from "./types";
+import type { CourseListItem, MyRating } from "./types";
 import CatalogHero from "./components/CatalogHero.vue";
 import CatalogSnapshot from "./components/CatalogSnapshot.vue";
 import CourseCatalogCard from "./components/CourseCatalogCard.vue";
@@ -20,7 +20,7 @@ withDefaults(
 
 const auth = useAuthStore();
 const courses = ref<CourseListItem[]>([]);
-const notifications = ref<StudentNotification[]>([]);
+const rating = ref<MyRating | null>(null);
 const loading = ref(true);
 const error = ref("");
 const nextTitle = ref("");
@@ -52,12 +52,13 @@ async function load(): Promise<void> {
   loading.value = true;
   error.value = "";
   try {
-    const [courseList, recentNotifications] = await Promise.all([
+    const [courseList, myRating] = await Promise.all([
       studentCourseApi.listCourses(),
-      studentCourseApi.listNotifications({ limit: 2 }),
+      // The page works without the rating: the block says it did not load.
+      studentCourseApi.getRating().catch(() => null),
     ]);
     courses.value = courseList;
-    notifications.value = recentNotifications;
+    rating.value = myRating;
     await loadNextStepTitle(nextCourse.value);
   } catch (cause) {
     error.value = errorMessage(cause);
@@ -88,7 +89,7 @@ onMounted(load);
           :next-type="nextType"
           :has-courses="Boolean(courses.length)"
         />
-        <CatalogSnapshot :courses="courses" :notifications="notifications" />
+        <CatalogSnapshot :rating="rating" />
       </div>
 
       <section aria-labelledby="student-courses-heading">

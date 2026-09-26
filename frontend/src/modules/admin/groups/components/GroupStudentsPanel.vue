@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { fullName } from "../../shared/format";
 import type { AdminUser } from "../../shared/types";
+import { orderByRating, ratingParts } from "../rating";
+import type { GroupRatingRow } from "../types";
 
 const props = defineProps<{
   members: AdminUser[];
   students: AdminUser[];
+  // null: the rating could not be loaded.
+  rating: GroupRatingRow[] | null;
   busy: boolean;
 }>();
 
@@ -17,11 +22,16 @@ const query = ref("");
 const adding = ref(false);
 const studentToAdd = ref<number | "">("");
 
+const ratingById = computed(
+  () => new Map((props.rating ?? []).map((row) => [row.student_id, row])),
+);
+
 const filteredMembers = computed(() => {
   const q = query.value.trim().toLocaleLowerCase();
-  if (!q) return props.members;
-  return props.members.filter((member) =>
-    `${member.username} ${member.email}`.toLocaleLowerCase().includes(q),
+  const ordered = orderByRating(props.members, props.rating);
+  if (!q) return ordered;
+  return ordered.filter((member) =>
+    `${fullName(member)} ${member.username} ${member.email}`.toLocaleLowerCase().includes(q),
   );
 });
 
@@ -54,7 +64,11 @@ function add(): void {
   <section class="students-card">
     <div class="students-head">
       <strong>Ученики · {{ members.length }}</strong>
-      <input v-model="query" aria-label="Поиск ученика" placeholder="Поиск по имени или email" />
+      <input
+        v-model="query"
+        aria-label="Поиск ученика"
+        placeholder="Поиск по ФИО, логину или email"
+      />
       <button type="button" :disabled="busy || !available.length" @click="adding = !adding">
         Добавить учеников
       </button>
@@ -64,24 +78,36 @@ function add(): void {
       <select v-model="studentToAdd" required>
         <option value="" disabled>Выберите ученика</option>
         <option v-for="student in available" :key="student.id" :value="student.id">
-          {{ student.username }} · {{ student.email }}
+          {{ fullName(student) }} · {{ student.email }}
         </option>
       </select>
       <button :disabled="busy || studentToAdd === ''">Добавить в группу</button>
       <span>Если ученик уже в другой группе, API перенесёт его сюда.</span>
     </form>
 
+    <p v-if="rating === null && members.length" class="students-rating-error">
+      Не удалось загрузить рейтинг группы.
+    </p>
+
     <div v-if="!members.length" class="students-empty">Учеников пока нет</div>
     <div v-else-if="!filteredMembers.length" class="students-empty">Ничего не найдено</div>
     <div v-else class="students-table">
       <div class="students-row students-row--head">
+        <span title="Место в рейтинге группы">МЕСТО</span>
         <span>УЧЕНИК</span>
         <span>EMAIL</span>
+        <span title="Баллы по всем курсам ученика + 2 балла за каждый день серии">РЕЙТИНГ</span>
         <span></span>
       </div>
       <div v-for="member in filteredMembers" :key="member.id" class="students-row">
-        <strong>{{ member.username }}</strong>
+        <span class="students-place">{{ ratingById.get(member.id)?.place ?? "—" }}</span>
+        <strong :title="member.username">{{ fullName(member) }}</strong>
         <span class="students-email">{{ member.email }}</span>
+        <span v-if="ratingById.get(member.id)" class="students-rating">
+          <b>{{ ratingById.get(member.id)!.total }}</b>
+          <small>{{ ratingParts(ratingById.get(member.id)!) }}</small>
+        </span>
+        <span v-else class="students-rating">—</span>
         <div class="students-actions">
           <button type="button" :disabled="busy" @click="emit('remove', member.id)">
             Исключить
@@ -165,11 +191,11 @@ function add(): void {
   font-size: 12px;
 }
 .students-table {
-  min-width: 620px;
+  min-width: 860px;
 }
 .students-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1.1fr) minmax(260px, 2fr) 110px;
+  grid-template-columns: 56px minmax(160px, 1fr) minmax(200px, 1.4fr) minmax(220px, 1.6fr) 110px;
   align-items: center;
   gap: 16px;
   min-height: 54px;
@@ -194,6 +220,31 @@ function add(): void {
 }
 .students-actions {
   text-align: right;
+}
+.students-place {
+  color: #4a546b;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.students-rating {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 6px 0;
+}
+.students-rating b {
+  font-variant-numeric: tabular-nums;
+}
+.students-rating small {
+  color: #6c768a;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.students-rating-error {
+  margin: 0;
+  padding: 0 16px 12px;
+  color: #9a3c3c;
+  font-size: 13px;
 }
 .students-actions button {
   border: 0;

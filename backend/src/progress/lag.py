@@ -19,8 +19,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from courses.models import Course
 from groups.deadlines import effective_deadlines
+from models import User
 from progress.schemas import Lag, OverdueStep
-from progress.service import CourseProgress, StepState, step_labels
+from progress.service import (
+    CourseProgress,
+    StepState,
+    course_progress,
+    step_labels,
+    studied_courses,
+)
 
 GRACE = timedelta(days=7)
 
@@ -75,3 +82,30 @@ async def group_lag(
             status = LagStatus.SLOWED
         result[user_id] = Lag(status=status, overdue=overdue)
     return result
+
+
+# From best to worst: a student's overall status is the worst of their courses.
+_ORDER = [LagStatus.ON_TRACK, LagStatus.SLOWED, LagStatus.FALLING_BEHIND]
+
+
+def worst(statuses: list[str]) -> LagStatus | None:
+    """The worst status; None when there is nothing to judge (no courses)."""
+    return max(map(LagStatus, statuses), key=_ORDER.index, default=None)
+
+
+async def students_lag(
+    db: AsyncSession, group_id: int, students: list[User]
+) -> dict[int, list[tuple[Course, Lag]]]:
+    """Lag of each student (by user id) of the group in every course they
+    study, in course order."""
+    courses = await studied_courses(db, [s.id for s in students])
+    learners: dict[int, tuple[Course, list[User]]] = {}
+    for s in students:
+        for course in courses[s.id]:
+            learners.setdefault(course.id, (course, []))[1].append(s)
+    lag: dict[tuple[int, int], Lag] = {}
+    for course, members in learners.values():
+        progress = await course_progress(db, course, members)
+        for user_id, value in (await group_lag(db, course, group_id, progress)).items():
+            lag[(user_id, course.id)] = value
+    return {s.id: [(c, lag[(s.id, c.id)]) for c in courses[s.id]] for s in students}

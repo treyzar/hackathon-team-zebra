@@ -10,16 +10,54 @@ export const stepLabels: Record<StepType, string> = {
 
 /** Russian noun agreement: 1 балл, 2 балла, 5 баллов, 11 баллов, 21 балл. */
 export function pointsWord(count: number): string {
-  const tens = Math.abs(count) % 100;
-  const units = tens % 10;
-  if (tens >= 11 && tens <= 14) return "баллов";
-  if (units === 1) return "балл";
-  if (units >= 2 && units <= 4) return "балла";
-  return "баллов";
+  // Fractional points (partial scores) read as "2,5 балла".
+  if (!Number.isInteger(count)) return "балла";
+  return plural(count, "балл", "балла", "баллов");
 }
 
 export function pointsText(count: number): string {
   return `${count} ${pointsWord(count)}`;
+}
+
+function plural(count: number, one: string, few: string, many: string): string {
+  const tens = Math.abs(count) % 100;
+  const units = tens % 10;
+  if (tens >= 11 && tens <= 14) return many;
+  if (units === 1) return one;
+  if (units >= 2 && units <= 4) return few;
+  return many;
+}
+
+/** After "больше", "до": "больше 2 баллов", "больше 21 балла". */
+function pointsGenitive(count: number): string {
+  const one = Number.isInteger(count) && plural(count, "one", "few", "many") === "one";
+  return `${count} ${one || !Number.isInteger(count) ? "балла" : "баллов"}`;
+}
+
+export function daysText(count: number): string {
+  return `${count} ${plural(count, "день", "дня", "дней")}`;
+}
+
+/** "2 место из 4"; null without a group. */
+export function ratingPlaceText(rating: import("./types").MyRating): string | null {
+  if (rating.place == null || rating.group_size == null) return null;
+  return `${rating.place} место из ${rating.group_size}`;
+}
+
+/** What it takes to move up; null without a group. */
+export function ratingGoalText(rating: import("./types").MyRating): string | null {
+  if (rating.place == null) return null;
+  const target = rating.next_place;
+  if (!target || target.gap == null) return "Вы на первом месте в группе";
+  if (target.reachable)
+    return `Наберите больше ${pointsGenitive(target.gap)}, чтобы подняться на ${target.place} место`;
+  return `До ${target.place} места ${pointsText(target.gap)}: заданий пока не хватает, помогут дни серии`;
+}
+
+export function streakText(streak: import("./types").Streak): string {
+  if (!streak.days) return "Серии нет — отправьте решение сегодня, чтобы начать";
+  const head = `Серия ${daysText(streak.days)}`;
+  return streak.active_today ? head : `${head} — отправьте решение сегодня, чтобы не прервать`;
 }
 
 export function progressText(completed: number, total: number): string {

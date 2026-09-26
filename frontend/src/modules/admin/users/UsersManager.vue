@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { getApiErrorMessage } from "@/api/errors";
 import { userApi } from "./api";
 import { groupApi } from "../groups/api";
+import { fullName } from "../shared/format";
 import type { AdminRole, AdminUser, Group } from "../shared/types";
 import { useAuthStore } from "@/stores/auth";
 
@@ -27,9 +28,6 @@ const labels: Record<AdminRole, string> = {
   curator: "Куратор",
   admin: "Администратор",
 };
-function fullName(user: AdminUser): string {
-  return [user.surname, user.name, user.patronymic].filter(Boolean).join(" ") || user.username;
-}
 const filtered = computed(() =>
   users.value.filter(
     (user) =>

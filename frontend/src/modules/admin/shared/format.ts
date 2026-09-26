@@ -1,4 +1,9 @@
-import type { RichText, StepType } from "./types";
+import type { AdminUser, RichText, StepType } from "./types";
+
+/** "Иванов Иван Петрович"; the username when no name is filled in. */
+export function fullName(user: AdminUser): string {
+  return [user.surname, user.name, user.patronymic].filter(Boolean).join(" ") || user.username;
+}
 
 export const stepTypeLabels: Record<StepType, string> = {
   theory: "Теория",
