@@ -40,7 +40,22 @@ class StepPayloadBase(Schema):
         if t.fixed_max_score is not None:
             self.max_score = t.fixed_max_score
         t.validate(self.content, self.answer_key, self.settings, self.max_score)
+        _check_checklist(self.settings, self.max_score)
         return self
+
+
+def _check_checklist(settings: CommonSettings, max_score: int) -> None:
+    """Checked criteria are the whole score: so they add up to the maximum,
+    and only a curator's review uses them."""
+    if not settings.checklist:
+        return
+    if not settings.grading.uses_review:
+        raise ValueError("A checklist needs grading by a curator")
+    total = round(sum(item.points for item in settings.checklist), 2)
+    if total != max_score:
+        raise ValueError(
+            f"Checklist points ({total:g}) must add up to max_score ({max_score})"
+        )
 
 
 def _payload_model(t: StepType) -> type[StepPayloadBase]:

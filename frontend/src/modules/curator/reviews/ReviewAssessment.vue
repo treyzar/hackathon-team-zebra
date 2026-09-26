@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { getApiErrorMessage } from "@/api/errors";
 import { reviewApi } from "./api";
-import { type GradeMode, verdictFor } from "./presentation";
+import {
+  checklistScore,
+  checklistVerdict,
+  type GradeMode,
+  reviewChecklist,
+  verdictFor,
+} from "./presentation";
 import type { ReviewDetail } from "./types";
 
 const props = defineProps<{ detail: ReviewDetail }>();
@@ -13,6 +19,10 @@ const score = ref(0);
 const comment = ref("");
 const saving = ref(false);
 const error = ref("");
+// With a checklist the curator marks met criteria and the score follows.
+const checklist = computed(() => reviewChecklist(props.detail));
+const checked = ref<string[]>([]);
+const checklistTotal = computed(() => checklistScore(checklist.value, checked.value));
 
 watch(
   () => props.detail.id,
@@ -22,6 +32,7 @@ watch(
     score.value = autoScore ?? Math.max(0, Math.floor(props.detail.max_score / 2));
     comment.value = "";
     error.value = "";
+    checked.value = [];
   },
   { immediate: true },
 );
@@ -29,6 +40,7 @@ watch(
 async function save(): Promise<void> {
   if (saving.value) return;
   if (
+    !checklist.value.length &&
     mode.value === "partial" &&
     (!Number.isFinite(score.value) || score.value < 0 || score.value > props.detail.max_score)
   ) {
@@ -40,7 +52,13 @@ async function save(): Promise<void> {
   try {
     await reviewApi.save(
       props.detail.id,
-      verdictFor(mode.value, score.value, props.detail.max_score, comment.value),
+      checklist.value.length
+        ? checklistVerdict(
+            mode.value !== "revise",
+            checklist.value.filter((item) => checked.value.includes(item.id)).map((i) => i.id),
+            comment.value,
+          )
+        : verdictFor(mode.value, score.value, props.detail.max_score, comment.value),
     );
     emit("saved", props.detail.id);
   } catch (cause) {
@@ -54,60 +72,98 @@ async function save(): Promise<void> {
 <template>
   <form class="review-assessment" aria-label="Оценка работы" @submit.prevent="save">
     <h2>Оценка</h2>
-    <div class="review-assessment__eyebrow">РЕШЕНИЕ</div>
-
-    <label
-      class="review-assessment__choice"
-      :class="{ 'review-assessment__choice--active': mode === 'full' }"
-    >
-      <input v-model="mode" type="radio" value="full" name="grade-mode" />
-      <span>
-        <b>Зачесть полностью</b>
-        <small>{{ detail.max_score }} из {{ detail.max_score }} баллов</small>
-      </span>
-    </label>
-
-    <div
-      class="review-assessment__choice review-assessment__choice--partial"
-      :class="{ 'review-assessment__choice--active': mode === 'partial' }"
-    >
-      <label class="review-assessment__partial-head">
-        <input v-model="mode" type="radio" value="partial" name="grade-mode" />
-        <b>Зачесть частично</b>
+    <template v-if="checklist.length">
+      <div class="review-assessment__eyebrow">ЧЕК-ЛИСТ</div>
+      <label v-for="item in checklist" :key="item.id" class="review-assessment__criterion">
+        <input v-model="checked" type="checkbox" :value="item.id" />
+        <span>
+          <b>{{ item.text }}</b>
+          <small v-if="item.hint">{{ item.hint }}</small>
+        </span>
+        <em>+{{ item.points }}</em>
       </label>
-      <div class="review-assessment__score">
+      <p class="review-assessment__total">
+        Итого: <b>{{ checklistTotal }}</b> из {{ detail.max_score }}
+      </p>
+      <div class="review-assessment__eyebrow">РЕШЕНИЕ</div>
+      <label
+        class="review-assessment__choice"
+        :class="{ 'review-assessment__choice--active': mode !== 'revise' }"
+      >
+        <input v-model="mode" type="radio" value="full" name="grade-mode" />
+        <span>
+          <b>Зачесть</b>
+          <small>{{ checklistTotal }} из {{ detail.max_score }} баллов по чек-листу</small>
+        </span>
+      </label>
+      <label
+        class="review-assessment__choice"
+        :class="{ 'review-assessment__choice--active': mode === 'revise' }"
+      >
+        <input v-model="mode" type="radio" value="revise" name="grade-mode" />
+        <span>
+          <b>Вернуть на доработку</b>
+          <small>Баллы по чек-листу, ученик может пересдать</small>
+        </span>
+      </label>
+    </template>
+
+    <template v-else>
+      <div class="review-assessment__eyebrow">РЕШЕНИЕ</div>
+
+      <label
+        class="review-assessment__choice"
+        :class="{ 'review-assessment__choice--active': mode === 'full' }"
+      >
+        <input v-model="mode" type="radio" value="full" name="grade-mode" />
+        <span>
+          <b>Зачесть полностью</b>
+          <small>{{ detail.max_score }} из {{ detail.max_score }} баллов</small>
+        </span>
+      </label>
+
+      <div
+        class="review-assessment__choice review-assessment__choice--partial"
+        :class="{ 'review-assessment__choice--active': mode === 'partial' }"
+      >
+        <label class="review-assessment__partial-head">
+          <input v-model="mode" type="radio" value="partial" name="grade-mode" />
+          <b>Зачесть частично</b>
+        </label>
+        <div class="review-assessment__score">
+          <input
+            v-model.number="score"
+            type="number"
+            min="0"
+            :max="detail.max_score"
+            step="any"
+            aria-label="Баллы за работу"
+            @focus="mode = 'partial'"
+          />
+          <span>из {{ detail.max_score }}</span>
+        </div>
         <input
           v-model.number="score"
-          type="number"
+          type="range"
           min="0"
           :max="detail.max_score"
-          step="any"
-          aria-label="Баллы за работу"
-          @focus="mode = 'partial'"
+          step="1"
+          aria-label="Выбрать баллы"
+          @input="mode = 'partial'"
         />
-        <span>из {{ detail.max_score }}</span>
       </div>
-      <input
-        v-model.number="score"
-        type="range"
-        min="0"
-        :max="detail.max_score"
-        step="1"
-        aria-label="Выбрать баллы"
-        @input="mode = 'partial'"
-      />
-    </div>
 
-    <label
-      class="review-assessment__choice"
-      :class="{ 'review-assessment__choice--active': mode === 'revise' }"
-    >
-      <input v-model="mode" type="radio" value="revise" name="grade-mode" />
-      <span>
-        <b>Вернуть на доработку</b>
-        <small>Баллы не начисляются, ученик пересдаёт</small>
-      </span>
-    </label>
+      <label
+        class="review-assessment__choice"
+        :class="{ 'review-assessment__choice--active': mode === 'revise' }"
+      >
+        <input v-model="mode" type="radio" value="revise" name="grade-mode" />
+        <span>
+          <b>Вернуть на доработку</b>
+          <small>Баллы не начисляются, ученик пересдаёт</small>
+        </span>
+      </label>
+    </template>
 
     <label for="review-comment" class="review-assessment__comment-label">Комментарий ученику</label>
     <textarea
@@ -209,6 +265,35 @@ async function save(): Promise<void> {
   width: 100%;
   margin: 0;
   accent-color: var(--color-primary);
+}
+.review-assessment__criterion {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.review-assessment__criterion input {
+  margin-top: 3px;
+}
+.review-assessment__criterion span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.review-assessment__criterion small {
+  color: #68748a;
+}
+.review-assessment__criterion em {
+  color: #17915a;
+  font-style: normal;
+  font-weight: 700;
+}
+.review-assessment__total {
+  margin: 0;
 }
 .review-assessment__comment-label {
   margin-top: 2px;

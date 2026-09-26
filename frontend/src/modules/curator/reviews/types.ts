@@ -45,11 +45,22 @@ export interface ReviewDetail extends ReviewListItem {
   content: Record<string, unknown>;
   answer_key: Record<string, unknown>;
   settings: Record<string, unknown>;
+  // Met criteria of settings.checklist, once reviewed.
+  review_checklist: string[] | null;
 }
 
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  points: number;
+  hint: string | null;
+}
+
+/** Either a score, or (for a step with a checklist) the met criteria. */
 export interface ReviewVerdict {
   verdict: "accepted" | "rejected";
-  score: number;
+  score?: number;
+  checked?: string[];
   comment: string | null;
 }
 

@@ -307,6 +307,8 @@ def _render_step_pdf(
         key = _render_answer_key(step.type, content, answer_key, images)
         if key:
             parts.append(key)
+        # Criteria of a manual review are for the answer-key copy only.
+        parts.append(_render_checklist(parsed.settings.checklist))
 
     parts.append("</article>")
     return "".join(parts)
@@ -342,6 +344,18 @@ def _render_step_specific(step_type: str, content: dict, answer_key: dict) -> st
             )
         return f"<div style='margin-top:8pt'>{''.join(rows)}</div>" if rows else ""
     return ""
+
+
+def _render_checklist(checklist) -> str:
+    if not checklist:
+        return ""
+    items = "".join(
+        f"<li>{_escape(item.text)} — {item.points:g} б."
+        + (f"<br><em>{_escape(item.hint)}</em>" if item.hint else "")
+        + "</li>"
+        for item in checklist
+    )
+    return f"<div><strong>Чек-лист проверки:</strong><ul>{items}</ul></div>"
 
 
 def _render_answer_key(step_type: str, content: dict, answer_key: dict, images) -> str:

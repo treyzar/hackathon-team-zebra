@@ -12,7 +12,7 @@ import enum
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 if TYPE_CHECKING:
     from judge import JudgeClient
@@ -57,6 +57,17 @@ class RichText(BaseModel):
     content: list[dict[str, Any]] = []
 
 
+class ChecklistItem(Schema):
+    """One criterion a curator marks as met; its points add up to the score."""
+
+    # Stable id: reviews store the ids of met criteria.
+    id: str = Field(min_length=1, max_length=64)
+    text: str = Field(min_length=1, max_length=500)
+    points: float = Field(ge=0, le=1000)
+    # A tip for the curator on how to judge it.
+    hint: str | None = Field(default=None, max_length=2000)
+
+
 class CommonSettings(Schema):
     """Settings shared by every step type.
 
@@ -67,6 +78,17 @@ class CommonSettings(Schema):
     grading: Grading
     max_attempts: int | None = Field(default=None, ge=1)
     show_answer: ShowAnswer = ShowAnswer.NEVER
+    # Criteria a curator checks off instead of typing a score; only for steps
+    # a curator reviews. Settings never reach students as a whole, so neither
+    # do the criteria.
+    checklist: list[ChecklistItem] = Field(default=[], max_length=50)
+
+    @model_validator(mode="after")
+    def _checklist_ids(self):
+        ids = [item.id for item in self.checklist]
+        if len(set(ids)) != len(ids):
+            raise ValueError("Checklist item ids must be unique")
+        return self
 
 
 class TestFiles(Protocol):

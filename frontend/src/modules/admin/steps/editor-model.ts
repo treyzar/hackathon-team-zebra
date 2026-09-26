@@ -20,6 +20,14 @@ export interface TestGroup {
   tests: CodeSample[];
 }
 
+/** A criterion the curator checks off; the met ones add up to the score. */
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  points: number;
+  hint: string;
+}
+
 export interface StepForm {
   type: StepType;
   title: string;
@@ -46,6 +54,12 @@ export interface StepForm {
   samples: CodeSample[];
   testGroups: TestGroup[];
   referenceSolution: string;
+  checklist: ChecklistItem[];
+}
+
+/** Steps a curator grades by hand can use a checklist. */
+export function usesChecklist(form: StepForm): boolean {
+  return form.type === "free_text" || (form.type === "programming" && form.grading !== "tests");
 }
 
 export function newStepForm(type: StepType = "theory"): StepForm {
@@ -77,6 +91,7 @@ export function newStepForm(type: StepType = "theory"): StepForm {
     samples: [],
     testGroups: [{ name: "Основная группа", points: 1, tests: [{ input: "", output: "" }] }],
     referenceSolution: "",
+    checklist: [],
   };
 }
 
@@ -130,6 +145,15 @@ export function formFromStep(step: Step): StepForm {
   form.maxAttempts = typeof settings.max_attempts === "number" ? settings.max_attempts : null;
   form.showAnswer = String(settings.show_answer ?? "never");
   form.scoring = String(settings.scoring ?? "all_or_nothing");
+  form.checklist = (Array.isArray(settings.checklist) ? settings.checklist : []).map((item) => {
+    const data = object(item);
+    return {
+      id: String(data.id),
+      text: String(data.text ?? ""),
+      points: Number(data.points ?? 0),
+      hint: String(data.hint ?? ""),
+    };
+  });
   if (step.type === "single_choice" || step.type === "multiple_choice") {
     const correct = answerKey.correct;
     const ids = new Set(Array.isArray(correct) ? correct.map(String) : [String(correct)]);
@@ -189,8 +213,22 @@ export function formFromStep(step: Step): StepForm {
   return form;
 }
 
+function checklistError(form: StepForm): string | null {
+  if (!usesChecklist(form) || !form.checklist.length) return null;
+  if (form.checklist.some((item) => !item.text.trim()))
+    return "Заполните текст каждого пункта чек-листа.";
+  if (form.checklist.some((item) => !Number.isFinite(item.points) || item.points < 0))
+    return "Баллы пунктов чек-листа не могут быть отрицательными.";
+  const total = Math.round(form.checklist.reduce((sum, item) => sum + item.points, 0) * 100) / 100;
+  if (total !== form.maxScore)
+    return `Сумма баллов чек-листа (${total}) должна равняться максимальному баллу (${form.maxScore}).`;
+  return null;
+}
+
 export function validateStepForm(form: StepForm): string | null {
   if (!hasDocContent(form.body)) return "Заполните содержание шага.";
+  const checklist = checklistError(form);
+  if (checklist) return checklist;
   if (!Number.isInteger(form.maxScore) || form.maxScore < 0 || form.maxScore > 1000)
     return "Баллы должны быть от 0 до 1000.";
   if (
@@ -257,6 +295,15 @@ export function payloadFromForm(form: StepForm): StepPayload {
     max_attempts: form.maxAttempts === "" ? null : form.maxAttempts,
     show_answer: form.showAnswer,
   };
+  // Automatic checking has no curator to mark criteria: the checklist is
+  // kept in the form only, in case the author switches back.
+  if (usesChecklist(form))
+    settings.checklist = form.checklist.map(({ id, text, points, hint }) => ({
+      id,
+      text: text.trim(),
+      points,
+      hint: hint.trim() || null,
+    }));
   const body = withTitle(form.title, form.body);
   const payload: StepPayload = {
     type: form.type,

@@ -304,3 +304,53 @@ test("a curator-only programming step sends no tests", () => {
   form.grading = "tests_and_review";
   assert.match(validateStepForm(form) ?? "", /группа с тестами/);
 });
+
+test("a checklist is kept, checked against the maximum and only sent for curator grading", () => {
+  const form = newStepForm("free_text");
+  form.body = textToDoc("Опишите проект");
+  form.maxScore = 5;
+  form.checklist = [
+    { id: "a", text: " Есть план ", points: 2, hint: " 3 шага " },
+    { id: "b", text: "Работает", points: 2, hint: "" },
+  ];
+  assert.match(validateStepForm(form) ?? "", /Сумма баллов чек-листа \(4\)/);
+  form.checklist[1]!.points = 3;
+  assert.equal(validateStepForm(form), null);
+  assert.deepEqual(payloadFromForm(form).settings.checklist, [
+    { id: "a", text: "Есть план", points: 2, hint: "3 шага" },
+    { id: "b", text: "Работает", points: 3, hint: null },
+  ]);
+
+  // Saving through any editor keeps it: the form reads it back.
+  const step = {
+    id: 1,
+    module_id: 1,
+    type: "free_text",
+    position: 0,
+    is_hidden: false,
+    revision: {
+      number: 1,
+      created_at: "2026-09-26T00:00:00Z",
+      author_id: 1,
+      comment: null,
+      is_breaking: false,
+      max_score: 5,
+      schema_version: 1,
+      content: { question: textToDoc("Опишите проект") },
+      answer_key: {},
+      settings: payloadFromForm(form).settings,
+    },
+  } satisfies Step;
+  assert.deepEqual(formFromStep(step).checklist, [
+    { id: "a", text: "Есть план", points: 2, hint: "3 шага" },
+    { id: "b", text: "Работает", points: 3, hint: "" },
+  ]);
+
+  const code = newStepForm("programming");
+  code.body = textToDoc("Задача");
+  code.checklist = [{ id: "a", text: "Стиль", points: 99, hint: "" }];
+  code.grading = "tests"; // automatic: no checklist, not validated, not sent
+  assert.equal("checklist" in payloadFromForm(code).settings, false);
+  code.grading = "manual";
+  assert.match(validateStepForm(code) ?? "", /чек-листа/);
+});

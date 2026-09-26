@@ -92,6 +92,9 @@ class Submission(BaseDB):
     )
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     review_comment: Mapped[str | None] = mapped_column(Text)
+    # Ids of checklist criteria the curator marked as met, when the step is
+    # graded by a checklist. For curators only: students see just the score.
+    review_checklist: Mapped[list[str] | None] = mapped_column(JSONB)
 
     judge_attempts: Mapped[int] = mapped_column(Integer, default=0)
     judge_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

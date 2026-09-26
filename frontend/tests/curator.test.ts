@@ -29,7 +29,12 @@ import {
   verdictFor,
   waitingLabel,
 } from "../src/modules/curator/reviews/presentation";
-import type { ReviewListItem } from "../src/modules/curator/reviews/types";
+import {
+  checklistScore,
+  checklistVerdict,
+  reviewChecklist,
+} from "../src/modules/curator/reviews/presentation";
+import type { ReviewDetail, ReviewListItem } from "../src/modules/curator/reviews/types";
 import {
   questionUpdate,
   questionsForFilter,
@@ -276,4 +281,23 @@ test("learners: the page is real and needy students come first", () => {
     ["Иванов", "Петров", "Антонов", "Яковлев", "Борисов"],
   );
   assert.deepEqual(statusCounts(students), { falling_behind: 1, slowed: 1, on_track: 2 });
+});
+
+test("checklist review: the score is the points of met criteria", () => {
+  const items = [
+    { id: "plan", text: "План", points: 2, hint: "3 шага" },
+    { id: "works", text: "Работает", points: 3.5, hint: null },
+  ];
+  const detail = { settings: { checklist: items } } as unknown as ReviewDetail;
+  assert.deepEqual(reviewChecklist(detail), items);
+  assert.deepEqual(reviewChecklist({ settings: {} } as unknown as ReviewDetail), []);
+  assert.equal(checklistScore(items, []), 0);
+  assert.equal(checklistScore(items, ["works"]), 3.5);
+  assert.equal(checklistScore(items, ["plan", "works", "unknown"]), 5.5);
+  // No score is sent: the server counts it from the criteria.
+  assert.deepEqual(checklistVerdict(false, ["plan"], "  "), {
+    verdict: "rejected",
+    checked: ["plan"],
+    comment: null,
+  });
 });
