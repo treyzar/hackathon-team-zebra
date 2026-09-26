@@ -62,6 +62,22 @@ def _missing(e: ClientError) -> bool:
     return e.response.get("Error", {}).get("Code") in ("404", "NoSuchKey")
 
 
+async def write_object(key: str, data: bytes, mime: str) -> None:
+
+    def put() -> None:
+        try:
+            _internal().put_object(
+                Bucket=settings.s3_bucket,
+                Key=key,
+                Body=data,
+                ContentType=mime,
+            )
+        except (ClientError, BotoCoreError) as e:
+            raise StorageError(str(e)) from e
+
+    await asyncio.to_thread(put)
+
+
 async def read_object(key: str) -> bytes:
     """Whole object; FileNotFoundError if it does not exist."""
 
@@ -92,3 +108,18 @@ async def object_size(key: str) -> int | None:
         return resp["ContentLength"]
 
     return await asyncio.to_thread(head)
+
+
+async def delete_object(key: str) -> None:
+
+    def delete() -> None:
+        try:
+            _internal().delete_object(Bucket=settings.s3_bucket, Key=key)
+        except ClientError as e:
+            if _missing(e):
+                return
+            raise StorageError(str(e)) from e
+        except BotoCoreError as e:
+            raise StorageError(str(e)) from e
+
+    await asyncio.to_thread(delete)

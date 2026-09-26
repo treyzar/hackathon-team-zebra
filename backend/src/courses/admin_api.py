@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from access_docs import access_note
 from auth import require_admin
 from courses import service as svc
-from courses.export_import import export_as_json
+from courses.export_import import export_as_archive, export_as_json
 from courses.export_import import import_course as import_from_json
 from courses.models import Course, Enrollment, Module, Step, StepRevision
 from courses.pdf_export import export_as_pdf
@@ -391,11 +391,20 @@ async def export_course_json(
 ) -> Response:
     course = await svc.get_course(db, course_id)
     document = await export_as_json(db, course)
-    body = json.dumps(document, ensure_ascii=False, indent=2).encode("utf-8")
+    payload = await export_as_archive(db, course, document)
+    if payload is None:
+        body = json.dumps(document, ensure_ascii=False, indent=2).encode("utf-8")
+        return Response(
+            content=body,
+            media_type="application/json; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="{course.slug}.json"'
+            },
+        )
     return Response(
-        content=body,
-        media_type="application/json; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{course.slug}.json"'},
+        content=payload,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{course.slug}.zip"'},
     )
 
 
