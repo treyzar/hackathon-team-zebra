@@ -158,7 +158,6 @@ watch(() => props.stepId, load, { immediate: true });
           ></b
         >
         <div v-for="answer in shortTextAccepted" :key="answer" class="workbench-answer">
-          <span class="admin-badge admin-badge--green">✓</span>
           <span>{{ answer }}</span>
         </div>
         <p v-if="!shortTextAccepted.length" class="admin-muted">
@@ -172,7 +171,6 @@ watch(() => props.stepId, load, { immediate: true });
       <div v-if="step.type === 'number'" class="workbench-answer-list">
         <b>Правильный ответ</b>
         <div class="workbench-answer">
-          <span class="admin-badge admin-badge--green">✓</span>
           <span>{{ form.numberValue || "—" }}</span>
         </div>
         <p class="admin-muted">
