@@ -1,5 +1,8 @@
-import type { RichDocument, RichNode } from "@/modules/student/courses/types";
+import type { RichDocument } from "@/modules/student/courses/types";
+import { richDocument } from "@/modules/shared/stepTitle";
 import type { ReviewDetail, ReviewListItem, ReviewVerdict } from "./types";
+
+export { taskDocument, taskTitle } from "@/modules/shared/stepTitle";
 
 export type GradeMode = "full" | "partial" | "revise";
 
@@ -48,29 +51,6 @@ export function attemptNumber(item: ReviewListItem): number {
   return Number.isInteger(item.attempts_before) && item.attempts_before >= 0
     ? item.attempts_before + 1
     : 1;
-}
-
-export function taskTitle(content: Record<string, unknown>, stepId: number): string {
-  const first = taskDocument(content)?.content?.[0];
-  if (first?.type === "heading" && first.attrs?.zebra_title === true) {
-    const title = documentText(first).replace(/\s+/g, " ").trim();
-    if (title) return title.slice(0, 100);
-  }
-  return `Задание #${stepId}`;
-}
-
-function richDocument(value: unknown): RichDocument | null {
-  if (!value || typeof value !== "object") return null;
-  const doc = value as RichDocument;
-  return doc.type === "doc" && Array.isArray(doc.content) ? doc : null;
-}
-
-export function taskDocument(content: Record<string, unknown>): RichDocument | null {
-  for (const key of ["question", "statement", "body"]) {
-    const document = richDocument(content[key]);
-    if (document) return document;
-  }
-  return null;
 }
 
 export function referenceDocument(key: Record<string, unknown>): RichDocument | null {
@@ -137,10 +117,4 @@ export function referenceText(detail: ReviewDetail): string {
       .filter((entry): entry is string => typeof entry === "string")
       .join("; ");
   return plainText(detail.answer_key.value);
-}
-
-export function documentText(node: RichNode): string {
-  return node.type === "text"
-    ? (node.text ?? "")
-    : (node.content ?? []).map(documentText).join(" ");
 }

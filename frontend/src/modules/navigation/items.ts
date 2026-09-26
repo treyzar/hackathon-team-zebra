@@ -21,6 +21,7 @@ export type NavigationIconName =
   | "learners"
   | "reviews"
   | "questions"
+  | "deadlines"
   | "builder"
   | "groups"
   | "users";
@@ -90,6 +91,12 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
       label: "Аналитика",
       description: "Прогресс групп по курсам",
       icon: "progress",
+    },
+    {
+      ...CURATOR_DEADLINES_ROUTE,
+      label: "Дедлайны",
+      description: "Сроки шагов для групп",
+      icon: "deadlines",
     },
   ],
   admin: [

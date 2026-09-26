@@ -1,27 +1,26 @@
-<<<<<<< HEAD
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 
 import { getApiErrorMessage } from "@/api/errors";
 import type { CourseListItem } from "@/modules/student/courses/types";
-import { deadlineFromInput, deadlineToInput } from "@/modules/shared/deadline";
+import { deadlineFromInput } from "@/modules/shared/deadline";
+import { taskTitle } from "@/modules/shared/stepTitle";
 import { deadlinesApi } from "./api";
-import DeadlineCoursePanel from "./DeadlineCoursePanel.vue";
+import DeadlineHelpPanel from "./DeadlineHelpPanel.vue";
 import DeadlineStepTable from "./DeadlineStepTable.vue";
-import { groupSteps, ownInput, validDeadlineInput } from "./presentation";
-import type { CourseDeadlineState, DeadlineGroup, StepDeadline } from "./types";
+import { enrichSteps, groupSteps, ownInput, validDeadlineInput } from "./presentation";
+import type { DeadlineGroup, StepDeadline } from "./types";
 import "./deadlines.css";
 
 const courses = ref<CourseListItem[]>([]);
 const groups = ref<DeadlineGroup[]>([]);
 const selectedCourseId = ref<number | "">("");
 const selectedGroupId = ref<number | "">("");
-const courseState = ref<CourseDeadlineState | null>(null);
 const steps = ref<StepDeadline[]>([]);
-const courseDraft = ref<string | null>(null);
 const stepDrafts = ref<Record<number, string | null>>({});
 const loadingFilters = ref(true);
 const loading = ref(false);
+const selectionLoaded = ref(false);
 const saving = ref(false);
 const error = ref("");
 const success = ref("");
@@ -32,15 +31,10 @@ const selectedGroup = computed(() =>
   groups.value.find((group) => group.id === selectedGroupId.value),
 );
 const modules = computed(() => groupSteps(steps.value));
-const courseChanged = computed(
-  () =>
-    courseDraft.value !==
-    (courseState.value?.own ? deadlineToInput(courseState.value.own.due_at) : null),
-);
 const changedSteps = computed(() =>
   steps.value.filter((step) => stepDrafts.value[step.step_id] !== ownInput(step)),
 );
-const hasChanges = computed(() => courseChanged.value || changedSteps.value.length > 0);
+const hasChanges = computed(() => changedSteps.value.length > 0);
 
 async function loadFilters(): Promise<void> {
   loadingFilters.value = true;
@@ -59,37 +53,44 @@ async function loadFilters(): Promise<void> {
   }
 }
 
-async function loadSelection(): Promise<void> {
+async function loadSelection(): Promise<boolean> {
   const currentRequest = ++requestId;
-  courseState.value = null;
+  selectionLoaded.value = false;
   steps.value = [];
-  courseDraft.value = null;
   stepDrafts.value = {};
   error.value = "";
   success.value = "";
-  if (!ready.value) return;
+  if (!ready.value) return false;
   loading.value = true;
   try {
-    const [state, rows] = await Promise.all([
-      deadlinesApi.course(Number(selectedGroupId.value), Number(selectedCourseId.value)),
+    const [course, rows] = await Promise.all([
+      deadlinesApi.course(Number(selectedCourseId.value)),
       deadlinesApi.steps(Number(selectedGroupId.value), Number(selectedCourseId.value)),
     ]);
-    if (currentRequest !== requestId) return;
-    courseState.value = state;
-    steps.value = rows;
-    courseDraft.value = state.own ? deadlineToInput(state.own.due_at) : null;
-    stepDrafts.value = Object.fromEntries(rows.map((step) => [step.step_id, ownInput(step)]));
+    const titles: Record<number, string> = {};
+    for (let offset = 0; offset < rows.length; offset += 8) {
+      const batch = rows.slice(offset, offset + 8);
+      const results = await Promise.allSettled(batch.map((row) => deadlinesApi.step(row.step_id)));
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          const stepId = batch[index]!.step_id;
+          titles[stepId] = taskTitle(result.value.content, stepId);
+        }
+      });
+    }
+    if (currentRequest !== requestId) return false;
+    steps.value = enrichSteps(course, rows, titles);
+    stepDrafts.value = Object.fromEntries(
+      steps.value.map((step) => [step.step_id, ownInput(step)]),
+    );
+    selectionLoaded.value = true;
+    return true;
   } catch (cause) {
     if (currentRequest === requestId) error.value = getApiErrorMessage(cause);
+    return false;
   } finally {
     if (currentRequest === requestId) loading.value = false;
   }
-}
-
-function updateCourse(value: string | null): void {
-  courseDraft.value = value;
-  error.value = "";
-  success.value = "";
 }
 
 function updateStep(stepId: number, value: string | null): void {
@@ -99,9 +100,8 @@ function updateStep(stepId: number, value: string | null): void {
 }
 
 async function save(): Promise<void> {
-  if (!ready.value || !courseState.value || !hasChanges.value || saving.value) return;
+  if (!ready.value || !hasChanges.value || saving.value) return;
   if (
-    (courseChanged.value && courseDraft.value !== null && !validDeadlineInput(courseDraft.value)) ||
     changedSteps.value.some((step) => {
       const value = stepDrafts.value[step.step_id];
       return value !== null && (value === undefined || !validDeadlineInput(value));
@@ -115,22 +115,8 @@ async function save(): Promise<void> {
   error.value = "";
   success.value = "";
   const groupId = Number(selectedGroupId.value);
-  const courseId = Number(selectedCourseId.value);
   let savedCount = 0;
   try {
-    if (courseChanged.value) {
-      if (courseDraft.value === null) {
-        await deadlinesApi.removeCourse(groupId, courseId);
-        courseState.value.own = null;
-      } else {
-        courseState.value = await deadlinesApi.setCourse(
-          groupId,
-          courseId,
-          deadlineFromInput(courseDraft.value)!,
-        );
-      }
-      savedCount += 1;
-    }
     for (const step of changedSteps.value) {
       const value = stepDrafts.value[step.step_id];
       if (value === null) {
@@ -141,8 +127,11 @@ async function save(): Promise<void> {
       }
       savedCount += 1;
     }
-    await loadSelection();
-    success.value = "Дедлайны сохранены";
+    if (await loadSelection()) {
+      success.value = "Дедлайны сохранены";
+    } else {
+      error.value = `Сроки сохранены, но список не удалось обновить. ${error.value || "Повторите загрузку."}`;
+    }
   } catch (cause) {
     error.value = savedCount
       ? `Часть сроков сохранена. Повторите сохранение остальных: ${getApiErrorMessage(cause)}`
@@ -159,6 +148,7 @@ onMounted(loadFilters);
 <template>
   <section class="deadlines-workspace" aria-label="Дедлайны группы">
     <header class="deadlines-toolbar">
+      <h2>Дедлайны</h2>
       <label>
         <span class="deadlines-visually-hidden">Курс</span>
         <select v-model="selectedCourseId" :disabled="loadingFilters || saving" aria-label="Курс">
@@ -189,8 +179,12 @@ onMounted(loadFilters);
 
     <p v-if="error" class="deadlines-message deadlines-message--error" role="alert">
       {{ error }}
-      <button v-if="!courseState && ready" type="button" @click="loadSelection">Повторить</button>
-      <button v-else-if="loadingFilters" type="button" @click="loadFilters">Повторить</button>
+      <button v-if="!courses.length || !groups.length" type="button" @click="loadFilters">
+        Повторить
+      </button>
+      <button v-else-if="!selectionLoaded && ready" type="button" @click="loadSelection">
+        Повторить
+      </button>
     </p>
     <p v-if="success" class="deadlines-message deadlines-message--success" role="status">
       {{ success }}
@@ -202,7 +196,7 @@ onMounted(loadFilters);
     <div v-else-if="!ready" class="deadlines-card deadlines-empty">
       Выберите курс и группу, чтобы настроить сроки.
     </div>
-    <div v-else-if="courseState && selectedGroup" class="deadlines-content">
+    <div v-else-if="selectionLoaded && selectedGroup" class="deadlines-content">
       <DeadlineStepTable
         :group-name="selectedGroup.name"
         :modules="modules"
@@ -210,14 +204,7 @@ onMounted(loadFilters);
         :disabled="saving"
         @update="updateStep"
       />
-      <DeadlineCoursePanel
-        :state="courseState"
-        :draft="courseDraft"
-        :disabled="saving"
-        @update="updateCourse"
-      />
+      <DeadlineHelpPanel />
     </div>
   </section>
 </template>
-=======
->>>>>>> parent of ac129ee (feat: добавит дедлайны)
