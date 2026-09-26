@@ -17,6 +17,39 @@ import type { Step } from "../src/modules/admin/shared/types";
 import { orderByRating, ratingParts } from "../src/modules/admin/groups/rating";
 import type { GroupRatingRow } from "../src/modules/admin/groups/types";
 import { reorderIds } from "../src/modules/admin/courses/reorder";
+import { modulesText, stepsText } from "../src/modules/shared/plural";
+
+test("step counts use the Russian singular, few and many forms", () => {
+  assert.deepEqual([0, 1, 2, 5, 11, 14, 21, 22, 25, 111, 112].map(stepsText), [
+    "0 шагов",
+    "1 шаг",
+    "2 шага",
+    "5 шагов",
+    "11 шагов",
+    "14 шагов",
+    "21 шаг",
+    "22 шага",
+    "25 шагов",
+    "111 шагов",
+    "112 шагов",
+  ]);
+});
+
+test("module counts use the Russian singular, few and many forms", () => {
+  assert.deepEqual([0, 1, 2, 5, 11, 14, 21, 22, 25, 111, 112].map(modulesText), [
+    "0 модулей",
+    "1 модуль",
+    "2 модуля",
+    "5 модулей",
+    "11 модулей",
+    "14 модулей",
+    "21 модуль",
+    "22 модуля",
+    "25 модулей",
+    "111 модулей",
+    "112 модулей",
+  ]);
+});
 
 test("dragging a step changes only its position within its module", () => {
   assert.deepEqual(reorderIds([10, 20, 30, 40], 10, 30, true), [20, 30, 10, 40]);

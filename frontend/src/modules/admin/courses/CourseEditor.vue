@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/errors";
+import { modulesText, stepsText } from "@/modules/shared/plural";
 import { courseApi } from "./api";
 import { reorderIds } from "./reorder";
 import CourseStepWorkbench from "./CourseStepWorkbench.vue";
@@ -302,7 +303,8 @@ async function deleteModule(module: Module): Promise<void> {
 }
 
 async function dismissAdded(): Promise<void> {
-  const { added: _added, ...query } = route.query;
+  const query = { ...route.query };
+  delete query.added;
   await router.replace({ query });
 }
 
@@ -350,8 +352,8 @@ watch(courseId, load);
             type="button"
             @click="tab = tab === 'structure' ? 'passport' : 'structure'"
           >
-            {{ tab === "structure" ? "Настройки" : "К структуре" }}</button
-          >
+            {{ tab === "structure" ? "Настройки" : "К структуре" }}
+          </button>
           <RouterLink class="admin-button" :to="ADMIN_IMPORT_ROUTE.path"
             >Импорт / экспорт</RouterLink
           >
@@ -402,7 +404,7 @@ watch(courseId, load);
             <div class="course-sidebar-heading">
               <div>
                 <h2>Структура курса</h2>
-                <p>{{ course.modules.length }} модулей · {{ stepCount }} шагов</p>
+                <p>{{ modulesText(course.modules.length) }} · {{ stepsText(stepCount) }}</p>
               </div>
             </div>
             <div
@@ -444,7 +446,7 @@ watch(courseId, load);
                       <span class="admin-number"
                         >{{ moduleIndex + 1 }}. {{ module.title.toUpperCase() }}</span
                       >
-                      <small>{{ module.steps.length }} шагов</small>
+                      <small>{{ stepsText(module.steps.length) }}</small>
                     </div>
                     <form v-else class="admin-actions" @submit.prevent="renameModule(module.id)">
                       <input
@@ -710,6 +712,7 @@ watch(courseId, load);
   min-width: 0;
 }
 .course-editor-layout .admin-list {
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
 }
 .course-module-head {
@@ -757,6 +760,7 @@ watch(courseId, load);
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   min-height: 42px;
   padding: 8px 9px;
   border: 1px solid #e1e6f0;
@@ -785,9 +789,8 @@ watch(courseId, load);
 }
 .course-step-name {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .course-step-hidden {
   margin: 0 !important;

@@ -10,6 +10,7 @@ import { CURATOR_ANALYTICS_ROUTE } from "@/pages/curator/analytics/constants";
 import { CURATOR_LEARNERS_ROUTE } from "@/pages/curator/learners/constants";
 import { STUDENT_COURSES_ROUTE } from "@/pages/student/courses/constants";
 import { WORKSPACE_SECTION_ROUTES } from "@/pages/workspace-section/constants";
+import { CURATOR_DEADLINES_ROUTE } from "@/pages/curator/deadlines/constants";
 
 export type NavigationIconName =
   | "home"
@@ -20,6 +21,7 @@ export type NavigationIconName =
   | "learners"
   | "reviews"
   | "questions"
+  | "deadlines"
   | "builder"
   | "groups"
   | "users";
@@ -89,6 +91,12 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
       label: "Аналитика",
       description: "Прогресс групп по курсам",
       icon: "progress",
+    },
+    {
+      ...CURATOR_DEADLINES_ROUTE,
+      label: "Дедлайны",
+      description: "Сроки шагов для групп",
+      icon: "deadlines",
     },
   ],
   admin: [
