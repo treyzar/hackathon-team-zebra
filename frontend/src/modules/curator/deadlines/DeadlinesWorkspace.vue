@@ -158,7 +158,6 @@ onMounted(loadFilters);
 <template>
   <section class="deadlines-workspace" aria-label="Дедлайны группы">
     <header class="deadlines-toolbar">
-      <h2>Дедлайны</h2>
       <label>
         <span class="deadlines-visually-hidden">Курс</span>
         <select v-model="selectedCourseId" :disabled="loadingFilters || saving" aria-label="Курс">
