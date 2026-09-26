@@ -460,7 +460,7 @@ onBeforeUnmount(() => {
 }
 .student-outline-totals strong {
   color: var(--color-text);
-  font-size: 13px;
+  font-size: var(--font-size-small);
   white-space: nowrap;
 }
 .student-outline-progress,
@@ -499,23 +499,23 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 44px;
+  min-height: var(--button-height);
   padding: 8px 10px;
   border-radius: var(--radius-control);
   color: var(--color-text);
-  font-size: 15px;
+  font-size: var(--font-size-base);
   line-height: 1.3;
   text-decoration: none;
 }
 .student-outline-step small {
   display: block;
   color: var(--color-subtle);
-  font-size: 12px;
+  font-size: var(--font-size-small);
 }
 .student-outline-step .student-step-score {
   flex: none;
   margin-left: auto;
-  font-size: 13px;
+  font-size: var(--font-size-small);
   font-weight: 600;
 }
 .student-outline-step .student-step-score--earned {
@@ -552,7 +552,7 @@ onBeforeUnmount(() => {
   border: 2px solid #8a93a8;
   border-radius: 50%;
   color: #5e677d;
-  font-size: 13px;
+  font-size: var(--font-size-small);
 }
 .student-step-icon--passed {
   border: 0;
@@ -580,7 +580,7 @@ onBeforeUnmount(() => {
 .student-outline-empty {
   margin: 16px 8px;
   color: #7b8497;
-  font-size: 13px;
+  font-size: var(--font-size-small);
 }
 .student-workspace-main {
   min-width: 0;
@@ -604,7 +604,11 @@ onBeforeUnmount(() => {
   color: #a53b3b;
 }
 .student-workspace-error button {
+  min-height: var(--button-height);
+  border: 0;
+  background: transparent;
   color: #3457f0;
+  font: inherit;
   font-weight: 700;
 }
 .student-course-overview {
@@ -641,12 +645,12 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  min-height: 56px;
+  min-height: var(--button-height);
   padding: 0 32px;
-  border-radius: 14px;
+  border-radius: var(--button-radius);
   background: var(--color-primary);
   color: #fff;
-  font-size: 18px;
+  font-size: var(--font-size-base);
   font-weight: 700;
   text-decoration: none;
 }
@@ -688,12 +692,12 @@ onBeforeUnmount(() => {
 }
 .student-module-card h4 {
   margin: 0 0 4px;
-  font-size: 17px;
+  font-size: var(--font-size-base);
 }
 .student-module-card p {
   margin: 0;
   color: #65728a;
-  font-size: 13px;
+  font-size: var(--font-size-small);
 }
 .student-module-card strong {
   margin-left: auto;
@@ -733,13 +737,13 @@ onBeforeUnmount(() => {
   }
   .student-mobile-toolbar button {
     flex: none;
-    min-height: 44px;
+    min-height: var(--button-height);
     padding: 0 12px;
     border: 1px solid var(--color-primary-pale);
     border-radius: 10px;
     background: var(--color-primary-soft);
     color: var(--color-primary);
-    font: 700 14px var(--font-sans);
+    font: 700 var(--font-size-small) var(--font-sans);
     cursor: pointer;
   }
   .student-outline-backdrop {
@@ -773,8 +777,8 @@ onBeforeUnmount(() => {
   .student-outline-close {
     display: grid;
     float: right;
-    width: 44px;
-    height: 44px;
+    width: var(--button-height);
+    height: var(--button-height);
     place-items: center;
     margin: -8px -8px 0 8px;
     border: 0;

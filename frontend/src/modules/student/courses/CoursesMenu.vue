@@ -59,7 +59,7 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 12px;
   color: var(--color-text);
-  font-size: 16px;
+  font-size: var(--font-size-base);
   text-decoration: none;
 }
 .courses-menu-link:hover {

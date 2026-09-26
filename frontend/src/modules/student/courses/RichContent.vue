@@ -90,6 +90,11 @@ watch(
   border-radius: 12px;
   background: #101a32;
   color: #ecf1ff;
+  font: var(--font-size-small)/1.6 var(--font-mono);
+}
+.student-rich-content :deep(code) {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-small);
 }
 .student-rich-content :deep(img) {
   max-width: 100%;

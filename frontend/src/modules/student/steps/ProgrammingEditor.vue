@@ -70,7 +70,7 @@ function updateFromTextarea(event: Event): void {
   padding: 0 16px;
   border-bottom: 1px solid #e1e6f0;
   color: #52617a;
-  font-size: 13px;
+  font-size: var(--font-size-small);
   font-weight: 650;
 }
 
@@ -84,7 +84,7 @@ function updateFromTextarea(event: Event): void {
 .programming-editor-file {
   margin-left: auto;
   color: #8a94a8;
-  font-family: monospace;
+  font-family: var(--font-mono);
 }
 
 .programming-editor-host {
@@ -103,10 +103,6 @@ function updateFromTextarea(event: Event): void {
   outline: 0;
   background: #fff;
   color: #0f172a;
-  font:
-    14px/1.6 ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
+  font: var(--font-size-small)/1.6 var(--font-mono);
 }
 </style>

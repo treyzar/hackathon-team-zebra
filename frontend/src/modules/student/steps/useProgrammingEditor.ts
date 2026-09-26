@@ -50,6 +50,9 @@ export function useProgrammingEditor(options: UseProgrammingEditorOptions) {
         readOnly: options.disabled(),
         automaticLayout: false,
         minimap: { enabled: false },
+        fontFamily:
+          getComputedStyle(options.host.value).getPropertyValue("--font-mono").trim() ||
+          "JetBrains Mono, monospace",
         fontSize: 15,
         lineHeight: 24,
         tabSize: 4,

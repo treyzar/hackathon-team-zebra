@@ -111,7 +111,7 @@ watch(() => props.stepId, loadQuestions, { immediate: true });
   border: 1px solid var(--color-border, #d1d5db);
   border-radius: 8px;
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--font-size-small);
   box-sizing: border-box;
   resize: vertical;
 }
@@ -121,13 +121,14 @@ watch(() => props.stepId, loadQuestions, { immediate: true });
   margin-top: 8px;
 }
 .form-actions button {
+  min-height: var(--button-height);
   padding: 8px 18px;
   background: var(--color-primary, #3457f0);
   color: #fff;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
+  font: 600 var(--font-size-base) var(--font-sans);
 }
 .form-actions button:disabled {
   opacity: 0.6;
@@ -148,7 +149,7 @@ watch(() => props.stepId, loadQuestions, { immediate: true });
 .comment-header {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: var(--font-size-small);
   color: #64748b;
   margin-bottom: 6px;
 }
@@ -157,7 +158,7 @@ watch(() => props.stepId, loadQuestions, { immediate: true });
 }
 .comment-text {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   white-space: pre-wrap;
 }
 .comment-reply {
@@ -170,31 +171,31 @@ watch(() => props.stepId, loadQuestions, { immediate: true });
 .reply-header {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: var(--font-size-small);
   color: #3457f0;
   margin-bottom: 4px;
 }
 .reply-text {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--font-size-base);
   white-space: pre-wrap;
 }
 .reply-pending {
   margin-top: 8px;
-  font-size: 12px;
+  font-size: var(--font-size-small);
   color: #94a3b8;
   font-style: italic;
 }
 .comments-loading,
 .comments-empty {
   margin-top: 16px;
-  font-size: 14px;
+  font-size: var(--font-size-small);
   color: #64748b;
 }
 .comments-error {
   margin-top: 10px;
   color: #dc2626;
-  font-size: 13px;
+  font-size: var(--font-size-small);
 }
 @media (max-width: 680px) {
   .comment-header,
@@ -205,9 +206,6 @@ watch(() => props.stepId, loadQuestions, { immediate: true });
   .comment-text,
   .reply-text {
     overflow-wrap: anywhere;
-  }
-  .form-actions button {
-    min-height: 44px;
   }
 }
 </style>

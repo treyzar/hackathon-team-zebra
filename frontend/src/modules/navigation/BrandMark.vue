@@ -20,7 +20,7 @@ import { DASHBOARD_ROUTE } from "@/pages/dashboard/constants";
   border-radius: var(--radius-control);
   background: var(--color-primary);
   color: #fff;
-  font-size: 14px;
+  font-size: max(14px, var(--font-size-floor, 0px));
   font-weight: 800;
   letter-spacing: -0.08em;
   text-decoration: none;

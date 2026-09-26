@@ -55,6 +55,8 @@ async function logout(): Promise<void> {
   <div
     class="app-shell app-shell--rail"
     :class="{
+      'role-student': isStudent,
+      'role-staff': !isStudent,
       'app-shell--student': isStudent,
       'app-shell--student-course': isStudentCourse,
       'app-shell--review-detail': isReviewDetail,
@@ -291,6 +293,10 @@ async function logout(): Promise<void> {
   }
   .page-menu-button {
     display: grid;
+  }
+  .app-shell--student .page-menu-button {
+    width: var(--button-height);
+    height: var(--button-height);
   }
   .page-header-fallback h1 {
     font-size: 24px;

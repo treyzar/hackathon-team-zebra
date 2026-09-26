@@ -270,22 +270,22 @@ test("skill map: courses are bands of honeycomb cells", () => {
   assert.deepEqual(
     layout.cells.map((cell) => [cell.courseId, cell.x, cell.y]),
     [
-      [1, 40, 48],
-      [1, 40, 162],
-      [1, 40, 276],
-      [1, 40, 390],
-      [1, 138, 105], // odd column: half a cell lower
-      [2, 236, 48],
+      [1, 40, 52],
+      [1, 40, 186],
+      [1, 40, 320],
+      [1, 40, 454],
+      [1, 154, 119], // odd column: half a cell lower
+      [2, 268, 52],
     ],
   );
   assert.deepEqual(
     layout.labels.map((label) => [label.text, label.x]),
     [
       ["SCRATCH", 40],
-      ["PYTHON", 236],
+      ["PYTHON", 268],
     ],
   );
-  assert.equal(layout.width, 40 * 2 + 2 * 98 + 130);
+  assert.equal(layout.width, 40 * 2 + 2 * 114 + 152);
   assert.deepEqual(
     initialSkill([{ course_id: 2, title: "Python", skills: [skill(), skill({ current: true })] }]),
     { courseId: 2, index: 1 },
@@ -305,7 +305,7 @@ test("skill map: a long course name widens its band instead of overlapping", () 
   const [first, second] = layout.labels;
   // The next course starts after the long name, and no label is wider than
   // the room up to the next band.
-  assert.equal(second!.x, 40 + 3 * 98);
+  assert.equal(second!.x, 40 + 3 * 114);
   assert.ok(first!.x + first!.width < second!.x);
   assert.equal(first!.title, long);
 });

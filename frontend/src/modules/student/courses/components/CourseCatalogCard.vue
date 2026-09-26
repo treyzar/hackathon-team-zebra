@@ -58,11 +58,11 @@ defineProps<{ course: CourseListItem }>();
 .student-course-kicker {
   color: #4a546b;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.04em;
 }
 .student-course-card > strong {
-  font-size: 16px;
+  font-size: var(--font-size-base);
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -85,7 +85,7 @@ defineProps<{ course: CourseListItem }>();
   justify-content: space-between;
   gap: 12px;
   color: #4a546b;
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 .student-course-bottom b {
   color: #0f172a;
