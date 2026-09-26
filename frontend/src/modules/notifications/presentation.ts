@@ -110,8 +110,15 @@ export function viewNotification(n: Notification, role: UserRole | null): Notifi
       };
     case "deadline_changed":
       return {
-        title: "Дедлайн изменён",
-        description: objectTitle ? `Обновлён срок по «${objectTitle}».` : "Обновлён срок задания.",
+        title: payload.deadline === null ? "Дедлайн снят" : "Дедлайн изменён",
+        description:
+          payload.deadline === null
+            ? objectTitle
+              ? `Срок по «${objectTitle}» снят.`
+              : "Срок задания снят."
+            : objectTitle
+              ? `Обновлён срок по «${objectTitle}».`
+              : "Обновлён срок задания.",
         tone: "info",
         to: stepTarget ?? courseTarget,
       };
@@ -125,7 +132,9 @@ export function viewNotification(n: Notification, role: UserRole | null): Notifi
     case "question_answered":
       return {
         title: "Ответ на вопрос",
-        description: objectTitle ? `По «${objectTitle}» появился ответ.` : "Появился ответ на ваш вопрос.",
+        description: objectTitle
+          ? `По «${objectTitle}» появился ответ.`
+          : "Появился ответ на ваш вопрос.",
         tone,
         to: stepTarget ?? courseTarget,
       };
@@ -146,7 +155,9 @@ export function viewNotification(n: Notification, role: UserRole | null): Notifi
     case "course_attention_needed":
       return {
         title: "Курс требует внимания",
-        description: courseTitle ? `«${courseTitle}» — есть вопросы от учеников.` : "Проверьте курс.",
+        description: courseTitle
+          ? `«${courseTitle}» — есть вопросы от учеников.`
+          : "Проверьте курс.",
         tone,
         to: null,
       };

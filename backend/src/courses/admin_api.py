@@ -64,6 +64,7 @@ async def create_course(data: CourseCreate, db: AsyncSession = Depends(access_db
         description=data.description.model_dump(mode="json"),
         is_published=False,
         step_access=data.step_access,
+        deadline_at=data.deadline_at,
     )
     db.add(course)
     await _flush_slug(db)
@@ -114,6 +115,8 @@ async def update_course(
             setattr(course, field, value)
     if data.description is not None:
         course.description = data.description.model_dump(mode="json")
+    if "deadline_at" in data.model_fields_set:
+        course.deadline_at = data.deadline_at
     await _flush_slug(db)
     return course
 

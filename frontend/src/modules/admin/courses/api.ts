@@ -20,12 +20,18 @@ export const courseApi = {
     title: string;
     description: object;
     step_access: StepAccess;
+    deadline_at?: string | null;
   }): Promise<Course> {
     return (await api.post<Course>("/admin/courses", data)).data;
   },
   async updateCourse(
     id: number,
-    data: Partial<Pick<Course, "slug" | "title" | "description" | "step_access" | "is_published">>,
+    data: Partial<
+      Pick<
+        Course,
+        "slug" | "title" | "description" | "step_access" | "is_published" | "deadline_at"
+      >
+    >,
   ): Promise<Course> {
     return (await api.patch<Course>(`/admin/courses/${id}`, data)).data;
   },

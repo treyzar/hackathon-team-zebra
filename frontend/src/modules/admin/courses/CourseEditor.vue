@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/errors";
 import { courseApi } from "./api";
+import { deadlineFromInput, deadlineToInput } from "@/modules/shared/deadline";
 import { reorderIds } from "./reorder";
 import CourseStepWorkbench from "./CourseStepWorkbench.vue";
 import { stepApi } from "../steps/api";
@@ -27,6 +28,7 @@ const title = ref("");
 const slug = ref("");
 const description = ref("");
 const stepAccess = ref<StepAccess>("all");
+const deadline = ref("");
 const newModuleTitle = ref("");
 const renamingId = ref<number | null>(null);
 const renameValue = ref("");
@@ -60,6 +62,7 @@ function syncForm(data: CourseTree): void {
   slug.value = data.slug;
   description.value = docToText(data.description);
   stepAccess.value = data.step_access;
+  deadline.value = deadlineToInput(data.deadline_at);
 }
 
 async function loadStepTitles(data: CourseTree): Promise<void> {
@@ -114,6 +117,7 @@ async function saveCourse(): Promise<void> {
       slug: slug.value.trim(),
       description: textToDoc(description.value),
       step_access: stepAccess.value,
+      deadline_at: deadlineFromInput(deadline.value),
     });
     await load();
     success.value = "Настройки курса сохранены";
@@ -302,7 +306,8 @@ async function deleteModule(module: Module): Promise<void> {
 }
 
 async function dismissAdded(): Promise<void> {
-  const { added: _added, ...query } = route.query;
+  const query = { ...route.query };
+  delete query.added;
   await router.replace({ query });
 }
 
@@ -350,8 +355,8 @@ watch(courseId, load);
             type="button"
             @click="tab = tab === 'structure' ? 'passport' : 'structure'"
           >
-            {{ tab === "structure" ? "Настройки" : "К структуре" }}</button
-          >
+            {{ tab === "structure" ? "Настройки" : "К структуре" }}
+          </button>
           <RouterLink class="admin-button" :to="ADMIN_IMPORT_ROUTE.path"
             >Импорт / экспорт</RouterLink
           >
@@ -591,7 +596,7 @@ watch(courseId, load);
         <div class="admin-panel-head">
           <div>
             <h2>Настройки курса</h2>
-            <p>Название, адрес и порядок доступа к шагам.</p>
+            <p>Название, адрес, порядок доступа к шагам и срок прохождения.</p>
           </div>
         </div>
         <form class="admin-form" @submit.prevent="saveCourse">
@@ -609,6 +614,20 @@ watch(courseId, load);
               <option value="sequential">Последовательно</option>
             </select></label
           >
+          <label class="admin-field"
+            >Дедлайн курса
+            <input v-model="deadline" type="datetime-local" />
+            <small>По вашему местному времени. Дедлайны шагов для группы имеют приоритет.</small>
+          </label>
+          <button
+            v-if="deadline"
+            class="admin-button course-deadline-clear"
+            type="button"
+            :disabled="busy"
+            @click="deadline = ''"
+          >
+            Убрать дедлайн
+          </button>
           <div class="admin-actions">
             <button class="admin-button admin-button--primary" :disabled="busy">
               {{ busy ? "Сохраняем…" : "Сохранить настройки" }}
@@ -630,6 +649,9 @@ watch(courseId, load);
 </template>
 
 <style scoped>
+.course-deadline-clear {
+  align-self: flex-start;
+}
 .admin-page--course-structure {
   display: flex;
   flex-direction: column;

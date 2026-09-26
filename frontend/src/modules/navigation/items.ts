@@ -7,6 +7,7 @@ import { ADMIN_USERS_ROUTE } from "@/pages/admin/users/constants";
 import { CURATOR_REVIEWS_ROUTE } from "@/pages/curator/reviews/constants";
 import { CURATOR_QUESTIONS_ROUTE } from "@/pages/curator/questions/constants";
 import { CURATOR_ANALYTICS_ROUTE } from "@/pages/curator/analytics/constants";
+import { CURATOR_DEADLINES_ROUTE } from "@/pages/curator/deadlines/constants";
 import { STUDENT_COURSES_ROUTE } from "@/pages/student/courses/constants";
 import { WORKSPACE_SECTION_ROUTES } from "@/pages/workspace-section/constants";
 
@@ -19,6 +20,7 @@ export type NavigationIconName =
   | "learners"
   | "reviews"
   | "questions"
+  | "deadlines"
   | "builder"
   | "groups"
   | "users";
@@ -88,6 +90,12 @@ export const navigationByRole: Record<UserRole, NavigationItem[]> = {
       label: "Аналитика",
       description: "Прогресс групп по курсам",
       icon: "progress",
+    },
+    {
+      ...CURATOR_DEADLINES_ROUTE,
+      label: "Дедлайны",
+      description: "Сроки прохождения курсов и шагов для групп",
+      icon: "deadlines",
     },
   ],
   admin: [

@@ -151,6 +151,7 @@ async def import_course(
         description=data.description.model_dump(mode="json"),
         is_published=False,
         step_access=data.step_access,
+        deadline_at=data.deadline_at,
     )
     db.add(course)
     await db.flush()
@@ -242,6 +243,7 @@ async def export_as_json(db: AsyncSession, course: Course) -> dict[str, Any]:
             title=course.title,
             description=course.description,
             step_access=course.step_access,
+            deadline_at=course.deadline_at,
             modules=[
                 ExportedModule(title=m.title, steps=by_module[m.id]) for m in modules
             ],

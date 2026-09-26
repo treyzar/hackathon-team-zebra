@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from courses.models import StepAccess
 from progress.schemas import ProgressSummary, StepProgress, Totals
@@ -25,6 +25,7 @@ class CourseCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: RichText = RichText()
     step_access: StepAccess = StepAccess.ALL
+    deadline_at: AwareDatetime | None = None
 
 
 class CourseUpdate(BaseModel):
@@ -33,6 +34,7 @@ class CourseUpdate(BaseModel):
     description: RichText | None = None
     is_published: bool | None = None
     step_access: StepAccess | None = None
+    deadline_at: AwareDatetime | None = None
 
 
 class CourseOut(ORM):
@@ -42,6 +44,7 @@ class CourseOut(ORM):
     description: dict[str, Any]
     is_published: bool
     step_access: StepAccess
+    deadline_at: datetime | None
 
 
 class ModuleIn(BaseModel):
@@ -152,9 +155,9 @@ class StudentCourseListItem(CourseListItem):
 
 class DeadlineView(BaseModel):
     due_at: datetime
-    # True when taken from a later step (source_step_id) rather than set here.
+    # True when taken from a later step or the course deadline.
     inherited: bool
-    source_step_id: int
+    source_step_id: int | None
 
 
 class StudentStepSummary(BaseModel):

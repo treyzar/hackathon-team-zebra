@@ -73,6 +73,30 @@ async def test_curator_lists_own_groups(client, admin, groups_setup):
     assert {g["id"] for g in everything} == {g1, g2}
 
 
+async def test_deadline_list_includes_step_labels_for_editor(
+    client, admin, course, groups_setup
+):
+    (g1, curator, _, _), _ = groups_setup
+    payload = single_choice()
+    payload["content"]["question"] = {
+        "type": "doc",
+        "content": [
+            {
+                "type": "heading",
+                "attrs": {"level": 1, "zebra_title": True},
+                "content": [{"type": "text", "text": "Проверка окна"}],
+            }
+        ],
+    }
+    step_id = await add_step(client, admin, course[1], payload)
+    rows = await listing(client, curator, g1, course[0])
+    assert rows[0]["step_id"] == step_id
+    assert rows[0]["module_title"] == "Intro"
+    assert rows[0]["title"] == "Проверка окна"
+    assert isinstance(rows[0]["module_position"], int)
+    assert isinstance(rows[0]["step_position"], int)
+
+
 async def test_earlier_steps_inherit_next_deadline(client, admin, course, groups_setup):
     (g1, curator, _, student), _ = groups_setup
     m2 = (
@@ -135,6 +159,182 @@ async def test_deadlines_are_per_group(client, admin, course, groups_setup, make
     assert (await client.get(f"/steps/{step}", headers=loner)).json()[
         "deadline"
     ] is None
+
+
+async def test_course_deadline_is_fallback_and_can_be_removed(
+    client, admin, course, groups_setup, make_user
+):
+    (g1, curator, _, student), _ = groups_setup
+    s1 = await add_step(client, admin, course[1], single_choice())
+    s2 = await add_step(client, admin, course[1], single_choice())
+    url = f"/admin/courses/{course[0]}"
+
+    updated = await client.patch(url, json={"deadline_at": D2}, headers=admin[1])
+    assert updated.status_code == 200 and same_time(updated.json()["deadline_at"], D2)
+    assert same_time(
+        (await client.get(url, headers=admin[1])).json()["deadline_at"], D2
+    )
+
+    _, loner = await make_user()
+    for headers in (student, loner):
+        step = (await client.get(f"/steps/{s2}", headers=headers)).json()
+        assert same_time(step["deadline"]["due_at"], D2)
+        assert step["deadline"]["source_step_id"] is None
+
+    await put_deadline(client, curator, g1, s1, D1)
+    rows = await listing(client, curator, g1, course[0])
+    assert same_time(rows[0]["effective"]["due_at"], D1)
+    assert rows[0]["effective"]["source_step_id"] == s1
+    assert same_time(rows[1]["effective"]["due_at"], D2)
+    assert rows[1]["own"] is None
+
+    cleared = await client.patch(url, json={"deadline_at": None}, headers=admin[1])
+    assert cleared.status_code == 200 and cleared.json()["deadline_at"] is None
+    assert (await client.get(f"/steps/{s2}", headers=student)).json()[
+        "deadline"
+    ] is None
+    assert same_time(
+        (await client.get(f"/steps/{s1}", headers=student)).json()["deadline"][
+            "due_at"
+        ],
+        D1,
+    )
+
+
+async def test_course_deadline_requires_timezone(client, admin, course):
+    response = await client.patch(
+        f"/admin/courses/{course[0]}",
+        json={"deadline_at": "2026-10-01T23:59:00"},
+        headers=admin[1],
+    )
+    assert response.status_code == 422
+
+
+async def test_group_course_deadline_overrides_course_and_respects_access(
+    client, admin, course, groups_setup
+):
+    (g1, curator, _, student), (g2, _, _, other_student) = groups_setup
+    step = await add_step(client, admin, course[1], single_choice())
+    course_url = f"/admin/courses/{course[0]}"
+    await client.patch(course_url, json={"deadline_at": D2}, headers=admin[1])
+    url = f"/groups/{g1}/courses/{course[0]}/deadline"
+
+    initial = await client.get(url, headers=curator)
+    assert initial.status_code == 200 and initial.json()["own"] is None
+    assert same_time(initial.json()["effective_due_at"], D2)
+
+    saved = await client.put(url, json={"due_at": D1}, headers=curator)
+    assert saved.status_code == 200 and same_time(saved.json()["own"]["due_at"], D1)
+    assert same_time(saved.json()["effective_due_at"], D1)
+    assert same_time(
+        (await client.get(f"/steps/{step}", headers=student)).json()["deadline"][
+            "due_at"
+        ],
+        D1,
+    )
+    assert same_time(
+        (await client.get(f"/steps/{step}", headers=other_student)).json()["deadline"][
+            "due_at"
+        ],
+        D2,
+    )
+
+    assert (await client.get(url, headers=other_student)).status_code == 403
+    assert (
+        await client.put(url, json={"due_at": D2}, headers=other_student)
+    ).status_code == 403
+    assert (
+        await client.put(
+            f"/groups/{g2}/courses/{course[0]}/deadline",
+            json={"due_at": D1},
+            headers=curator,
+        )
+    ).status_code == 403
+    assert (await client.delete(url, headers=other_student)).status_code == 403
+
+    replaced = await client.put(url, json={"due_at": D2}, headers=admin[1])
+    assert replaced.status_code == 200 and same_time(
+        replaced.json()["own"]["due_at"], D2
+    )
+    assert (await client.delete(url, headers=curator)).status_code == 204
+    after = (await client.get(url, headers=curator)).json()
+    assert after["own"] is None and same_time(after["effective_due_at"], D2)
+    assert (await client.delete(url, headers=curator)).status_code == 404
+
+
+async def test_group_course_deadline_validates_course_and_timezone(
+    client, admin, course, groups_setup
+):
+    (g1, curator, _, _), _ = groups_setup
+    url = f"/groups/{g1}/courses/{course[0]}/deadline"
+    assert (
+        await client.put(url, json={"due_at": "2026-10-01T23:59:00"}, headers=curator)
+    ).status_code == 422
+    assert (
+        await client.put(
+            f"/groups/{g1}/courses/999999/deadline",
+            json={"due_at": D1},
+            headers=curator,
+        )
+    ).status_code == 404
+
+
+async def test_step_deadline_overrides_group_course_deadline(
+    client, admin, course, groups_setup
+):
+    (g1, curator, _, student), _ = groups_setup
+    s1 = await add_step(client, admin, course[1], single_choice())
+    s2 = await add_step(client, admin, course[1], single_choice())
+    await client.put(
+        f"/groups/{g1}/courses/{course[0]}/deadline",
+        json={"due_at": D2},
+        headers=curator,
+    )
+    await put_deadline(client, curator, g1, s1, D1)
+    rows = await listing(client, curator, g1, course[0])
+    assert same_time(rows[0]["effective"]["due_at"], D1)
+    assert same_time(rows[1]["effective"]["due_at"], D2)
+
+    await client.put(
+        f"/groups/{g1}/courses/{course[0]}/deadline",
+        json={"due_at": PAST},
+        headers=curator,
+    )
+    late = (await submit(client, student, s2, {"option_id": B})).json()
+    assert late["is_late"] and same_time(late["deadline_due_at"], PAST)
+
+
+async def test_moved_group_deadline_notifies_its_enrolled_students(
+    client, admin, course, groups_setup
+):
+    (g1, curator, _, student), (_, _, _, other_student) = groups_setup
+    step = await add_step(client, admin, course[1], single_choice())
+    url = f"/groups/{g1}/courses/{course[0]}/deadline"
+
+    await client.put(url, json={"due_at": D2}, headers=curator)
+    await client.put(url, json={"due_at": D2}, headers=curator)
+    mine = (await client.get("/notifications", headers=student)).json()
+    changed = [item for item in mine if item["type"] == "deadline_changed"]
+    assert len(changed) == 1
+    assert changed[0]["payload"]["step_id"] is None
+    assert same_time(changed[0]["payload"]["deadline"], D2)
+    assert not [
+        item
+        for item in (await client.get("/notifications", headers=other_student)).json()
+        if item["type"] == "deadline_changed"
+    ]
+
+    await put_deadline(client, curator, g1, step, D1)
+    mine = (await client.get("/notifications", headers=student)).json()
+    changed = [item for item in mine if item["type"] == "deadline_changed"]
+    assert changed[0]["payload"]["step_id"] == step
+    assert same_time(changed[0]["payload"]["deadline"], D1)
+
+    await client.delete(f"/groups/{g1}/deadlines/{step}", headers=curator)
+    mine = (await client.get("/notifications", headers=student)).json()
+    changed = [item for item in mine if item["type"] == "deadline_changed"]
+    assert len(changed) == 3
+    assert same_time(changed[0]["payload"]["deadline"], D2)
 
 
 async def test_replace_and_delete(client, admin, course, groups_setup):
