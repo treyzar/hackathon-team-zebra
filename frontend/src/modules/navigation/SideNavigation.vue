@@ -108,6 +108,8 @@ onMounted(async () => {
   top: 0;
   left: 0;
   width: 290px;
+  max-width: calc(100vw - 24px);
+  height: 100dvh;
   border-right: 0;
   box-shadow: 8px 0 32px #0b12202e;
 }

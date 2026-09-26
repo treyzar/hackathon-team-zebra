@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { getCourse, getStep } from "./api";
 import {
@@ -24,9 +24,32 @@ const titles = ref(new Map<number, string>());
 const loading = ref(true);
 const stepLoading = ref(false);
 const error = ref("");
+const outlineOpen = ref(false);
+const mobile = ref(false);
+const outlineButton = ref<HTMLButtonElement | null>(null);
+const outlineCloseButton = ref<HTMLButtonElement | null>(null);
+const workspaceMain = ref<HTMLElement | null>(null);
+const outlineHidden = computed(() => mobile.value && !outlineOpen.value);
 let courseVersion = 0;
 let stepVersion = 0;
 let disposed = false;
+let mobileQuery: MediaQueryList | null = null;
+
+function updateMobile(event: MediaQueryListEvent): void {
+  mobile.value = event.matches;
+  if (!event.matches) outlineOpen.value = false;
+}
+
+function closeOutline(): void {
+  outlineOpen.value = false;
+  if (mobile.value) void nextTick(() => outlineButton.value?.focus());
+}
+
+onMounted(() => {
+  mobileQuery = window.matchMedia("(max-width: 767px)");
+  mobile.value = mobileQuery.matches;
+  mobileQuery.addEventListener("change", updateMobile);
+});
 
 const selected = computed(() =>
   course.value?.modules.flatMap((module) => module.steps).find((item) => item.id === props.stepId),
@@ -135,18 +158,35 @@ async function refresh(): Promise<void> {
   }
 }
 
-watch(() => props.courseId, loadCourse, { immediate: true });
+watch(
+  () => props.courseId,
+  () => {
+    outlineOpen.value = false;
+    if (workspaceMain.value) workspaceMain.value.scrollTop = 0;
+    void loadCourse();
+  },
+  { immediate: true },
+);
 watch(
   () => props.stepId,
   () => {
+    outlineOpen.value = false;
+    if (workspaceMain.value) workspaceMain.value.scrollTop = 0;
     error.value = "";
     void loadSelectedStep();
   },
 );
+watch(outlineOpen, async (open) => {
+  if (open) {
+    await nextTick();
+    outlineCloseButton.value?.focus();
+  }
+});
 onBeforeUnmount(() => {
   disposed = true;
   ++courseVersion;
   ++stepVersion;
+  mobileQuery?.removeEventListener("change", updateMobile);
 });
 </script>
 
@@ -157,8 +197,50 @@ onBeforeUnmount(() => {
       {{ error }} <button type="button" @click="loadCourse">Повторить</button>
     </div>
     <template v-else>
-      <aside class="student-outline" aria-label="Модули и шаги курса">
+      <div class="student-mobile-toolbar">
+        <div>
+          <RouterLink :to="{ name: STUDENT_COURSES_ROUTE.name }" class="student-back-link"
+            >← Мои курсы</RouterLink
+          >
+          <strong>{{ course.title }}</strong>
+        </div>
+        <button
+          ref="outlineButton"
+          type="button"
+          aria-controls="student-course-outline"
+          :aria-expanded="outlineOpen"
+          @click="outlineOpen = true"
+        >
+          Шаги курса
+        </button>
+      </div>
+      <button
+        v-if="outlineOpen && mobile"
+        class="student-outline-backdrop"
+        type="button"
+        aria-label="Закрыть оглавление курса"
+        tabindex="-1"
+        @click="closeOutline"
+      />
+      <aside
+        id="student-course-outline"
+        class="student-outline"
+        :class="{ 'student-outline--open': outlineOpen }"
+        :aria-hidden="outlineHidden ? 'true' : undefined"
+        :inert="outlineHidden"
+        aria-label="Модули и шаги курса"
+        @keydown.esc="closeOutline"
+      >
         <div class="student-outline-head">
+          <button
+            ref="outlineCloseButton"
+            class="student-outline-close"
+            type="button"
+            aria-label="Закрыть оглавление курса"
+            @click="closeOutline"
+          >
+            ✕
+          </button>
           <RouterLink :to="{ name: STUDENT_COURSES_ROUTE.name }" class="student-back-link"
             >← Мои курсы</RouterLink
           >
@@ -209,6 +291,7 @@ onBeforeUnmount(() => {
                   name: STUDENT_STEP_ROUTE.name,
                   params: { courseId: course.id, stepId: item.id },
                 }"
+                @click="closeOutline"
               >
                 <span
                   class="student-step-icon"
@@ -251,7 +334,12 @@ onBeforeUnmount(() => {
           </p>
         </nav>
       </aside>
-      <section class="student-workspace-main" aria-label="Материал курса">
+      <section
+        ref="workspaceMain"
+        class="student-workspace-main"
+        :inert="mobile && outlineOpen"
+        aria-label="Материал курса"
+      >
         <div v-if="error" class="student-workspace-error" role="alert">{{ error }}</div>
         <template v-if="stepId">
           <div v-if="selected?.locked" class="student-step-unavailable">
@@ -333,6 +421,11 @@ onBeforeUnmount(() => {
   color: var(--color-text);
   background: var(--color-bg);
 }
+.student-mobile-toolbar,
+.student-outline-backdrop,
+.student-outline-close {
+  display: none;
+}
 .student-outline {
   display: flex;
   flex-direction: column;
@@ -355,6 +448,7 @@ onBeforeUnmount(() => {
   font-size: 20px;
   font-weight: 700;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 .student-outline-totals {
   display: flex;
@@ -396,6 +490,7 @@ onBeforeUnmount(() => {
   letter-spacing: 0.08em;
   line-height: 1.4;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 .student-outline-module > div + div {
   margin-top: 8px;
@@ -609,30 +704,122 @@ onBeforeUnmount(() => {
     grid-template-columns: 245px minmax(0, 1fr);
   }
 }
-@media (max-width: 650px) {
+@media (max-width: 767px) {
   .student-workspace {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(170px, 32%) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .student-mobile-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+    background: #fff;
+  }
+  .student-mobile-toolbar > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .student-mobile-toolbar strong {
+    overflow: hidden;
+    font-size: 15px;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .student-mobile-toolbar button {
+    flex: none;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--color-primary-pale);
+    border-radius: 10px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font: 700 14px var(--font-sans);
+    cursor: pointer;
+  }
+  .student-outline-backdrop {
+    position: fixed;
+    z-index: 20;
+    inset: 0;
+    display: block;
+    width: 100%;
+    border: 0;
+    background: #0b122080;
   }
   .student-outline {
-    border-right: 0;
-    border-bottom: 1px solid #e1e6f0;
+    position: fixed;
+    z-index: 21;
+    inset: 0 auto 0 0;
+    width: min(360px, calc(100vw - 24px));
+    height: 100dvh;
+    visibility: hidden;
+    transform: translateX(-100%);
+    transition:
+      transform 0.2s ease,
+      visibility 0.2s;
+    box-shadow: 12px 0 30px #0b12202e;
+    pointer-events: none;
+  }
+  .student-outline--open {
+    visibility: visible;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  .student-outline-close {
+    display: grid;
+    float: right;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    margin: -8px -8px 0 8px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-muted);
+    font-size: 18px;
+    cursor: pointer;
   }
   .student-outline-head {
-    padding: 13px 17px 10px;
-  }
-  .student-outline-head h2 {
-    margin: 7px 0 2px;
-    font-size: 16px;
-  }
-  .student-outline-head p {
-    margin-bottom: 6px;
+    padding: 20px 17px 14px;
   }
   .student-outline-scroll {
-    padding-top: 0;
+    padding: 4px 17px 28px;
   }
   .student-workspace-main {
-    padding: 25px 20px 50px;
+    padding: 22px 16px 48px;
+    overflow-x: hidden;
+  }
+  .student-course-overview h2 {
+    overflow-wrap: anywhere;
+    font-size: 28px;
+  }
+  .student-course-description {
+    padding: 18px;
+  }
+  .student-overview-button {
+    justify-content: center;
+    width: 100%;
+    padding: 0 16px;
+    font-size: 16px;
+  }
+  .student-module-card {
+    gap: 12px;
+    min-width: 0;
+    padding: 14px;
+  }
+  .student-module-card > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .student-outline {
+    transition: none;
   }
 }
 </style>

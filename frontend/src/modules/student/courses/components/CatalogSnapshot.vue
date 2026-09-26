@@ -153,6 +153,10 @@ const barTotal = computed(() => parts.value.reduce((sum, part) => sum + part.poi
   align-items: center;
   gap: 10px;
 }
+.rating-parts li > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .rating-dot {
   width: 12px;
   height: 12px;

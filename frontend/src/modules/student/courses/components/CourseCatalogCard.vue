@@ -64,6 +64,7 @@ defineProps<{ course: CourseListItem }>();
 .student-course-card > strong {
   font-size: 16px;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 .student-progress-track {
   display: block;

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { getApiErrorMessage } from "@/api/errors";
 import type { StudentQuestion } from "@/modules/student/courses/types.ts";
 import { askQuestion, getStepQuestions } from "@/modules/student/courses/api.ts";
 
@@ -16,8 +17,8 @@ async function loadQuestions() {
   error.value = "";
   try {
     questions.value = await getStepQuestions(props.stepId);
-  } catch (e: any) {
-    error.value = e?.response?.data?.detail || "Ошибка при загрузке вопросов";
+  } catch (cause) {
+    error.value = getApiErrorMessage(cause);
   } finally {
     loading.value = false;
   }
@@ -33,8 +34,8 @@ async function handleSubmit() {
     const created = await askQuestion(props.stepId, text);
     questions.value.unshift(created);
     newText.value = "";
-  } catch (e: any) {
-    error.value = e?.response?.data?.detail || "Не удалось отправить комментарий";
+  } catch (cause) {
+    error.value = getApiErrorMessage(cause);
   } finally {
     submitting.value = false;
   }
@@ -194,5 +195,19 @@ watch(() => props.stepId, loadQuestions, { immediate: true });
   margin-top: 10px;
   color: #dc2626;
   font-size: 13px;
+}
+@media (max-width: 680px) {
+  .comment-header,
+  .reply-header {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .comment-text,
+  .reply-text {
+    overflow-wrap: anywhere;
+  }
+  .form-actions button {
+    min-height: 44px;
+  }
 }
 </style>
