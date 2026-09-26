@@ -154,10 +154,10 @@ const numberContent = computed(() => props.step.content as unknown as NumberCont
       @update:model-value="emit('update:code', $event)"
     />
   </div>
-    <div v-else-if="step.type === 'short_text'" class="student-short-answer">
-    <label for="student-short-text">Ответ</label>
+  <div v-else-if="step.type === 'short_text'" class="student-free-answer">
+    <label for="student-answer-text">Ответ</label>
     <input
-      id="student-short-text"
+      id="student-answer-text"
       type="text"
       :value="answerText"
       maxlength="500"
@@ -168,12 +168,12 @@ const numberContent = computed(() => props.step.content as unknown as NumberCont
     <span class="student-muted">До 500 символов.</span>
   </div>
 
-  <div v-else-if="step.type === 'number'" class="student-number-answer">
-    <label for="student-number-text">
+  <div v-else-if="step.type === 'number'" class="student-free-answer">
+    <label for="student-answer-text">
       {{ numberContent.kind === "decimal" ? "Число" : "Целое число" }}
     </label>
     <input
-      id="student-number-text"
+      id="student-answer-text"
       type="text"
       inputmode="decimal"
       :value="answerText"

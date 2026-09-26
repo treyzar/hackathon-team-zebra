@@ -98,6 +98,13 @@ export function newStepForm(type: StepType = "theory"): StepForm {
     samples: [],
     testGroups: [{ name: "Основная группа", points: 1, tests: [{ input: "", output: "" }] }],
     referenceSolution: "",
+    checklist: [],
+    numberKind: "integer",
+    numberPrecision: 0,
+    numberValue: "",
+    shortTextAccepted: "",
+    shortTextCaseSensitive: false,
+    shortTextGrading: "auto",
   };
 }
 
