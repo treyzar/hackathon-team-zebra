@@ -1,3 +1,4 @@
+import { pluralRu, stepsText } from "@/modules/shared/plural";
 import type { RichDocument, RichNode, StepType } from "./types";
 
 export const stepLabels: Record<StepType, string> = {
@@ -14,24 +15,15 @@ export const stepLabels: Record<StepType, string> = {
 export function pointsWord(count: number): string {
   // Fractional points (partial scores) read as "2,5 балла".
   if (!Number.isInteger(count)) return "балла";
-  return plural(count, "балл", "балла", "баллов");
+  return pluralRu(count, "балл", "балла", "баллов");
 }
 
 export function pointsText(count: number): string {
   return `${count} ${pointsWord(count)}`;
 }
 
-function plural(count: number, one: string, few: string, many: string): string {
-  const tens = Math.abs(count) % 100;
-  const units = tens % 10;
-  if (tens >= 11 && tens <= 14) return many;
-  if (units === 1) return one;
-  if (units >= 2 && units <= 4) return few;
-  return many;
-}
-
 export function daysText(count: number): string {
-  return `${count} ${plural(count, "день", "дня", "дней")}`;
+  return `${count} ${pluralRu(count, "день", "дня", "дней")}`;
 }
 
 type Rating = import("./types").MyRating;
@@ -68,8 +60,7 @@ export function ratingGoal(
   let after = ". Заданий пока не хватает — помогут дни серии.";
   if (target.reachable && plan.length === 1)
     after = `. Это ${ONE_STEP[plan[0]!.type] ?? "один шаг"}.`;
-  else if (target.reachable)
-    after = `. Это ${plan.length} ${plural(plan.length, "шаг", "шага", "шагов")}.`;
+  else if (target.reachable) after = `. Это ${stepsText(plan.length)}.`;
   return { before: `До ${target.place}-го места`, points: pointsText(target.gap), after };
 }
 

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/errors";
+import { modulesText, stepsText } from "@/modules/shared/plural";
 import { courseApi } from "./api";
 import { reorderIds } from "./reorder";
 import CourseStepWorkbench from "./CourseStepWorkbench.vue";
@@ -403,7 +404,7 @@ watch(courseId, load);
             <div class="course-sidebar-heading">
               <div>
                 <h2>Структура курса</h2>
-                <p>{{ course.modules.length }} модулей · {{ stepCount }} шагов</p>
+                <p>{{ modulesText(course.modules.length) }} · {{ stepsText(stepCount) }}</p>
               </div>
             </div>
             <div
@@ -445,7 +446,7 @@ watch(courseId, load);
                       <span class="admin-number"
                         >{{ moduleIndex + 1 }}. {{ module.title.toUpperCase() }}</span
                       >
-                      <small>{{ module.steps.length }} шагов</small>
+                      <small>{{ stepsText(module.steps.length) }}</small>
                     </div>
                     <form v-else class="admin-actions" @submit.prevent="renameModule(module.id)">
                       <input
