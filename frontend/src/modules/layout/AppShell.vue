@@ -103,7 +103,9 @@ async function logout(): Promise<void> {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
         </button>
         <template v-if="isStudent">
-          <p class="page-greeting">Привет, {{ username }}! Продолжим?</p>
+          <p class="page-greeting">
+            {{ isStudentCourse ? "Курс" : `Привет, ${username}! Продолжим?` }}
+          </p>
           <span class="page-account">{{ username }}</span>
         </template>
         <!-- Admin pages teleport their own title and actions here. -->
@@ -277,6 +279,13 @@ async function logout(): Promise<void> {
   .page-account {
     display: none;
   }
+  .app-shell--student .page-greeting {
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .app-shell--student-course .page-header {
     display: flex;
   }
@@ -288,7 +297,7 @@ async function logout(): Promise<void> {
   }
   .content-body,
   .app-shell--student .content-body {
-    padding: 20px 16px 36px;
+    padding: 16px 16px 36px;
   }
   .app-shell--student-course .content-body {
     padding: 0;

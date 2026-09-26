@@ -417,9 +417,44 @@
   padding-left: 22px;
 }
 @media (max-width: 680px) {
+  .student-lesson {
+    font-size: 16px;
+  }
+  .student-lesson h2 {
+    overflow-wrap: anywhere;
+    font-size: 28px;
+  }
+  .student-lesson-top {
+    gap: 8px;
+    font-size: 14px;
+  }
+  .student-next-round {
+    width: 44px;
+    height: 44px;
+  }
   .student-paper,
   .student-answer-card {
-    padding: 19px;
+    padding: 18px;
+  }
+  .student-option span,
+  .student-attached-file span,
+  .student-result-head strong,
+  .student-group-result__summary span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .student-submit-row,
+  .student-submit-button {
+    width: 100%;
+  }
+  .student-submit-button {
+    justify-content: center;
+    padding: 0 16px;
+    text-align: center;
+  }
+  .student-result-head,
+  .student-group-result__summary {
+    flex-wrap: wrap;
   }
   .student-sample {
     grid-template-columns: 1fr;

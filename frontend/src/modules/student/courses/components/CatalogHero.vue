@@ -137,12 +137,23 @@ defineProps<{
 }
 @media (max-width: 640px) {
   .student-hero {
-    min-height: 310px;
-    padding: 24px;
+    min-height: 0;
+    padding: 22px;
+  }
+  .student-hero h2,
+  .student-hero-description {
+    overflow-wrap: anywhere;
+  }
+  .student-hero h2 {
+    font-size: 28px;
+  }
+  .student-progress-track--dark {
+    margin-top: 24px;
   }
   .student-hero-actions {
     align-items: flex-start;
     flex-direction: column;
+    width: 100%;
   }
   .student-primary-button {
     width: 100%;
