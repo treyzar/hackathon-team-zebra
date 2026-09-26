@@ -609,7 +609,12 @@ watch(
               </button>
             </div>
           </section>
-          <section v-if="form.type === 'programming'" class="admin-panel">
+          <!-- A curator checks by hand: tests would never run. They stay in the
+               form, so switching back to automatic checking keeps them. -->
+          <section
+            v-if="form.type === 'programming' && form.grading !== 'manual'"
+            class="admin-panel"
+          >
             <div class="admin-panel-head">
               <div>
                 <h2>Скрытые тесты</h2>
@@ -772,7 +777,7 @@ watch(
                     <option value="tests_and_review">Тесты и куратор</option>
                     <option value="manual">Только куратор</option>
                   </select></label
-                ><label class="admin-field"
+                ><label v-if="form.grading !== 'manual'" class="admin-field"
                   >Начисление баллов<select v-model="form.scoring">
                     <option value="all_or_nothing">Всё или ничего</option>
                     <option value="per_group">За группы тестов</option>

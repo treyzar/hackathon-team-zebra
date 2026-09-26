@@ -291,3 +291,16 @@ test("a user is shown by full name, or by username without one", () => {
   assert.equal(fullName({ ...user, patronymic: "Петрович" }), "Иванов Иван Петрович");
   assert.equal(fullName({ ...user, name: "", surname: "" }), "ivanov");
 });
+
+test("a curator-only programming step sends no tests", () => {
+  const form = newStepForm("programming");
+  form.body = textToDoc("Напишите программу");
+  form.testGroups = [{ name: "", points: 0, tests: [] }]; // unfinished, now hidden
+  form.grading = "manual";
+  assert.equal(validateStepForm(form), null);
+  assert.deepEqual(payloadFromForm(form).answer_key.test_groups, []);
+  assert.equal(payloadFromForm(form).settings.grading, "manual");
+
+  form.grading = "tests_and_review";
+  assert.match(validateStepForm(form) ?? "", /группа с тестами/);
+});

@@ -307,7 +307,9 @@ export function payloadFromForm(form: StepForm): StepPayload {
       samples: form.samples,
     };
     payload.answer_key = {
-      test_groups: form.testGroups,
+      // A curator-only check runs no tests; the hidden form section must not
+      // send (possibly unfinished) tests the author cannot see any more.
+      test_groups: form.grading === "manual" ? [] : form.testGroups,
       reference_solution: form.referenceSolution || null,
     };
     settings.scoring = form.scoring;
