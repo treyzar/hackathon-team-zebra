@@ -143,7 +143,6 @@ onMounted(loadFilters);
 <template>
   <section class="analytics-workspace" aria-label="Аналитика групп">
     <div class="analytics-toolbar">
-      <h2>Аналитика</h2>
       <label>
         <span class="analytics-visually-hidden">Курс</span>
         <select v-model="selectedCourseId" :disabled="loadingFilters" aria-label="Курс">
