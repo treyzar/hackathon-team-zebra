@@ -393,6 +393,7 @@ async def export_as_archive(
                     id=file_id,
                     path=exported_path,
                     purpose=file.purpose,
+                    filename=exported_name,
                     mime=file.mime,
                     size=len(data),
                 )
