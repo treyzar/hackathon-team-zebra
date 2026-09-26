@@ -41,9 +41,10 @@ function chooseFile(file: File | undefined): void {
   importedCourse.value = null;
   importError.value = "";
   if (!file) return;
-  if (!file.name.toLowerCase().endsWith(".json")) {
+  const name = file.name.toLowerCase()
+  if (!name.endsWith(".json") && !name.endsWith(".zip")) {
     selectedFile.value = null;
-    importError.value = "Выберите файл с расширением .json.";
+    importError.value = "Выберите файл с расширением .json или .zip.";
     return;
   }
   selectedFile.value = file;
@@ -77,11 +78,12 @@ async function importCourse(): Promise<void> {
   }
 }
 
-function download(blob: Blob, filename: string): void {
+function download(blob: Blob, baseName: string): void {
+  const ext = blob.type.includes("zip") ? "zip" : blob.type.includes("pdf") ? "pdf" : "json";
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = filename;
+  link.download = `${baseName}.${ext}`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -95,7 +97,7 @@ async function exportCourse(format: "json" | "pdf"): Promise<void> {
       format === "json"
         ? await courseApi.exportCourseJson(selectedCourse.value.id)
         : await courseApi.exportCoursePdf(selectedCourse.value.id);
-    download(blob, `${selectedCourse.value.slug}.${format}`);
+    download(blob, selectedCourse.value.slug);
   } catch (cause) {
     exportError.value = getApiErrorMessage(cause);
   } finally {
@@ -124,7 +126,7 @@ onMounted(loadCourses);
         <div class="admin-panel-head">
           <div>
             <h2>Импорт</h2>
-            <p>JSON-файл курса</p>
+            <p>JSON-файл или ZIP-файл курса</p>
           </div>
           <span class="exchange-format">.JSON</span>
         </div>
@@ -144,7 +146,7 @@ onMounted(loadCourses);
             ref="fileInput"
             class="exchange-file-input"
             type="file"
-            accept=".json,application/json"
+            accept=".json,.zip,application/json,application/zip"
             aria-label="Выбрать JSON-файл курса"
             @change="onFileChange"
           />
@@ -198,7 +200,7 @@ onMounted(loadCourses);
             <h2>Экспорт</h2>
             <p>Скачать курс в файл</p>
           </div>
-          <span class="exchange-format">JSON · PDF</span>
+          <span class="exchange-format">JSON/ZIP · PDF</span>
         </div>
 
         <label class="admin-field" for="export-course">Курс</label>
@@ -225,7 +227,7 @@ onMounted(loadCourses);
             @click="exportCourse('json')"
           >
             <span aria-hidden="true">↓</span>
-            {{ exporting === "json" ? "Готовим JSON…" : "Скачать JSON" }}
+            {{ exporting === "json" ? "Готовим файл…" : "Скачать JSON или ZIP" }}
           </button>
           <button
             class="admin-button"

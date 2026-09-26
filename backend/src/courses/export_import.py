@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import zipfile
 from pathlib import PurePosixPath
 from typing import Any
@@ -172,8 +173,9 @@ async def _store_archive_files(
     user: User,
     archive: zipfile.ZipFile,
     manifest: ArchiveManifest,
-) -> dict[int, int]:
+) -> tuple[dict[int, int], list[tuple[str, bytes, str]]]:
     mapping: dict[int, int] = {}
+    pending: list[tuple[str, bytes, str]] = []
     max_file_bytes = settings.max_upload_mb * 1024 * 1024
     for entry in manifest.files:
         if entry.purpose not in _ARCHIVE_PURPOSES:
@@ -190,14 +192,12 @@ async def _store_archive_files(
             raise unprocessable(
                 f"Файл «{entry.filename}» больше {settings.max_upload_mb} МБ"
             )
-
         data = archive.read(entry.path)
         if len(data) != entry.size:
             raise unprocessable(
                 f"Файл «{entry.filename}»: в манифесте {entry.size} байт, "
                 f"в архиве {len(data)}"
             )
-
         file = File(
             owner_id=user.id,
             purpose=entry.purpose,
@@ -209,9 +209,20 @@ async def _store_archive_files(
         )
         db.add(file)
         await db.flush()
-        await storage.write_object(file.storage_key, data, file.mime)
         mapping[entry.id] = file.id
-    return mapping
+        pending.append((file.storage_key, data, file.mime))
+    return mapping, pending
+
+
+log = logging.getLogger(__name__)
+
+
+async def _cleanup_orphan_files(keys: list[str]) -> None:
+    for key in keys:
+        try:
+            await storage.delete_object(key)
+        except storage.StorageError:
+            log.warning("failed to remove orphan object %s", key, exc_info=True)
 
 
 async def import_course_archive(
@@ -259,11 +270,22 @@ async def import_course_archive(
                 f"нет в «{MANIFEST_FILENAME}»: {listed}"
             )
 
-        mapping = await _store_archive_files(db, user, archive, manifest)
+        mapping, pending = await _store_archive_files(db, user, archive, manifest)
         _replace_file_ids(raw_document, mapping)
         document = CourseDocument.model_validate(raw_document)
 
-    return await import_course_document(db, user, document)
+    course, warnings = await import_course_document(db, user, document)
+
+    written: list[str] = []
+    try:
+        for key, data, mime in pending:
+            await storage.write_object(key, data, mime)
+            written.append(key)
+    except storage.StorageError:
+        await _cleanup_orphan_files(written)
+        raise
+
+    return course, warnings
 
 
 async def import_course_document(
