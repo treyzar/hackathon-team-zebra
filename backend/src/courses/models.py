@@ -42,7 +42,6 @@ class Course(BaseDB):
         default=StepAccess.ALL,
         server_default=StepAccess.ALL.value,
     )
-    deadline_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 

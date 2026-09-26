@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from courses.models import Course, Step
+from courses.models import Step
 from models import BaseDB, User
 
 
@@ -39,17 +39,5 @@ class Deadline(BaseDB):
     step_id: Mapped[int] = mapped_column(
         ForeignKey(Step.id, ondelete="CASCADE"), index=True
     )
-    due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    set_by: Mapped[int | None] = mapped_column(ForeignKey(User.id, ondelete="SET NULL"))
-
-
-class GroupCourseDeadline(BaseDB):
-    """An explicit course deadline for one group, set by its curator or an admin."""
-
-    __table_args__ = (UniqueConstraint("group_id", "course_id"),)
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    group_id: Mapped[int] = mapped_column(ForeignKey(Group.id, ondelete="CASCADE"))
-    course_id: Mapped[int] = mapped_column(ForeignKey(Course.id, ondelete="CASCADE"))
     due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     set_by: Mapped[int | None] = mapped_column(ForeignKey(User.id, ondelete="SET NULL"))

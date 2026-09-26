@@ -54,10 +54,6 @@ defineProps<{ name: NavigationIconName }>();
       <circle cx="12" cy="12" r="9" />
       <path d="M9.5 9a2.5 2.5 0 1 1 4.1 1.9C12.5 11.8 12 12.3 12 13.5M12 17h.01" />
     </template>
-    <template v-else-if="name === 'deadlines'">
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <path d="M7 3v4M17 3v4M3 10h18M8 15h3M8 18h3" />
-    </template>
     <template v-else-if="name === 'builder'">
       <path d="M3 4h18v16H3zM9 4v16M9 10h12" />
       <path d="M5.5 8h1M5.5 12h1M5.5 16h1" />

@@ -11,7 +11,6 @@ export interface Course {
   description: RichText;
   is_published: boolean;
   step_access: StepAccess;
-  deadline_at: string | null;
 }
 
 export interface StepSummary {

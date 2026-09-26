@@ -18,16 +18,6 @@ import { orderByRating, ratingParts } from "../src/modules/admin/groups/rating";
 import type { GroupRatingRow } from "../src/modules/admin/groups/types";
 import { parseMethodText } from "../src/modules/admin/courses/method-parser";
 import { reorderIds } from "../src/modules/admin/courses/reorder";
-import { deadlineFromInput, deadlineToInput } from "../src/modules/shared/deadline";
-
-test("course deadline converts local date and time to an aware API value", () => {
-  const local = "2026-10-01T23:45";
-  const apiValue = deadlineFromInput(local);
-  assert.ok(apiValue?.endsWith("Z"));
-  assert.equal(deadlineToInput(apiValue), local);
-  assert.equal(deadlineFromInput(""), null);
-  assert.equal(deadlineToInput(null), "");
-});
 
 test("dragging a step changes only its position within its module", () => {
   assert.deepEqual(reorderIds([10, 20, 30, 40], 10, 30, true), [20, 30, 10, 40]);
