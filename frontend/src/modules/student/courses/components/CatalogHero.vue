@@ -35,7 +35,7 @@ defineProps<{
             params: { courseId: course.id, stepId: course.progress.next_step_id },
           }"
         >
-          Продолжить <span aria-hidden="true">→</span>
+          <span class="flex gap-2"> Продолжить <span aria-hidden="true">→</span> </span>
         </RouterLink>
         <span class="student-hero-meta">{{ course.progress.percent }}% курса пройдено</span>
       </div>
