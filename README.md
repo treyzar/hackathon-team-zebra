@@ -13,7 +13,7 @@
 **Ссылки**
 
 - Сайт: [cifrovye-zodchie.ru](https://cifrovye-zodchie.ru)
-- Документация API: [cifrovye-zodchie.ru/docs](https://cifrovye-zodchie.ru/docs)
+- Документация API: [cifrovye-zodchie.ru/redoc](https://cifrovye-zodchie.ru/redoc)
 - Презентация и видео:
   [папка на Google Диске](https://drive.google.com/drive/folders/1ZkjlmY7xb37Sp-qfSCOj2D9rncS37HTS?usp=sharing)
 
