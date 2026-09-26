@@ -1,6 +1,5 @@
 .student-lesson {
   width: 100%;
-  max-width: 980px;
   min-width: 0;
   font-size: var(--font-size-base);
   line-height: 1.6;
