@@ -48,6 +48,26 @@ body {
   background: var(--color-bg);
 }
 
+.role-student {
+  --font-size-base: 18px;
+  --font-size-small: 15px;
+  --font-size-floor: 15px;
+  --button-height: 56px;
+  --button-radius: 14px;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+.role-staff {
+  --font-size-base: 15px;
+  --font-size-small: 13px;
+  --font-size-floor: 0px;
+  --button-height: 40px;
+  --button-radius: var(--radius-control);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+}
+
 :focus-visible {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;

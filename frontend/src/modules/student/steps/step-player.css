@@ -1,8 +1,7 @@
 .student-lesson {
   width: 100%;
-  max-width: 980px;
   min-width: 0;
-  font-size: 18px;
+  font-size: var(--font-size-base);
   line-height: 1.6;
 }
 .student-lesson-top {
@@ -33,8 +32,8 @@
 }
 .student-next-round {
   display: grid;
-  width: 48px;
-  height: 48px;
+  width: var(--button-height);
+  height: var(--button-height);
   flex: none;
   place-items: center;
   margin-left: auto;
@@ -114,7 +113,7 @@
   font-weight: 600;
 }
 .student-language select {
-  min-height: 38px;
+  min-height: var(--button-height);
   padding: 0 12px;
   border: 1px solid var(--color-border);
   border-radius: 10px;
@@ -131,7 +130,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  min-height: 56px;
+  min-height: var(--button-height);
   padding: 12px 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
@@ -206,7 +205,7 @@
 .student-file-button {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: var(--button-height);
   padding: 0 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
@@ -232,7 +231,7 @@
   border-radius: 9px;
   background: #f4f6fb;
   color: #43516b;
-  font-size: 13px;
+  font-size: var(--font-size-small);
 }
 .student-attached-file button {
   color: #a54343;
@@ -267,7 +266,7 @@
 .student-sample span,
 .student-test-row span {
   color: #68748a;
-  font-size: 12px;
+  font-size: var(--font-size-small);
 }
 .student-sample pre,
 .student-test-row pre,
@@ -279,7 +278,7 @@
   border-radius: 8px;
   background: #eef1f8;
   color: #25324a;
-  font: 13px/1.6 var(--font-mono);
+  font: var(--font-size-small)/1.6 var(--font-mono);
 }
 .student-alert {
   margin-top: 16px;
@@ -296,21 +295,21 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  min-height: 56px;
+  min-height: var(--button-height);
   margin-top: 20px;
 }
 .student-submit-button {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-height: 56px;
+  min-height: var(--button-height);
   text-decoration: none;
   padding: 0 28px;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--button-radius);
   background: var(--color-primary);
   color: #fff;
-  font: 700 18px var(--font-sans);
+  font: 700 var(--font-size-base) var(--font-sans);
   cursor: pointer;
 }
 .student-submit-button:hover:not(:disabled) {
@@ -389,7 +388,7 @@
   padding: 9px 10px;
   border-radius: 9px;
   background: #ffffffb8;
-  font-size: 13px;
+  font-size: var(--font-size-small);
 }
 .student-group-result__summary {
   display: flex;
@@ -409,8 +408,16 @@
   background: #f1f9f4;
 }
 .student-answer-reveal button {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--button-height);
+  padding: 0 16px;
+  border: 1px solid #dbe6df;
+  border-radius: var(--button-radius);
+  background: #fff;
   color: #17915a;
-  font-weight: 750;
+  font: 700 var(--font-size-base) var(--font-sans);
+  cursor: pointer;
 }
 .student-answer-reveal ul {
   margin: 0;
@@ -418,7 +425,7 @@
 }
 @media (max-width: 680px) {
   .student-lesson {
-    font-size: 16px;
+    font-size: var(--font-size-base);
   }
   .student-lesson h2 {
     overflow-wrap: anywhere;
@@ -426,11 +433,11 @@
   }
   .student-lesson-top {
     gap: 8px;
-    font-size: 14px;
+    font-size: var(--font-size-small);
   }
   .student-next-round {
-    width: 44px;
-    height: 44px;
+    width: var(--button-height);
+    height: var(--button-height);
   }
   .student-paper,
   .student-answer-card {

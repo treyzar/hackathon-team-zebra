@@ -150,8 +150,8 @@ onMounted(load);
   flex-direction: column;
   gap: 14px;
   color: #0f172a;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
   font-variant-numeric: tabular-nums;
 }
 .hexmap-head {
@@ -181,6 +181,15 @@ onMounted(load);
 .hexmap-state--error {
   color: #9a3c3c;
 }
+.hexmap-state button {
+  min-height: var(--button-height);
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
 .hexmap-body {
   display: flex;
   align-items: flex-start;
@@ -201,7 +210,7 @@ onMounted(load);
   position: absolute;
   color: #4a546b;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.08em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -211,8 +220,8 @@ onMounted(load);
 /* A cell: the outer hexagon is the border, the inner one the fill. */
 .hx {
   position: absolute;
-  width: 130px;
-  height: 112px;
+  width: 152px;
+  height: 132px;
   padding: 0;
   border: 0;
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
@@ -228,7 +237,7 @@ onMounted(load);
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 0 18px;
+  padding: 0 16px;
   clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
   background: var(--hx-fill);
   color: var(--hx-text);
@@ -240,13 +249,13 @@ onMounted(load);
   line-height: 1;
 }
 .hi-name {
-  font-size: 14px;
+  font-size: var(--font-size-small);
   font-weight: 700;
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
 .hi-sub {
-  font-size: 11px;
+  font-size: var(--font-size-small);
   line-height: 1.2;
   opacity: 0.85;
 }
@@ -306,7 +315,7 @@ onMounted(load);
   border-radius: 999px;
   background: #3457f0;
   color: #fff;
-  font-size: 12px;
+  font-size: var(--font-size-small);
   font-weight: 700;
   white-space: nowrap;
   pointer-events: none;
@@ -339,7 +348,7 @@ onMounted(load);
   line-height: 1.1;
 }
 .hexmap-small {
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 .hexmap-segments {
   display: flex;
@@ -367,9 +376,9 @@ onMounted(load);
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 56px;
+  min-height: var(--button-height);
   margin-top: 8px;
-  border-radius: 14px;
+  border-radius: var(--button-radius);
   background: #3457f0;
   color: #fff;
   font-weight: 700;

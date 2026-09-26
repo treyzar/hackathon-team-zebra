@@ -60,7 +60,7 @@ defineProps<{ course: Course }>();
   margin: 0 0 11px;
   color: #3457f0;
   font-size: 12px;
-  font-weight: 750;
+  font-weight: 600;
   letter-spacing: 0.08em;
 }
 .student-course-overview h2 {
@@ -97,12 +97,12 @@ defineProps<{ course: Course }>();
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  min-height: 54px;
+  min-height: var(--button-height);
   padding: 0 26px;
-  border-radius: 13px;
+  border-radius: var(--button-radius);
   background: #3457f0;
   color: #fff;
-  font-size: 16px;
+  font-size: var(--font-size-base);
   font-weight: 700;
   text-decoration: none;
 }
@@ -139,12 +139,12 @@ defineProps<{ course: Course }>();
 }
 .student-module-card h4 {
   margin: 0 0 4px;
-  font-size: 17px;
+  font-size: var(--font-size-base);
 }
 .student-module-card p {
   margin: 0;
   color: #65728a;
-  font-size: 13px;
+  font-size: var(--font-size-small);
 }
 .student-module-card strong {
   margin-left: auto;

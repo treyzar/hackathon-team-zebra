@@ -111,7 +111,7 @@ function deadlineLabel(value: string): string {
 }
 .student-back-link {
   color: #3457f0;
-  font-size: 14px;
+  font-size: var(--font-size-small);
   font-weight: 650;
   text-decoration: none;
 }
@@ -123,7 +123,7 @@ function deadlineLabel(value: string): string {
 .student-outline-head p {
   margin: 0 0 13px;
   color: #5e677d;
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 .student-outline-progress {
   height: 7px;
@@ -145,8 +145,8 @@ function deadlineLabel(value: string): string {
 .student-outline-module h3 {
   margin: 18px 7px 9px;
   color: #5e677d;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.07em;
   line-height: 1.4;
   text-transform: uppercase;
@@ -155,18 +155,18 @@ function deadlineLabel(value: string): string {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 45px;
+  min-height: var(--button-height);
   padding: 8px 10px;
   border-radius: 10px;
   color: #27344d;
-  font-size: 13px;
+  font-size: var(--font-size-base);
   line-height: 1.3;
   text-decoration: none;
 }
 .student-outline-step small {
   display: block;
   color: #7b8497;
-  font-size: 10px;
+  font-size: var(--font-size-small);
 }
 .student-outline-step > span:nth-child(2) {
   flex: 1;
@@ -199,7 +199,7 @@ function deadlineLabel(value: string): string {
   border: 1.5px solid #8a93a8;
   border-radius: 50%;
   color: #5e677d;
-  font-size: 13px;
+  font-size: var(--font-size-small);
 }
 .student-step-icon--passed {
   border: 0;
@@ -227,7 +227,7 @@ function deadlineLabel(value: string): string {
 .student-outline-empty {
   margin: 16px 8px;
   color: #7b8497;
-  font-size: 13px;
+  font-size: var(--font-size-small);
 }
 @media (max-width: 650px) {
   .student-outline {

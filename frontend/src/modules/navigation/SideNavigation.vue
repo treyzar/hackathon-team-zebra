@@ -100,7 +100,7 @@ onMounted(async () => {
   border-right: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 14px;
+  font-size: max(14px, var(--font-size-floor, 0px));
 }
 .side-navigation--overlay {
   position: fixed;
@@ -130,7 +130,7 @@ onMounted(async () => {
 }
 .side-brand-copy span {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: max(12px, var(--font-size-floor, 0px));
 }
 .side-close {
   display: grid;
@@ -222,7 +222,7 @@ onMounted(async () => {
 
 .side-navigation--large .side-bell :deep(.notifications-bell--sidebar) {
   gap: 14px;
-  min-height: 52px;
+  min-height: var(--button-height);
   padding: 0 14px;
   border-radius: 14px;
   font-size: 18px;
@@ -252,7 +252,7 @@ onMounted(async () => {
   border-radius: 50%;
   background: var(--color-ink);
   color: #fff;
-  font-size: 13px;
+  font-size: max(13px, var(--font-size-floor, 0px));
   font-weight: 700;
 }
 .side-account-copy {
@@ -269,7 +269,7 @@ onMounted(async () => {
 }
 .side-account-copy span {
   color: var(--color-muted);
-  font-size: 12px;
+  font-size: max(12px, var(--font-size-floor, 0px));
 }
 .side-logout {
   padding: 4px 0;
@@ -277,7 +277,7 @@ onMounted(async () => {
   background: transparent;
   color: var(--color-primary);
   font: inherit;
-  font-size: 13px;
+  font-size: max(13px, var(--font-size-floor, 0px));
   cursor: pointer;
 }
 .side-navigation--large {
@@ -288,7 +288,7 @@ onMounted(async () => {
 }
 .side-navigation--large .side-link {
   gap: 14px;
-  min-height: 52px;
+  min-height: var(--button-height);
   padding: 0 14px;
   border-radius: 14px;
 }
@@ -310,6 +310,10 @@ onMounted(async () => {
 .side-navigation--large .side-account-copy span,
 .side-navigation--large .side-logout {
   font-size: 15px;
+}
+.side-navigation--large .side-logout {
+  min-height: var(--button-height);
+  padding: 0 8px;
 }
 .side-logout:hover {
   color: var(--color-primary-hover);
