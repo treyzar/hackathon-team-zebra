@@ -33,7 +33,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
-from courses.models import Course, Enrollment, Module, Step
+from courses.models import Course, Module, Step
 from courses.service import now
 from models import User
 from progress.schemas import (
@@ -44,7 +44,13 @@ from progress.schemas import (
     RatingRow,
     Streak,
 )
-from progress.service import CourseProgress, StepState, course_progress, step_labels
+from progress.service import (
+    CourseProgress,
+    StepState,
+    course_progress,
+    step_labels,
+    studied_courses,
+)
 from submissions.models import IN_PROGRESS, Submission
 
 STREAK_DAY_BONUS = 2
@@ -89,26 +95,6 @@ async def streaks(
             bonus=STREAK_DAY_BONUS * length,
             active_today=today in days[user_id],
         )
-    return result
-
-
-async def studied_courses(
-    db: AsyncSession, user_ids: list[int]
-) -> dict[int, list[Course]]:
-    """Published courses each user is enrolled in, oldest course first."""
-    rows = await db.execute(
-        select(Enrollment.user_id, Course)
-        .join(Course, Course.id == Enrollment.course_id)
-        .where(
-            Enrollment.user_id.in_(user_ids),
-            Course.is_published,
-            Course.deleted_at.is_(None),
-        )
-        .order_by(Course.id)
-    )
-    result: dict[int, list[Course]] = {user_id: [] for user_id in user_ids}
-    for user_id, course in rows:
-        result[user_id].append(course)
     return result
 
 

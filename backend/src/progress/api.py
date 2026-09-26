@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from access_docs import access_note
@@ -7,14 +8,18 @@ from courses import service as courses_svc
 from courses.access import ensure_enrolled
 from courses.models import Course
 from database import access_db
+from groups.models import Group
 from groups.service import group_students, manageable_group, student_group_id
 from models import Role, User
 from progress.analytics import course_analytics, module_analytics
-from progress.lag import LagStatus, group_lag
+from progress.lag import LagStatus, group_lag, students_lag, worst
 from progress.rating import my_rating, rating_of
 from progress.schemas import (
     CourseAnalytics,
     CourseProgressOut,
+    Learner,
+    LearnerCourse,
+    LearnerGroup,
     ModuleAnalytics,
     ModuleProgress,
     MyRating,
@@ -229,3 +234,51 @@ async def group_module_analytics(
         raise courses_svc.not_found("Module")
     students = await group_students(db, group_id, course.id)
     return await module_analytics(db, course, module, students)
+
+
+@progress_api.get("/learners", response_model=list[LearnerGroup])
+@access_note(
+    "Куратор — свои группы, администратор — все. Группы с учениками: у каждого "
+    "ученика статус по каждому его курсу (правило — в README, раздел "
+    "«Отставание») и итоговый — худший из них."
+)
+async def list_learners(
+    user: User = Depends(require_curator),
+    db: AsyncSession = Depends(access_db),
+):
+    """Ученики курируемых групп и их статус: «в графике», «замедлился» или
+    «выпадает» — худший по курсам, на которые ученик записан."""
+    query = select(Group).order_by(Group.name)
+    if user.role != Role.ADMIN:
+        query = query.where(Group.curator_id == user.id)
+    result = []
+    for group in await db.scalars(query):
+        students = await group_students(db, group.id)
+        lag = await students_lag(db, group.id, students)
+        result.append(
+            LearnerGroup(
+                group_id=group.id,
+                name=group.name,
+                students=[
+                    Learner(
+                        student_id=s.id,
+                        username=s.username,
+                        name=s.name,
+                        surname=s.surname,
+                        patronymic=s.patronymic,
+                        status=worst([value.status for _, value in lag[s.id]]),
+                        courses=[
+                            LearnerCourse(
+                                course_id=course.id,
+                                title=course.title,
+                                status=value.status,
+                                overdue_steps=len(value.overdue),
+                            )
+                            for course, value in lag[s.id]
+                        ],
+                    )
+                    for s in students
+                ],
+            )
+        )
+    return result

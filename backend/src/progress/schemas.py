@@ -196,6 +196,26 @@ class StudentInfo(BaseModel):
     patronymic: str
 
 
+class LearnerCourse(BaseModel):
+    course_id: int
+    title: str
+    # on_track | slowed | falling_behind, by the lag rule for this course.
+    status: str
+    overdue_steps: int
+
+
+class Learner(StudentInfo):
+    # The worst status over the student's courses; null without courses.
+    status: str | None
+    courses: list[LearnerCourse]
+
+
+class LearnerGroup(BaseModel):
+    group_id: int
+    name: str
+    students: list[Learner]
+
+
 class StudentModule(BaseModel):
     module_id: int
     # passed | in_progress | not_started
