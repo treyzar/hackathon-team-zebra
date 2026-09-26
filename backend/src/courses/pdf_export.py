@@ -237,7 +237,7 @@ def _build_pdf_html(
         f"<title>{_escape(course.title)}</title>",
         "</head><body>",
         "<section class='cover'>",
-        "<div class='kicker'>Курс · Zebra</div>",
+        "<div class='kicker'>Курс · Код роста</div>",
         f"<h1>{_escape(course.title)}</h1>",
         "<div class='meta'>",
         f"<span>slug: <code>{_escape(course.slug)}</code></span>",

@@ -21,7 +21,7 @@ from schemas import UserResponse
 from submissions.review_api import review
 
 app = FastAPI(
-    title="Sasha",
+    title="Код роста",
     description=(
         "Роли: **ученик** (по умолчанию после регистрации), **куратор**, "
         "**администратор**. У каждого эндпоинта указано, кому он доступен.\n\n"
