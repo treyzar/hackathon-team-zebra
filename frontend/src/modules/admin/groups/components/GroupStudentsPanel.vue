@@ -91,7 +91,7 @@ function add(): void {
 
     <div v-if="!members.length" class="students-empty">Учеников пока нет</div>
     <div v-else-if="!filteredMembers.length" class="students-empty">Ничего не найдено</div>
-    <div v-else class="students-table">
+    <div v-else class="students-table" aria-label="Список учеников группы" tabindex="0">
       <div class="students-row students-row--head">
         <span title="Место в рейтинге группы">МЕСТО</span>
         <span>УЧЕНИК</span>
@@ -120,6 +120,9 @@ function add(): void {
 
 <style scoped>
 .students-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid #e1e6f0;
   border-radius: 16px;
@@ -191,7 +194,12 @@ function add(): void {
   font-size: 12px;
 }
 .students-table {
+  flex: 1 1 auto;
+  min-height: 0;
   min-width: 860px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .students-row {
   display: grid;
@@ -204,6 +212,9 @@ function add(): void {
   color: #1d2b43;
 }
 .students-row--head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   min-height: 36px;
   border-top: 0;
   background: #f4f6fb;

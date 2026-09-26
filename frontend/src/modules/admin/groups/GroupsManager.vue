@@ -311,6 +311,7 @@ onBeforeUnmount(() => {
         </section>
 
         <GroupStudentsPanel
+          class="group-students-card"
           :members="members"
           :students="students"
           :rating="rating"
@@ -368,16 +369,19 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 14px;
   overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-right: 4px;
-  scrollbar-gutter: stable;
 }
 .group-summary-card {
   flex: 0 0 auto;
+  min-width: 0;
   padding: 18px;
   border: 1px solid #e1e6f0;
   border-radius: 16px;
   background: #fff;
+}
+.group-content .group-students-card {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 180px;
 }
 .group-content--empty,
 .groups-loading {
@@ -412,7 +416,10 @@ onBeforeUnmount(() => {
     width: 100%;
     height: auto;
     overflow: visible;
-    padding-right: 0;
+  }
+  .group-content .group-students-card {
+    flex: none;
+    min-height: 0;
   }
 }
 @media (max-width: 560px) {
