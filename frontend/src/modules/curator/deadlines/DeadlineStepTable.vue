@@ -68,6 +68,7 @@ function changeTime(row: StepDeadline, event: Event): void {
               :value="deadlineTime(draft(item.deadline))"
               :disabled="disabled"
               :aria-label="`Время для шага ${item.number}`"
+              class="min-w-20!"
               @input="changeTime(item.deadline, $event)"
             />
             <button
